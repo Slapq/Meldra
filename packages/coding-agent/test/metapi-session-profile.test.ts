@@ -7,6 +7,7 @@ import {
 	getSessionDiscoveryProfiles,
 	getSessionProfile,
 	getSessionWorkspaceRoot,
+	isOrphanedTempSession,
 	METAPI_SESSION_PROFILE_ENTRY,
 	replaceSessionProfile,
 	setSessionProfile,
@@ -24,6 +25,22 @@ describe("MetaPi session Profile metadata", () => {
 		expect(getSessionDiscoveryProfiles("default")).not.toContain("pi");
 		expect(getSessionDiscoveryProfiles("work")).not.toContain("pi");
 		expect(getSessionDiscoveryProfiles("pi")).toEqual(["pi"]);
+	});
+
+	it("filters orphaned Sessions whose cwd was inside the OS temp directory", () => {
+		const orphanedCwd = join(tmpdir(), "pi-2860-123-fixture");
+		expect(isOrphanedTempSession({ cwd: orphanedCwd })).toBe(true);
+		expect(isOrphanedTempSession({ cwd: join(tmpdir(), "pi-runtime-suite-123", "other") })).toBe(true);
+		const existingUserCwd = join(tmpdir(), "user-project", "nested");
+		cleanup.push(join(tmpdir(), "user-project"));
+		mkdirSync(existingUserCwd, { recursive: true });
+		expect(isOrphanedTempSession({ cwd: existingUserCwd })).toBe(false);
+		expect(isOrphanedTempSession({ cwd: join(process.cwd(), "pi-runtime-events-123") })).toBe(false);
+
+		const existingCwd = join(tmpdir(), "user-project-existing");
+		cleanup.push(existingCwd);
+		mkdirSync(existingCwd, { recursive: true });
+		expect(isOrphanedTempSession({ cwd: existingCwd })).toBe(false);
 	});
 
 	it("persists the active Profile as an extension entry", () => {

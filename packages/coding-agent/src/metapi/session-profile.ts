@@ -1,4 +1,6 @@
-import { createReadStream } from "node:fs";
+import { createReadStream, existsSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { isAbsolute, relative, sep } from "node:path";
 import { createInterface } from "node:readline";
 import { getDefaultSessionDir, type SessionEntry, type SessionInfo, SessionManager } from "../core/session-manager.ts";
 import { resolvePath } from "../utils/paths.ts";
@@ -89,6 +91,18 @@ export async function listSessionsForCwdAcrossProfiles(
 	return all.filter((session) => resolvePath(session.cwd) === resolved);
 }
 
+export function isOrphanedTempSession(session: Pick<SessionInfo, "cwd">): boolean {
+	const cwd = resolvePath(session.cwd);
+	const temp = resolvePath(tmpdir());
+	const tempRelative = relative(temp, cwd);
+	const isInsideTemp =
+		tempRelative !== "" && tempRelative !== ".." && !tempRelative.startsWith(`..${sep}`) && !isAbsolute(tempRelative);
+	if (!isInsideTemp) return false;
+	if (!existsSync(cwd)) return true;
+	const tempRootName = tempRelative.split(sep, 1)[0] ?? "";
+	return /^(?:pi|metapi|session-test|coding-agent-test)-/i.test(tempRootName);
+}
+
 async function readStoredSessionProfile(path: string): Promise<string | undefined> {
 	let profile: string | undefined;
 	try {
@@ -146,7 +160,9 @@ export async function listSessionsAcrossProfiles(
 	const collections: SessionInfo[][] = [];
 	let loadedProfiles = 0;
 	for (const name of names) {
-		const sessions = await SessionManager.listAllInAgentDir(getProfileAgentDir(name));
+		const sessions = (await SessionManager.listAllInAgentDir(getProfileAgentDir(name))).filter(
+			(session) => !isOrphanedTempSession(session),
+		);
 		collections.push(await filterSessionsByActiveProfile(sessions, name, profileName));
 		loadedProfiles++;
 		onProgress?.(loadedProfiles, names.length);
