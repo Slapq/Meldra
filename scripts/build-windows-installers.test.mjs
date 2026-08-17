@@ -52,6 +52,24 @@ test("desktop shortcut always launches the bundled portable Windows Terminal", (
 	assert.match(script, /\{userdesktop\}\\MetaPi/);
 });
 
+test("desktop shortcut and installer use the official Pi favicon with transparent corners", () => {
+	const script = readRepo("scripts/windows-installer/metapi.iss");
+	const source = readRepo("scripts/windows-installer/pi-favicon.svg");
+	const icon = readFileSync(new URL("scripts/windows-installer/pi-app.ico", repoRoot));
+	assert.match(source, /<rect[^>]+rx="120"[^>]+fill="#09090b"/);
+	assert.match(source, /<path fill="#fff"/);
+	assert.match(script, /SetupIconFile=\{#PayloadDir\}\\pi-app\.ico/);
+	assert.match(script, /UninstallDisplayIcon=\{app\}\\pi-app\.ico/);
+	assert.match(script, /IconFilename: "\{app\}\\pi-app\.ico"/);
+	assert.deepEqual([...icon.subarray(0, 4)], [0, 0, 1, 0]);
+});
+
+test("first-use onboarding quotes the Windows Terminal title as one argument", () => {
+	const script = readRepo("scripts/windows-installer/metapi.iss");
+	assert.match(script, /--title ""MetaPi Setup"" -- cmd\.exe \/d \/c/);
+	assert.match(script, /metapi-onboarding\.cmd/);
+});
+
 test("local release staging is reproducible and keeps DSH rc peer resolution", () => {
 	const script = readRepo("scripts/local-release.mjs");
 	assert.match(script, /--offline-model-data/);

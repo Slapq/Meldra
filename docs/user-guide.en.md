@@ -15,7 +15,7 @@ Requirements:
 - A supported terminal
 - Bash on Windows; Git for Windows is recommended
 
-Windows x64 users can download the dual installers from [`v0.1.0-preview.5`](https://github.com/Slapq/MetaPi/releases/tag/v0.1.0-preview.5): `MetaPi-Setup.exe` bundles Node.js, while `MetaPi-Setup-NodeJS.exe` uses the system Node.js. Both include portable Windows Terminal for the desktop shortcut. The installer also adds `metapi` to the current-user PATH, so any newly opened PowerShell, cmd, Git Bash, Windows Terminal, or VS Code terminal can run MetaPi. The installers are currently unsigned, so Windows may show Unknown publisher or SmartScreen warnings.
+Windows x64 users can download the dual installers from [`v0.1.0-preview.7`](https://github.com/Slapq/MetaPi/releases/tag/v0.1.0-preview.7): `MetaPi-Setup.exe` bundles Node.js, while `MetaPi-Setup-NodeJS.exe` uses the system Node.js. Both include portable Windows Terminal for the desktop shortcut. The installer also adds `metapi` to the current-user PATH, so any newly opened PowerShell, cmd, Git Bash, Windows Terminal, or VS Code terminal can run MetaPi. The installers are currently unsigned, so Windows may show Unknown publisher or SmartScreen warnings.
 
 The scoped npm Bootstrap remains unpublished; do not substitute the official Pi package for MetaPi. `metapi update --self` remains disabled. Starter Bundle Setup and Provider/model/Scout onboarding are supported. See the [Setup and Distribution Contract](setup-and-distribution.en.md) for the full boundary.
 

@@ -15,7 +15,7 @@
 - 可用的终端
 - Windows 上可用的 Bash，推荐 Git for Windows
 
-Windows x64 用户可以从 [`v0.1.0-preview.5`](https://github.com/Slapq/MetaPi/releases/tag/v0.1.0-preview.5) 下载双安装器：`MetaPi-Setup.exe` 内置 Node.js，`MetaPi-Setup-NodeJS.exe` 使用系统 Node.js。两版都内置 portable Windows Terminal，桌面快捷方式默认使用它；安装器同时把 `metapi` 加入当前用户 PATH，因此任意新开的 PowerShell、cmd、Git Bash、Windows Terminal 或 VS Code terminal 都能运行 MetaPi。安装器当前未签名，Windows 可能显示 Unknown publisher 或 SmartScreen 提示。
+Windows x64 用户可以从 [`v0.1.0-preview.7`](https://github.com/Slapq/MetaPi/releases/tag/v0.1.0-preview.7) 下载双安装器：`MetaPi-Setup.exe` 内置 Node.js，`MetaPi-Setup-NodeJS.exe` 使用系统 Node.js。两版都内置 portable Windows Terminal，桌面快捷方式默认使用它；安装器同时把 `metapi` 加入当前用户 PATH，因此任意新开的 PowerShell、cmd、Git Bash、Windows Terminal 或 VS Code terminal 都能运行 MetaPi。安装器当前未签名，Windows 可能显示 Unknown publisher 或 SmartScreen 提示。
 
 scoped npm Bootstrap 尚未发布；不要使用官方 Pi 包代替 MetaPi。`metapi update --self` 仍禁用。Starter Bundle Setup 与 Provider/模型/Scout 配置向导已经支持。完整产品边界见 [Setup 与发行合同](setup-and-distribution.md)。
 

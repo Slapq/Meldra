@@ -100,7 +100,7 @@ function findIscc() {
 
 function copyInstallerSources(repoRoot, payload) {
 	const source = join(repoRoot, "scripts", "windows-installer");
-	for (const name of ["metapi.cmd", "metapi-shell.cmd", "metapi-onboarding.cmd"]) {
+	for (const name of ["metapi.cmd", "metapi-shell.cmd", "metapi-onboarding.cmd", "pi-app.ico"]) {
 		cpSync(join(source, name), join(payload, name));
 	}
 	cpSync(join(repoRoot, "LICENSE"), join(payload, "META_LICENSE.txt"));
@@ -199,6 +199,7 @@ async function main() {
 		join(payload, "runtime", "npm.cmd"),
 		join(payload, "terminal", "WindowsTerminal.exe"),
 		join(payload, "terminal", "LICENSE"),
+		join(payload, "pi-app.ico"),
 	]) {
 		if (!existsSync(required)) throw new Error(`Bundled payload is missing ${required}`);
 	}

@@ -37,7 +37,8 @@ SolidCompression=yes
 WizardStyle=modern dynamic
 SetupLogging=yes
 UninstallDisplayName=MetaPi
-UninstallDisplayIcon={app}\terminal\WindowsTerminal.exe
+UninstallDisplayIcon={app}\pi-app.ico
+SetupIconFile={#PayloadDir}\pi-app.ico
 LicenseFile={#PayloadDir}\META_LICENSE.txt
 ChangesEnvironment=yes
 CloseApplications=no
@@ -55,14 +56,15 @@ Source: "{#PayloadDir}\runtime\*"; DestDir: "{app}\runtime"; Flags: ignoreversio
 Source: "{#PayloadDir}\metapi.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#PayloadDir}\metapi-shell.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#PayloadDir}\metapi-onboarding.cmd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#PayloadDir}\pi-app.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#PayloadDir}\THIRD_PARTY_NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#PayloadDir}\META_LICENSE.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{userdesktop}\MetaPi"; Filename: "{app}\terminal\WindowsTerminal.exe"; Parameters: "-d ""{%USERPROFILE}"" --title MetaPi -- cmd.exe /d /c ""{app}\metapi-shell.cmd"""; WorkingDir: "{%USERPROFILE}"; Comment: "MetaPi"
+Name: "{userdesktop}\MetaPi"; Filename: "{app}\terminal\WindowsTerminal.exe"; Parameters: "-d ""{%USERPROFILE}"" --title MetaPi -- cmd.exe /d /c ""{app}\metapi-shell.cmd"""; WorkingDir: "{%USERPROFILE}"; Comment: "MetaPi"; IconFilename: "{app}\pi-app.ico"
 
 [Run]
-Filename: "{app}\terminal\WindowsTerminal.exe"; Parameters: "-d ""{%USERPROFILE}"" --title MetaPi Setup -- cmd.exe /d /c ""{app}\metapi-onboarding.cmd"""; WorkingDir: "{%USERPROFILE}"; Description: "{cm:LaunchProgram,MetaPi}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\terminal\WindowsTerminal.exe"; Parameters: "-d ""{%USERPROFILE}"" --title ""MetaPi Setup"" -- cmd.exe /d /c ""{app}\metapi-onboarding.cmd"""; WorkingDir: "{%USERPROFILE}"; Description: "{cm:LaunchProgram,MetaPi}"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\terminal\settings"
