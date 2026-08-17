@@ -5,10 +5,12 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { ExtensionAPI, RegisteredCommand } from "../src/core/extensions/types.ts";
 import { builtInExtensions } from "../src/extensions/index.ts";
 import metaPiConfig from "../src/extensions/metapi-config/index.ts";
+import scoutExtension from "../starter-profile/extensions/scout.ts";
 
 interface ConfigHost {
 	commands: Map<string, Omit<RegisteredCommand, "name" | "sourceInfo">>;
 	emit(channel: string, data: unknown): void;
+	pi: ExtensionAPI;
 }
 
 const tempDirs: string[] = [];
@@ -41,9 +43,11 @@ function createHost(profile: string, agentDir: string): ConfigHost {
 				};
 			},
 		},
+		on: () => undefined,
+		registerTool: () => undefined,
 	} as unknown as ExtensionAPI;
 	metaPiConfig(pi);
-	return { commands, emit };
+	return { commands, emit, pi };
 }
 
 function tempAgentDir(): string {
@@ -73,6 +77,55 @@ describe("MetaPi Profile config extension", () => {
 	it("does not register in the Pi compatibility Profile", () => {
 		const host = createHost("pi", tempAgentDir());
 		expect(host.commands.size).toBe(0);
+	});
+
+	it("registers Scout in the real Config Host catalog", () => {
+		const host = createHost("default", tempAgentDir());
+		scoutExtension(host.pi);
+		const configCommand = host.commands.get("config") as any;
+		expect(configCommand.getArgumentCompletions("")).toEqual(
+			expect.arrayContaining([{ value: "scout", label: expect.stringContaining("Scout") }]),
+		);
+		let config: unknown;
+		host.emit("config:get", {
+			id: "scout",
+			callback: (value: unknown) => {
+				config = value;
+			},
+		});
+		expect(config).toMatchObject({ thinkingLevel: "low", injectGuidelines: true });
+		expect(host.commands.has("scout")).toBe(true);
+	});
+
+	it("renders Scout fields using the Config Host language", async () => {
+		const agentDir = tempAgentDir();
+		const configDir = join(agentDir, "plugin-configs");
+		mkdirSync(configDir, { recursive: true });
+		writeFileSync(join(configDir, "pi-config.json"), JSON.stringify({ lang: "zh" }), "utf8");
+		const host = createHost("default", agentDir);
+		scoutExtension(host.pi);
+		let component: any;
+		await (host.commands.get("config") as any).handler("scout", {
+			mode: "tui",
+			hasUI: true,
+			ui: {
+				custom: async (factory: any) => {
+					component = factory(
+						{ requestRender: () => undefined },
+						{
+							fg: (_color: string, text: string) => text,
+							bg: (_color: string, text: string) => text,
+							bold: (text: string) => text,
+						},
+						{},
+						() => undefined,
+					);
+					return null;
+				},
+				notify: () => undefined,
+			},
+		});
+		expect(component.render(100).join("\n")).toContain("模型");
 	});
 
 	it("preserves the config event contract and isolates values by Profile agent directory", () => {

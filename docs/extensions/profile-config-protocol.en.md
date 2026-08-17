@@ -66,6 +66,15 @@ Requirements:
 - A plugin MUST register again whenever its Extension factory runs. Registration is runtime-local and is not persisted
   as metadata.
 
+User-facing `label`, `hint`, and `placeholder` values also accept the backward-compatible localized form:
+
+```ts
+type LocalizedText = string | { en: string; zh: string };
+```
+
+The Config Host selects the object value using its current Profile language preference. Plugins MUST NOT perform their
+own `LANG`, `Intl`, or locale detection for these fields.
+
 ## Fields
 
 Shared optional metadata for editable fields:

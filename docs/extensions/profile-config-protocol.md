@@ -53,6 +53,14 @@ pi.events.emit("config:register", {
 - Extension factory 每次执行时都必须重新注册；注册 catalog 只存在于当前 Runtime，不单独持久化；
 - 未在本规范中定义的字段类型和 renderer metadata 不属于兼容合同。
 
+面向用户的 `label`、`hint` 和 `placeholder` 同时支持向后兼容的结构化本地化值：
+
+```ts
+type LocalizedText = string | { en: string; zh: string };
+```
+
+Config Host 根据当前 Profile 语言偏好选择对象中的文案。插件不得自行读取 `LANG`、`Intl` 或其他 locale 信息来决定这些字段。
+
 ## 字段
 
 所有可编辑字段包含：

@@ -98,6 +98,18 @@ describe("MetaPi Starter setup wizard", () => {
 		expect(internals.completedCount(status)).toBe(3);
 	});
 
+	test("recognizes Scout settings saved by Profile Config", () => {
+		const configDir = join(agentDir, "plugin-configs");
+		mkdirSync(configDir, { recursive: true });
+		writeFileSync(
+			join(configDir, "scout.json"),
+			JSON.stringify({ model: "fixture/fixture-model", thinkingLevel: "low" }),
+			"utf8",
+		);
+		const status = internals.inspectStatus(context({ authenticated: true, activeModel: true }));
+		expect(status.scoutModelReady).toBe(true);
+		expect(status.scoutThinkingReady).toBe(true);
+	});
 	test("keeps an unavailable configured Scout model incomplete", () => {
 		mkdirSync(agentDir, { recursive: true });
 		writeFileSync(

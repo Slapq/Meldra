@@ -73,6 +73,11 @@ import {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 type Lang = "en" | "zh";
+type LocalizedText = string | Readonly<{ en: string; zh: string }>;
+
+function localize(value: LocalizedText, lang: Lang): string {
+	return typeof value === "string" ? value : value[lang];
+}
 
 interface I18n {
 	title: string;
@@ -160,22 +165,22 @@ function detectLang(): Lang {
 
 interface FieldBase {
 	key: string;
-	label: string;
-	hint?: string;
+	label: LocalizedText;
+	hint?: LocalizedText;
 	envVar?: string; // show ENV badge if this env var is set
 }
 
 interface StringField extends FieldBase {
 	type: "string";
-	placeholder?: string;
+	placeholder?: LocalizedText;
 }
 interface SecretField extends FieldBase {
 	type: "secret";
-	placeholder?: string;
+	placeholder?: LocalizedText;
 }
 interface NumberField extends FieldBase {
 	type: "number";
-	placeholder?: string;
+	placeholder?: LocalizedText;
 	min?: number;
 	max?: number;
 	step?: number;
@@ -189,7 +194,7 @@ interface SelectField extends FieldBase {
 }
 interface SectionField {
 	type: "section";
-	label: string;
+	label: LocalizedText;
 	key?: undefined;
 	hint?: undefined;
 	envVar?: undefined;
@@ -199,7 +204,7 @@ type ConfigField = StringField | SecretField | NumberField | BooleanField | Sele
 
 interface PluginRegistration {
 	id: string;
-	label: string;
+	label: LocalizedText;
 	icon?: string;
 	fields: ConfigField[];
 	defaults: Record<string, any>;
@@ -388,7 +393,7 @@ export default function metaPiConfig(pi: ExtensionAPI) {
 		getArgumentCompletions: (prefix: string) => {
 			return [...registry.values()]
 				.filter((r) => r.id.startsWith(prefix))
-				.map((r) => ({ value: r.id, label: `${r.icon || "⚙"} ${r.label}` }));
+				.map((r) => ({ value: r.id, label: `${r.icon || "⚙"} ${localize(r.label, lang)}` }));
 		},
 		handler: async (args, ctx) => {
 			if (ctx.mode !== "tui") {
@@ -438,7 +443,7 @@ export default function metaPiConfig(pi: ExtensionAPI) {
 							).length;
 							return {
 								value: p.id,
-								label: `${p.icon || "⚙"} ${p.label}`,
+								label: `${p.icon || "⚙"} ${localize(p.label, lang)}`,
 								description: `${configuredCount}/${fieldCount} configured`,
 							};
 						}),
@@ -507,13 +512,13 @@ export default function metaPiConfig(pi: ExtensionAPI) {
 
 		const result = await ctx.ui.custom<Record<string, any> | null>(
 			(tui: any, theme: Theme, _kb: any, done: (r: Record<string, any> | null) => void) =>
-				new PluginFormComponent(tui, theme, done, reg, currentConfig, t),
+				new PluginFormComponent(tui, theme, done, reg, currentConfig, t, lang),
 		);
 
 		if (result) {
 			savePluginConfig(reg.id, result);
 			pi.events.emit(`config:updated:${reg.id}`, result);
-			ctx.ui.notify(`${reg.icon || "⚙"} ${reg.label} — ${t.saved}`, "info");
+			ctx.ui.notify(`${reg.icon || "⚙"} ${localize(reg.label, lang)} — ${t.saved}`, "info");
 		} else {
 			ctx.ui.notify(t.cancelled, "info");
 		}
@@ -543,6 +548,7 @@ class PluginFormComponent implements Focusable {
 	private done: (r: Record<string, any> | null) => void;
 	private reg: PluginRegistration;
 	private t: I18n;
+	private lang: Lang;
 
 	private entries: FormEntry[] = [];
 	private focusIdx = 0;
@@ -554,12 +560,14 @@ class PluginFormComponent implements Focusable {
 		reg: PluginRegistration,
 		currentConfig: Record<string, any>,
 		t: I18n,
+		lang: Lang,
 	) {
 		this.tui = tui;
 		this.th = theme;
 		this.done = done;
 		this.reg = reg;
 		this.t = t;
+		this.lang = lang;
 		this.buildEntries(currentConfig);
 	}
 
@@ -783,7 +791,7 @@ class PluginFormComponent implements Focusable {
 
 		// Top
 		this.hr(lines, width);
-		lines.push(th.fg("accent", th.bold(` ${this.reg.icon || "⚙"} ${this.reg.label}`)));
+		lines.push(th.fg("accent", th.bold(` ${this.reg.icon || "⚙"} ${localize(this.reg.label, this.lang)}`)));
 		lines.push("");
 
 		for (let i = 0; i < this.entries.length; i++) {
@@ -810,18 +818,20 @@ class PluginFormComponent implements Focusable {
 			}
 
 			const f = entry.field;
+			const label = localize(f.label, this.lang);
+			const hint = f.hint ? localize(f.hint, this.lang) : undefined;
 
 			// Section header
 			if (f.type === "section") {
 				lines.push("");
-				lines.push("  " + th.fg("accent", th.bold(`◆ ${f.label}`)));
+				lines.push("  " + th.fg("accent", th.bold(`◆ ${label}`)));
 				lines.push("");
 				continue;
 			}
 
 			// Field row
 			const pfx = active ? th.fg("accent", " ▶ ") : "   ";
-			const lbl = active ? th.fg("accent", f.label.padEnd(PAD)) : th.fg("text", f.label.padEnd(PAD));
+			const lbl = active ? th.fg("accent", label.padEnd(PAD)) : th.fg("text", label.padEnd(PAD));
 
 			// Env var badge
 			const envActive = f.envVar && process.env[f.envVar];
@@ -829,27 +839,15 @@ class PluginFormComponent implements Focusable {
 
 			switch (f.type) {
 				case "string": {
+					const placeholder = f.placeholder ? localize(f.placeholder, this.lang) : "";
 					lines.push(truncateToWidth(pfx + lbl, width));
 					if (active) {
-						lines.push(
-							"     " +
-								renderInp(
-									entry.inputState,
-									true,
-									this.focused,
-									th,
-									fieldW,
-									(f as StringField).placeholder || "",
-								),
-						);
-						if (f.hint) lines.push("     " + th.fg("dim", f.hint));
+						lines.push("     " + renderInp(entry.inputState, true, this.focused, th, fieldW, placeholder));
+						if (hint) lines.push("     " + th.fg("dim", hint));
 					} else {
 						lines.push(
 							"     " +
-								truncateToWidth(
-									th.fg("text", entry.inputState.text || th.fg("dim", (f as StringField).placeholder || "")),
-									fieldW,
-								) +
+								truncateToWidth(th.fg("text", entry.inputState.text || th.fg("dim", placeholder)), fieldW) +
 								envBadge,
 						);
 					}
@@ -858,20 +856,11 @@ class PluginFormComponent implements Focusable {
 				}
 
 				case "secret": {
+					const placeholder = f.placeholder ? localize(f.placeholder, this.lang) : "";
 					lines.push(truncateToWidth(pfx + lbl, width));
 					if (active) {
 						if (entry.secretVisible) {
-							lines.push(
-								"     " +
-									renderInp(
-										entry.inputState,
-										true,
-										this.focused,
-										th,
-										fieldW,
-										(f as SecretField).placeholder || "",
-									),
-							);
+							lines.push("     " + renderInp(entry.inputState, true, this.focused, th, fieldW, placeholder));
 							lines.push("     " + th.fg("dim", t.hideSecret));
 						} else {
 							const masked = entry.inputState.text
@@ -879,7 +868,7 @@ class PluginFormComponent implements Focusable {
 								: th.fg("dim", "(not set)");
 							lines.push("     " + masked + "  " + th.fg("accent", t.showSecret));
 						}
-						if (f.hint) lines.push("     " + th.fg("dim", f.hint));
+						if (hint) lines.push("     " + th.fg("dim", hint));
 					} else {
 						const indicator = entry.inputState.text
 							? th.fg("success", "● ") + th.fg("text", maskSecret(entry.inputState.text))
@@ -891,22 +880,16 @@ class PluginFormComponent implements Focusable {
 				}
 
 				case "number": {
+					const placeholder = f.placeholder ? localize(f.placeholder, this.lang) : "0";
 					lines.push(truncateToWidth(pfx + lbl, width));
 					if (active) {
 						lines.push(
 							"     " +
-								renderInp(
-									entry.inputState,
-									true,
-									this.focused,
-									th,
-									fieldW,
-									(f as NumberField).placeholder || "0",
-								) +
+								renderInp(entry.inputState, true, this.focused, th, fieldW, placeholder) +
 								"  " +
 								th.fg("dim", t.switchHint),
 						);
-						if (f.hint) lines.push("     " + th.fg("dim", f.hint));
+						if (hint) lines.push("     " + th.fg("dim", hint));
 					} else {
 						lines.push("     " + th.fg("text", entry.inputState.text || "0") + envBadge);
 					}
@@ -916,7 +899,7 @@ class PluginFormComponent implements Focusable {
 
 				case "boolean": {
 					lines.push(truncateToWidth(pfx + lbl + toggleStr(entry.boolVal ?? false, th) + envBadge, width));
-					if (active && f.hint) lines.push("     " + th.fg("dim", f.hint));
+					if (active && hint) lines.push("     " + th.fg("dim", hint));
 					lines.push("");
 					break;
 				}
@@ -932,7 +915,7 @@ class PluginFormComponent implements Focusable {
 							)
 							.join(th.fg("dim", "│"));
 						lines.push("     " + truncateToWidth(optDisp, fieldW));
-						if (f.hint) lines.push("     " + th.fg("dim", f.hint));
+						if (hint) lines.push("     " + th.fg("dim", hint));
 					} else {
 						lines.push("     " + th.fg("text", sf.options[idx] || "") + envBadge);
 					}

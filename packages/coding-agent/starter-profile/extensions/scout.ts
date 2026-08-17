@@ -1,5 +1,5 @@
 /**
- * Scout — disposable read-only subagents for pi
+ * Scout — disposable read-only subagents for MetaPi
  *
  * Inspired by the "拯救 5.6 Sol" Codex subagent practice (linux.do/t/topic/2578075):
  * fight context rot by dispatching cheap, fast, read-only "scouts" that explore the
@@ -8,11 +8,13 @@
  *
  * Design decisions:
  *  - Single blocking `scout` tool: { task, cwd? }. Parallelism comes for free —
- *    pi executes multiple tool calls from one assistant message concurrently,
+ *    MetaPi executes multiple tool calls from one assistant message concurrently,
  *    which is exactly "dispatch in one batch, then wait for all".
- *  - Each scout is an isolated `pi --mode json -p --no-session` subprocess.
- *  - Scout model/thinking is pinned in ~/.pi/agent/scout.json (never exposed as
- *    a tool parameter — the main model cannot pick expensive models).
+ *  - Each scout is an isolated `metapi --mode json -p --no-session` subprocess.
+ *  - Scout model/thinking is stored by Profile Config in
+ *    `<agentDir>/plugin-configs/scout.json` (legacy `<agentDir>/scout.json` remains a
+ *    read-only fallback). It is never exposed as a tool parameter, so the main model
+ *    cannot pick expensive models.
  *    Fallback: main model + "low" thinking, with a one-time hint to configure
  *    a cheaper model.
  *  - Tools are fixed to read,grep,find,ls,bash. Read-only discipline is enforced
@@ -24,12 +26,12 @@
  *    smaller tasks. Live UI updates are throttled to avoid full-screen TUI jumps.
  *  - Orchestration doctrine (when to delegate / when not / how to verify) is
  *    injected into the main agent's system prompt; can be disabled via
- *    `"injectGuidelines": false` in scout.json or the /scout panel.
+ *    `"injectGuidelines": false` in Profile Config.
  *
  * Files:
- *  - Config: ~/.pi/agent/scout.json
- *      { "model": "provider/model-id", "thinkingLevel": "low", "injectGuidelines": true }
- *  - Command: /scout — settings panel (model / thinking / guidelines injection)
+ *  - Config: `<agentDir>/plugin-configs/scout.json`; legacy `<agentDir>/scout.json`
+ *    is read only when no Profile Config value is available
+ *  - Command: /scout — compatibility alias for /config scout
  */
 
 import { spawn, spawnSync } from "node:child_process";
@@ -178,33 +180,38 @@ interface ScoutConfig {
 	injectGuidelines?: boolean;
 }
 
-function configPath(): string {
+function legacyConfigPath(): string {
 	return path.join(getAgentDir(), "scout.json");
 }
 
-function loadConfig(): ScoutConfig {
+function normalizeConfig(value: unknown): ScoutConfig {
+	const parsed = value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+	const cfg: ScoutConfig = {};
+	if (typeof parsed.model === "string" && (!parsed.model || parsed.model.includes("/"))) cfg.model = parsed.model;
+	if (typeof parsed.thinkingLevel === "string" && (THINKING_LEVELS as readonly string[]).includes(parsed.thinkingLevel)) {
+		cfg.thinkingLevel = parsed.thinkingLevel as ThinkingLevel;
+	}
+	if (typeof parsed.injectGuidelines === "boolean") cfg.injectGuidelines = parsed.injectGuidelines;
+	return cfg;
+}
+
+function loadLegacyConfig(): ScoutConfig {
 	try {
-		const raw = fs.readFileSync(configPath(), "utf-8");
-		const parsed = JSON.parse(raw) as ScoutConfig;
-		const cfg: ScoutConfig = {};
-		if (typeof parsed.model === "string" && parsed.model.includes("/")) cfg.model = parsed.model;
-		if (
-			typeof parsed.thinkingLevel === "string" &&
-			(THINKING_LEVELS as readonly string[]).includes(parsed.thinkingLevel)
-		) {
-			cfg.thinkingLevel = parsed.thinkingLevel as ThinkingLevel;
-		}
-		if (typeof parsed.injectGuidelines === "boolean") cfg.injectGuidelines = parsed.injectGuidelines;
-		return cfg;
+		return normalizeConfig(JSON.parse(fs.readFileSync(legacyConfigPath(), "utf-8")));
 	} catch {
 		return {};
 	}
 }
 
-function saveConfig(cfg: ScoutConfig): void {
-	const dir = getAgentDir();
-	fs.mkdirSync(dir, { recursive: true });
-	fs.writeFileSync(configPath(), `${JSON.stringify(cfg, null, 2)}\n`, "utf-8");
+function readConfig(pi: ExtensionAPI): ScoutConfig {
+	let value: unknown;
+	pi.events.emit("config:get", {
+		id: "scout",
+		callback: (next: unknown) => {
+			value = next;
+		},
+	});
+	return value && Object.keys(value as Record<string, unknown>).length > 0 ? normalizeConfig(value) : loadLegacyConfig();
 }
 
 function splitModelRef(ref: string): { provider: string; id: string } {
@@ -455,7 +462,7 @@ function getPiInvocation(args: string[]): { command: string; args: string[] } {
 	if (!isGenericRuntime) {
 		return { command: process.execPath, args };
 	}
-	return { command: "pi", args };
+	return { command: "metapi", args };
 }
 
 async function writePromptTempFile(content: string): Promise<{ dir: string; filePath: string }> {
@@ -816,6 +823,37 @@ function resolveScoutModel(cfg: ScoutConfig, ctx: ExtensionContext): ResolvedSco
 
 export default function scoutExtension(pi: ExtensionAPI) {
 	let fallbackHintShown = false;
+	const legacyConfig = loadLegacyConfig();
+	pi.events.emit("config:register", {
+		id: "scout",
+		label: { en: "Scout", zh: "Scout" },
+		icon: "S",
+		fields: [
+			{
+				key: "model",
+				label: { en: "Model", zh: "模型" },
+				type: "string",
+				placeholder: { en: "provider/model-id (empty follows main model)", zh: "provider/model-id（留空跟随主模型）" },
+			},
+			{
+				key: "thinkingLevel",
+				label: { en: "Thinking level", zh: "Thinking 等级" },
+				type: "select",
+				options: [...THINKING_LEVELS],
+				hint: { en: "Low is recommended for Scout tasks", zh: "Scout 任务建议使用 low" },
+			},
+			{
+				key: "injectGuidelines",
+				label: { en: "Inject orchestration guidelines", zh: "注入编排指南" },
+				type: "boolean",
+			},
+		],
+		defaults: {
+			model: legacyConfig.model ?? "",
+			thinkingLevel: legacyConfig.thinkingLevel ?? "low",
+			injectGuidelines: legacyConfig.injectGuidelines ?? true,
+		},
+	});
 	const activeScoutPids = new Set<number>();
 	const cleanupActiveScouts = () => {
 		for (const pid of activeScoutPids) killProcessTree(pid);
@@ -836,7 +874,7 @@ export default function scoutExtension(pi: ExtensionAPI) {
 
 	// Inject orchestration doctrine into the main agent's system prompt
 	pi.on("before_agent_start", async (event) => {
-		const cfg = loadConfig();
+		const cfg = readConfig(pi);
 		if (cfg.injectGuidelines === false) return;
 		return { systemPrompt: `${event.systemPrompt}\n\n${ORCHESTRATION_GUIDELINES}` };
 	});
@@ -865,7 +903,7 @@ export default function scoutExtension(pi: ExtensionAPI) {
 			const task = params.task?.trim();
 			if (!task) throw new Error("scout: task must not be empty");
 
-			const cfg = loadConfig();
+			const cfg = readConfig(pi);
 			const resolved = resolveScoutModel(cfg, ctx);
 
 			if (resolved.warning && ctx.hasUI) {
@@ -1063,55 +1101,13 @@ export default function scoutExtension(pi: ExtensionAPI) {
 		},
 	});
 
-	// ── /scout settings panel ──────────────────────────────────────────────────
-
+	// /scout remains a compatibility alias for the unified Profile Config page.
 	pi.registerCommand("scout", {
-		description: "Scout settings: model, thinking level, guidelines injection",
+		description: "Open Scout configuration",
 		handler: async (_args, ctx) => {
 			if (!ctx.hasUI) return;
-
-			while (true) {
-				const cfg = loadConfig();
-				const modelLabel = cfg.model ?? "(follow main model)";
-				const thinkingLabel = cfg.thinkingLevel ?? "low";
-				const guidelinesLabel = cfg.injectGuidelines === false ? "off" : "on";
-
-				const choice = await ctx.ui.select(`Scout settings  (${configPath()})`, [
-					`Model:       ${modelLabel}`,
-					`Thinking:    ${thinkingLabel}`,
-					`Guidelines:  ${guidelinesLabel}`,
-				]);
-				if (!choice) return;
-
-				if (choice.startsWith("Model:")) {
-					const available = ctx.modelRegistry
-						.getAvailable()
-						.map((m) => `${m.provider}/${m.id}`)
-						.sort();
-					const picked = await ctx.ui.select("Scout model (cheap + fast recommended):", [
-						"(follow main model)",
-						...available,
-					]);
-					if (picked === undefined) continue;
-					if (picked === "(follow main model)") {
-						const next = { ...cfg };
-						delete next.model;
-						saveConfig(next);
-						ctx.ui.notify("scout: model cleared — scouts follow the main model", "info");
-					} else {
-						saveConfig({ ...cfg, model: picked });
-						ctx.ui.notify(`scout: model set to ${picked}`, "info");
-					}
-				} else if (choice.startsWith("Thinking:")) {
-					const picked = await ctx.ui.select("Scout thinking level (low recommended):", [...THINKING_LEVELS]);
-					if (picked === undefined) continue;
-					saveConfig({ ...cfg, thinkingLevel: picked as ThinkingLevel });
-					ctx.ui.notify(`scout: thinking level set to ${picked}`, "info");
-				} else if (choice.startsWith("Guidelines:")) {
-					const next = cfg.injectGuidelines === false;
-					saveConfig({ ...cfg, injectGuidelines: next });
-					ctx.ui.notify(`scout: orchestration guidelines injection ${next ? "enabled" : "disabled"}`, "info");
-				}
+			if (!(await ctx.executeCommand("/config scout"))) {
+				ctx.ui.notify("Scout configuration is unavailable in the current mode.", "error");
 			}
 		},
 	});
