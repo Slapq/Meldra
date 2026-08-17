@@ -50,17 +50,14 @@ function isChinese(): boolean {
 }
 
 function readScoutConfig(): ScoutConfig {
-	const paths = [join(getAgentDir(), "plugin-configs", "scout.json"), join(getAgentDir(), "scout.json")];
-	for (const path of paths) {
-		if (!existsSync(path)) continue;
-		try {
-			const value = JSON.parse(readFileSync(path, "utf8")) as unknown;
-			if (value && typeof value === "object" && !Array.isArray(value)) return value as ScoutConfig;
-		} catch {
-			/* try the legacy path */
-		}
+	const path = join(getAgentDir(), "scout.json");
+	if (!existsSync(path)) return {};
+	try {
+		const value = JSON.parse(readFileSync(path, "utf8")) as unknown;
+		return value && typeof value === "object" && !Array.isArray(value) ? (value as ScoutConfig) : {};
+	} catch {
+		return {};
 	}
-	return {};
 }
 
 function inspectStatus(ctx: ExtensionContext): SetupStatus {
