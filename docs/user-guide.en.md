@@ -1,0 +1,404 @@
+# MetaPi User Guide
+
+[中文](user-guide.md) | [English](user-guide.en.md) | [Home](../README.en.md)
+
+This guide covers the practical MetaPi workflow: starting from source, choosing a Profile, using a WorkSpace, managing
+Sessions and packages, configuring plugins, and running DeepSeek Harness. For unchanged Pi behavior, use the detailed
+[Pi documentation](../packages/coding-agent/docs/index.md).
+
+## 1. Prepare the Environment
+
+Requirements:
+
+- Node.js `>= 22.19.0`
+- npm and Git
+- A supported terminal
+- Bash on Windows; Git for Windows is recommended
+
+Windows x64 users can download the dual installers from [`v0.1.0-preview.4`](https://github.com/Slapq/MetaPi/releases/tag/v0.1.0-preview.4): `MetaPi-Setup.exe` bundles Node.js, while `MetaPi-Setup-NodeJS.exe` uses the system Node.js. Both include portable Windows Terminal for the desktop shortcut. The installer also adds `metapi` to the current-user PATH, so any newly opened PowerShell, cmd, Git Bash, Windows Terminal, or VS Code terminal can run MetaPi. The installers are currently unsigned, so Windows may show Unknown publisher or SmartScreen warnings.
+
+The scoped npm Bootstrap remains unpublished; do not substitute the official Pi package for MetaPi. `metapi update --self` remains disabled. Starter Bundle Setup and Provider/model/Scout onboarding are supported. See the [Setup and Distribution Contract](setup-and-distribution.en.md) for the full boundary.
+
+The installers support Windows 10 build 19041+ / Windows 11 x64. The Bash tool still requires Bash; Git for Windows is recommended. Running from source additionally requires Node.js `>=22.19.0`, npm, and Git.
+
+After cloning the repository:
+
+```bash
+npm install --ignore-scripts
+npm run build
+```
+
+Linux / macOS:
+
+```bash
+./pi-test.sh
+```
+
+Windows PowerShell:
+
+```powershell
+.\pi-test.ps1
+```
+
+The source launchers preserve the directory from which they are called. The examples below use `metapi`; replace it with
+the appropriate source launcher when working from checkout.
+
+## 2. Understand the State Boundaries
+
+| State | Default location | Owner |
+|---|---|---|
+| MetaPi Profile | `~/.metapi/profiles/<name>/` | The Profile |
+| MetaPi user preferences | `~/.metapi/user/preferences.json` | The current MetaPi user |
+| Pi compatibility | `~/.pi/agent/` | Original Pi |
+| WorkSpace | `~/.metapi/workspaces/` or an explicit directory | The MetaPi Session |
+| DSH Runtime | `<profile>/agent/dsh-runtime/` | Harness in that Profile |
+
+Ordinary Profiles do not share Profile workflow settings, plugin configuration, Sessions, or Runtime state. Interface and
+control choices such as Theme, terminal presentation, editor behavior, and navigation are User Experience Preferences;
+ordinary Profiles share them through `~/.metapi/user/preferences.json`. The reserved `pi` Profile continues to use original
+Pi state, does not read these MetaPi user preferences, and does not receive MetaPi-owned injection.
+
+A WorkSpace is a Session working directory. It does not automatically own Profile models, packages, settings, or Harness
+state.
+
+## 3. Start the First Pi Session
+
+```bash
+metapi --profile default
+```
+
+`default` is a minimal MetaPi Starter Profile continuously tuned by the project team. A clean first MetaPi initialization provisions the Starter Bundle automatically; existing users can run `metapi setup` to install or restore it. The Bundle provides Provider Manager, Scout, MetaPi Workflows, and `/setup`, while `/config` remains the built-in Profile Config Host.
+
+After entering the TUI, run:
+
+```text
+/setup
+```
+
+The wizard always shows all three steps in Provider → model → Scout order and does not skip existing configuration. Each step is marked **Configured**, **Partially configured**, or **Not configured**. Configured steps can be kept and continued or reconfigured; incomplete steps continuously open and await the native `/login`, `/model`, and `/scout` surfaces. Cancellation or failure remains on that step with retry, skip-for-this-run, and exit choices. The final summary can continue into `/config`.
+
+Run `/login` if a provider is not configured, or use a provider-supported environment/auth path. See
+[Providers](../packages/coding-agent/docs/providers.md). Never put real API keys in a repository, Profile Bundle,
+Session export, or documentation.
+
+Choose a model with `/model`, then enter a request such as:
+
+```text
+Analyze this repository and tell me which checks I should run.
+```
+
+Useful entries include `/model`, `/settings`, `/profile`, `/workspace`, `/config`, `/resume`, `/reload`, `/export`, and
+`/hotkeys`.
+
+MetaPi inherits Pi's file and shell tools and the permissions of the launching process. It does not provide a built-in
+sandbox. See [Containerization](../packages/coding-agent/docs/containerization.md) when stronger isolation is required.
+
+## 4. Editor and Resources
+
+- Type `@` to select a file; only a completion-selected path is treated as an attachment by a Runtime that supports it.
+- `!command` sends command output to the model; `!!command` does not add output to context.
+- `/reload` reloads disk Extensions, Skills, Prompt Templates, Themes, keybindings, and context files.
+- `/hotkeys` shows the active shortcuts.
+
+`metapi-config` is an inline built-in exception. `/reload` recreates its registrations but is not a source-code
+hot-reload boundary for that built-in.
+
+See [Using Pi](../packages/coding-agent/docs/usage.md) and [Keybindings](../packages/coding-agent/docs/keybindings.md).
+
+## 5. Manage Profiles
+
+```bash
+metapi profile status
+metapi profile list
+metapi profile bind research
+metapi profile unbind
+metapi profile import <source> --name research --no-bind
+metapi profile export research ./research-profile
+metapi profile update research
+```
+
+Profile selection is explicit `--profile`, then the nearest directory binding, then `default`. To use original Pi state
+explicitly:
+
+```bash
+metapi --profile pi
+```
+
+Use `/profile` in the TUI to inspect or switch ordinary MetaPi Profiles. A switch rebuilds the Profile's settings,
+models, Extensions, and optional Runtime while retaining the MetaPi Session and WorkSpace. The `pi` compatibility
+Profile uses the independent original Pi Session store and cannot be entered or left within the current session. Exit
+and start it explicitly with `metapi --profile pi`; returning to an ordinary Profile also requires a new explicit launch.
+Neither domain moves, copies, or discovers the other domain's Session files.
+
+Non-interactive import requires `--bind-current` or `--no-bind`. A Portable Profile uses a Pi-compatible `package.json` and can carry Pi resources, public settings, model choices, Provider declarations, packages, Scout, workflows, and Runtime declarations. Official Pi can load the Package and ignore MetaPi metadata it does not recognize. Another user receives the same shareable configuration on import, but not the author's credentials, Sessions, current environment-variable values, machine-local paths, Runtime caches, Loader inventory, or process state. Imports containing remote package sources may access the network and run lifecycle scripts; use trusted Bundles.
+
+## 6. Use a WorkSpace
+
+```bash
+metapi --workspace
+metapi --workspace D:/WorkSpaces/release-audit
+```
+
+Use `/workspace` to show the binding. `metapi-workspace` is a built-in package for every ordinary MetaPi Profile. Windows Setup creates one current-user desktop shortcut that launches `metapi --profile default --workspace`. The shortcut uses the bundled Windows Terminal, but the CLI is not bound to that terminal.
+
+Profile and WorkSpace are orthogonal:
+
+- the Profile owns the environment, models, Pi resources, and Runtime;
+- the WorkSpace is the current working directory;
+- only an explicit Current WorkSpace choice writes Pi project resources to that WorkSpace's `.pi` directory;
+- switching Profiles does not replace the WorkSpace.
+
+## 7. Project Profile Recommendations
+
+```bash
+metapi init
+```
+
+This creates `.pi/metapi.json`. A project may recommend a Profile Bundle source:
+
+```json
+{
+  "schemaVersion": 1,
+  "profile": {
+    "source": "./profiles/team-profile",
+    "displayName": "Team Profile"
+  }
+}
+```
+
+A recommendation does not automatically import, bind, or activate a Profile. A project cannot use this file to mutate an
+installed Profile's Runtime plugins.
+
+## 8. Install Pi Packages
+
+```bash
+metapi install <source>
+metapi list
+metapi update --extensions
+metapi remove <source>
+```
+
+Use `-l` for the current WorkSpace/project `.pi` settings:
+
+```bash
+metapi install <source> -l
+metapi config -l
+```
+
+Project resources require project trust. `metapi config` is the Package resource selector, not the plugin field
+configuration page. See [Pi Packages](../packages/coding-agent/docs/packages.md) for source, trust, and update behavior.
+
+## 9. Configuration and Settings
+
+`/config` is available in ordinary MetaPi Profiles:
+
+```text
+/config
+/config <plugin-id>
+```
+
+It edits registered plugin fields and stores values under:
+
+```text
+<profile-agentDir>/plugin-configs/<plugin-id>.json
+```
+
+Profiles are isolated. The `pi` compatibility Profile does not receive MetaPi's host; an original Pi installation of
+`pi-config` remains its own authority.
+
+`/settings` is Pi's Settings UI on the native Pi Runtime. On DSH it is owned by Harness and exposes native model,
+effort, Settings, Provider, and credential controls.
+
+`metapi config` is the Pi Package resource selector. These surfaces are intentionally different. Ordinary Profile
+plugins must follow the [Profile Config Registration Protocol](extensions/profile-config-protocol.en.md).
+
+## 10. Sessions, Resume, and Branches
+
+```bash
+metapi -c
+metapi -r
+metapi --session <path-or-id>
+metapi --fork <path-or-id>
+metapi --no-session
+metapi --name "release audit"
+```
+
+In the TUI, use `/resume`, `/new`, `/name`, `/tree`, `/fork`, `/clone`, and `/compact`. In a native Pi Agent Profile, `/resume` searches the physical directories of ordinary MetaPi Profiles but only shows Sessions whose latest Profile metadata belongs to the active Profile. A legacy Session without metadata falls back to its physical Profile directory. This keeps a Session recoverable after a Profile switch without mixing default Pi Agent and DSH conversations. `metapi --profile pi` still discovers original Pi Sessions only.
+
+See [Sessions](../packages/coding-agent/docs/sessions.md) for the complete native behavior.
+
+## 11. Export and Share
+
+```text
+/export
+/export output.html
+/share
+```
+
+`/export` writes HTML or JSONL. `/share` performs a real remote upload, so confirm that the Session can leave the
+machine.
+
+Active DSH Sessions use the registered custom-entry renderer for complete renderable transcript entries. A standalone
+HTML export has no active Profile Extension renderer and does not pretend to render unknown custom metadata.
+
+Profile export is a different artifact:
+
+```bash
+metapi profile export research ./research-profile
+```
+
+Session export preserves a conversation; Profile export moves an environment declaration.
+
+Profile export first warns that Bundle source files are copied as-is. MetaPi-managed credentials, Sessions, Runtime Settings, caches, Loader state, project `.pi` configuration, directory bindings, and one-run CLI overrides are not added automatically. A key or token already hardcoded in a Bundle source file can still be exported with that file.
+
+Every export writes `METAPI_PROFILE_EXPORT_AUDIT.md` with:
+
+- the included configuration categories and complete file manifest;
+- the managed state that was not added automatically;
+- file paths, line numbers, and types for credential-like literals.
+
+The report never records matched values. Findings do not block export or rewrite files. Move hardcoded values to the MetaPi credential service or environment variables, export again, and review the new report before sharing.
+
+## 12. Run a DeepSeek Harness Profile
+
+A Portable Profile selects Harness with `runtime.provider: "deepseek-harness"`. The Profile name does not determine the
+Runtime.
+
+```bash
+metapi --profile research-harness
+```
+
+Open the management center with `/dsh`. Common entries are `/resume`, `/sessions`, `/new`, `/history`, `/rewind`, `/model`,
+`/preset`, `/settings`, `/queue`, `/cancel`, `/plugins`, `/dsh trajectory`, and `/dsh evidence`.
+
+Harness owns the Agent loop, queue, active model route, presets, tools, Settings, Session ledger, plugins, and
+persistence. MetaPi owns process lifecycle, protocol adaptation, and Pi TUI presentation. DSH Sessions and the
+containing Pi Session remain separate.
+
+DSH `/resume` and `/sessions` open the same Pi-native cursor Session browser over structured Harness `session.list` rows. `/rewind`, `/dsh rewind`, and double Escape when enabled open the same Pi cursor message selector before Harness performs the native fork. Neither browser copies Harness history into Pi Session files.
+
+When DSH fails, switch to the default Pi Agent in the same WorkSpace, inspect the project and MetaPi/DSH integration state, apply a repair, and switch back to DSH. This is a manual recovery workflow; automatic multi-Agent orchestration, delegation, and shared writable Sessions are not current capabilities.
+
+`/model` uses Pi's native selector over the current MetaPi Profile's Providers and models. Only after the user confirms a
+model does MetaPi register that one route in DSH `llm-pi-ai` Settings, supply its credential through a credential
+reference, and ask Harness to select it. Cancelling the selector performs no DSH write. `/dsh model` remains the
+explicit Harness-native catalog selector.
+
+The bundled rc.6 bridge supports `openai-completions`, `openai-responses`, and `anthropic-messages`. Anthropic endpoints
+use Pi's native service-root convention; the SDK appends `/v1/messages`. Other APIs are rejected before DSH Settings are
+written rather than being guessed as another wire protocol.
+
+See [DeepSeek Harness Profile Runtime](../packages/coding-agent/docs/deepseek-harness.md) for the full current surface.
+
+## 13. Manage DSH Plugins
+
+Terminal:
+
+```bash
+metapi profile plugins research-harness list
+metapi profile plugins research-harness add <source>
+metapi profile plugins research-harness remove <package>
+metapi profile plugins research-harness update
+```
+
+TUI:
+
+```text
+/plugins
+/plugin list
+/plugin add <source>
+/plugin remove <package>
+/plugin update
+```
+
+MetaPi passes the source to DSH/pnpm unchanged. Writes may access the network and run lifecycle scripts; the TUI asks
+for confirmation. A successful package command is not activation proof: MetaPi verifies the result through a fresh
+Runtime/Loader inventory.
+
+`list` is read-only and does not download pnpm. An explicit mutation may use Corepack to obtain the pinned version when
+pnpm is not on PATH.
+
+## 14. Non-interactive Use
+
+```bash
+metapi -p "Summarize this repository"
+metapi --mode json -p "Run the static checks"
+metapi --mode rpc
+```
+
+Non-interactive modes do not show a project trust prompt. They use a saved trust decision, `defaultProjectTrust`, or a
+one-run `--approve` / `--no-approve` override.
+
+Whether an external Runtime supports a particular print or RPC path is provider-specific. Do not infer it from the
+command name.
+
+## 15. Troubleshooting
+
+### The wrong Profile starts
+
+```bash
+metapi profile status
+```
+
+Check `--profile` and parent-directory bindings. Remove a binding with `metapi profile unbind <directory>`.
+
+### `/config` is empty
+
+Confirm that the plugin loaded and emitted `config:register` while its factory ran, then use `/reload`. The `pi`
+compatibility Profile intentionally has no MetaPi Config Host.
+
+### `metapi config` does not show plugin fields
+
+That is expected. `metapi config` manages Package resources; `/config` manages plugin fields.
+
+### DSH commands are unavailable
+
+Check the Profile's runtime provider:
+
+```bash
+metapi profile status <name>
+```
+
+The Profile name alone does not select Harness.
+
+### DSH plugin operations need pnpm
+
+Read-only `list` does not download tools. Run an explicit add/remove/update or install pnpm/Corepack, then inspect the
+native output.
+
+### `/reload` does not reload built-in source
+
+Disk Extensions clear their module cache and re-import. Inline built-in factories come from the current process; rebuild
+and restart after changing MetaPi built-in source.
+
+### Windows shell or tests fail
+
+Check Git Bash, PowerShell, PATH, and the Windows SDK/Build Tools. Separate recorded symlink `EPERM`, Unix socket, and
+terminal-image platform baselines from a new feature regression.
+
+### Self-update is unavailable
+
+This is intentional. MetaPi has no authoritative release source and must not use the Pi update source as a substitute.
+Update a development checkout by pulling/building it from its trusted source.
+
+## 16. Backups and Shutdown
+
+Exit with `/quit`; DSH also supports `/dsh exit`, both through graceful MetaPi teardown.
+
+Back up after related processes exit:
+
+```text
+~/.metapi/
+~/.pi/agent/            # original Pi compatibility Profile only
+```
+
+A single active JSONL file is not a complete Runtime backup. Portable Profile export, Session export, and
+directory-level backup solve different problems.
+
+## Next Steps
+
+- [Development Guide](development.en.md)
+- [Pi Usage Reference](../packages/coding-agent/docs/usage.md)
+- [Profile Runtime provider](../packages/coding-agent/docs/profile-runtimes.md)
+- [Extension Development](../packages/coding-agent/docs/extensions.md)
+- [Profile Config Protocol](extensions/profile-config-protocol.en.md)

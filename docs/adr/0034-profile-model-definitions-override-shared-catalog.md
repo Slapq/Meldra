@@ -1,0 +1,3 @@
+# Compose shared and Profile model definitions with Profile precedence
+
+For an ordinary MetaPi launch, a Profile Bundle may carry Pi-compatible model definitions in a `models.json` file at the Bundle root. MetaPi composes that file with its shared User Model Assets before creating Pi's model runtime. Definitions with distinct provider/model identities are combined. When the shared catalog and current Profile both define the same provider ID and model ID, the current Profile definition applies for that Profile only. The composition does not modify shared user files, does not carry into another Profile, and does not change Pi's existing authentication, model selection, session restoration, scoped-model, fallback, warning, or error behavior.
