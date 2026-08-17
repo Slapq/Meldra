@@ -11,13 +11,14 @@ interface ConfigHost {
 	commands: Map<string, Omit<RegisteredCommand, "name" | "sourceInfo">>;
 	emit(channel: string, data: unknown): void;
 	pi: ExtensionAPI;
+	lifecycle: Map<string, (...args: any[]) => any>;
 }
 
 const tempDirs: string[] = [];
 const originalProfile = process.env.METAPI_PROFILE_NAME;
 const originalAgentDir = process.env.METAPI_CODING_AGENT_DIR;
 
-function createHost(profile: string, agentDir: string): ConfigHost {
+function createHost(profile: string, agentDir: string, loadConfig = true): ConfigHost {
 	process.env.METAPI_PROFILE_NAME = profile;
 	process.env.METAPI_CODING_AGENT_DIR = agentDir;
 	const listeners = new Map<string, Array<(data: unknown) => void>>();
@@ -25,6 +26,7 @@ function createHost(profile: string, agentDir: string): ConfigHost {
 	const emit = (channel: string, data: unknown): void => {
 		for (const listener of listeners.get(channel) ?? []) listener(data);
 	};
+	const lifecycle = new Map<string, (...args: any[]) => any>();
 	const pi = {
 		registerCommand: (name: string, command: Omit<RegisteredCommand, "name" | "sourceInfo">) => {
 			commands.set(name, command);
@@ -43,11 +45,13 @@ function createHost(profile: string, agentDir: string): ConfigHost {
 				};
 			},
 		},
-		on: () => undefined,
+		on: (name: string, handler: (...args: any[]) => any) => {
+			lifecycle.set(name, handler);
+		},
 		registerTool: () => undefined,
 	} as unknown as ExtensionAPI;
-	metaPiConfig(pi);
-	return { commands, emit, pi };
+	if (loadConfig) metaPiConfig(pi);
+	return { commands, emit, pi, lifecycle };
 }
 
 function tempAgentDir(): string {
@@ -79,9 +83,21 @@ describe("MetaPi Profile config extension", () => {
 		expect(host.commands.size).toBe(0);
 	});
 
-	it("registers Scout in the real Config Host catalog", () => {
+	it("registers Scout when Scout loads before the Config Host", async () => {
+		const host = createHost("default", tempAgentDir(), false);
+		scoutExtension(host.pi);
+		metaPiConfig(host.pi);
+		await host.lifecycle.get("session_start")?.({}, {});
+		const configCommand = host.commands.get("config") as any;
+		expect(configCommand.getArgumentCompletions("")).toEqual(
+			expect.arrayContaining([{ value: "scout", label: expect.stringContaining("Scout") }]),
+		);
+	});
+
+	it("registers Scout in the real Config Host catalog", async () => {
 		const host = createHost("default", tempAgentDir());
 		scoutExtension(host.pi);
+		await host.lifecycle.get("session_start")?.({}, {});
 		const configCommand = host.commands.get("config") as any;
 		expect(configCommand.getArgumentCompletions("")).toEqual(
 			expect.arrayContaining([{ value: "scout", label: expect.stringContaining("Scout") }]),
@@ -104,6 +120,7 @@ describe("MetaPi Profile config extension", () => {
 		writeFileSync(join(configDir, "pi-config.json"), JSON.stringify({ lang: "zh" }), "utf8");
 		const host = createHost("default", agentDir);
 		scoutExtension(host.pi);
+		await host.lifecycle.get("session_start")?.({}, {});
 		let component: any;
 		await (host.commands.get("config") as any).handler("scout", {
 			mode: "tui",

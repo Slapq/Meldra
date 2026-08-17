@@ -823,37 +823,42 @@ function resolveScoutModel(cfg: ScoutConfig, ctx: ExtensionContext): ResolvedSco
 
 export default function scoutExtension(pi: ExtensionAPI) {
 	let fallbackHintShown = false;
-	const legacyConfig = loadLegacyConfig();
-	pi.events.emit("config:register", {
-		id: "scout",
-		label: { en: "Scout", zh: "Scout" },
-		icon: "S",
-		fields: [
-			{
-				key: "model",
-				label: { en: "Model", zh: "模型" },
-				type: "string",
-				placeholder: { en: "provider/model-id (empty follows main model)", zh: "provider/model-id（留空跟随主模型）" },
+	let configRegistered = false;
+	const registerConfig = () => {
+		if (configRegistered) return;
+		configRegistered = true;
+		const legacyConfig = loadLegacyConfig();
+		pi.events.emit("config:register", {
+			id: "scout",
+			label: { en: "Scout", zh: "Scout" },
+			icon: "S",
+			fields: [
+				{
+					key: "model",
+					label: { en: "Model", zh: "模型" },
+					type: "string",
+					placeholder: { en: "provider/model-id (empty follows main model)", zh: "provider/model-id（留空跟随主模型）" },
+				},
+				{
+					key: "thinkingLevel",
+					label: { en: "Thinking level", zh: "Thinking 等级" },
+					type: "select",
+					options: [...THINKING_LEVELS],
+					hint: { en: "Low is recommended for Scout tasks", zh: "Scout 任务建议使用 low" },
+				},
+				{
+					key: "injectGuidelines",
+					label: { en: "Inject orchestration guidelines", zh: "注入编排指南" },
+					type: "boolean",
+				},
+			],
+			defaults: {
+				model: legacyConfig.model ?? "",
+				thinkingLevel: legacyConfig.thinkingLevel ?? "low",
+				injectGuidelines: legacyConfig.injectGuidelines ?? true,
 			},
-			{
-				key: "thinkingLevel",
-				label: { en: "Thinking level", zh: "Thinking 等级" },
-				type: "select",
-				options: [...THINKING_LEVELS],
-				hint: { en: "Low is recommended for Scout tasks", zh: "Scout 任务建议使用 low" },
-			},
-			{
-				key: "injectGuidelines",
-				label: { en: "Inject orchestration guidelines", zh: "注入编排指南" },
-				type: "boolean",
-			},
-		],
-		defaults: {
-			model: legacyConfig.model ?? "",
-			thinkingLevel: legacyConfig.thinkingLevel ?? "low",
-			injectGuidelines: legacyConfig.injectGuidelines ?? true,
-		},
-	});
+		});
+	};
 	const activeScoutPids = new Set<number>();
 	const cleanupActiveScouts = () => {
 		for (const pid of activeScoutPids) killProcessTree(pid);
@@ -864,6 +869,7 @@ export default function scoutExtension(pi: ExtensionAPI) {
 	process.once("exit", cleanupActiveScouts);
 
 	pi.on("session_start", async () => {
+		registerConfig();
 		fallbackHintShown = false;
 	});
 
