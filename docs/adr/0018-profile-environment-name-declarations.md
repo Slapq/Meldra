@@ -1,0 +1,3 @@
+# Declare Profile environment names without persisting values
+
+The first MetaPi implementation will let non-default, non-`pi` Profile manifests declare required, optional, and explicitly inherited environment-variable names. At launch, allowed values may come from the host environment; MetaPi will not persist actual values, create `.env` files, export values in Profile bundles, or alter Pi's existing credential storage. Missing required names are reported as a configuration condition, not hidden by fallback behavior. The reserved `pi` Compatibility Profile preserves original Pi behavior by inheriting the complete host environment without MetaPi filtering.

@@ -1,0 +1,28 @@
+{
+	"name": "metapi-test-profile",
+	"version": "1.0.0",
+	"keywords": [
+		"pi-package",
+		"metapi-profile"
+	],
+	"pi": {
+		"prompts": [
+			"./prompts"
+		]
+	},
+	"metapi": {
+		"profileVersion": 1,
+		"displayName": "MetaPi Test Profile",
+		"settings": {
+			"defaultThinkingLevel": "medium"
+		},
+		"environment": {
+			"required": [
+				"METAPI_TEST_REQUIRED"
+			],
+			"inherit": [
+				"METAPI_TEST_REQUIRED"
+			]
+		}
+	}
+}

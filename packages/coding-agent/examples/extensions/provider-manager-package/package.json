@@ -1,0 +1,26 @@
+{
+  "name": "@slapq/metapi-provider-manager-example",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Interactive TUI provider & model manager for Pi Agent. Configure OpenAI-compatible, Anthropic, Google and other LLM providers with a visual form. Supports multi-language (EN/ZH).",
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "provider",
+    "model",
+    "llm",
+    "tui"
+  ],
+  "license": "MIT",
+  "author": "Slapq",
+  "repository": "https://github.com/Slapq/MetaPi",
+  "type": "module",
+  "pi": {
+    "extensions": ["./extensions"]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*"
+  }
+}
