@@ -875,6 +875,10 @@ export async function main(args: string[], options?: MainOptions) {
 	}
 
 	let appMode = resolveAppMode(parsed, process.stdin.isTTY, process.stdout.isTTY);
+	if (parsed.startupCommand && appMode !== "interactive") {
+		console.error(chalk.red("Error: --startup-command requires interactive TUI mode"));
+		process.exit(1);
+	}
 
 	if (
 		appMode === "interactive" &&

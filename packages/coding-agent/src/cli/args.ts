@@ -186,8 +186,16 @@ export function parseArgs(args: string[]): Args {
 			result.noSkills = true;
 		} else if (arg === "--no-prompt-templates" || arg === "-np") {
 			result.noPromptTemplates = true;
-		} else if (arg === "--startup-command" && i + 1 < args.length) {
-			result.startupCommand = args[++i];
+		} else if (arg === "--startup-command") {
+			const command = args[i + 1];
+			if (command === undefined || command.startsWith("-")) {
+				result.diagnostics.push({ type: "error", message: "--startup-command requires a slash command" });
+			} else if (!command.startsWith("/") || /[\r\n]/.test(command)) {
+				result.diagnostics.push({ type: "error", message: "--startup-command requires a single slash command" });
+			} else {
+				result.startupCommand = command;
+				i++;
+			}
 		} else if (arg === "--no-themes") {
 			result.noThemes = true;
 		} else if (arg === "--no-context-files" || arg === "-nc") {

@@ -188,9 +188,13 @@ describe("parseArgs", () => {
 	});
 
 	describe("--startup-command flag", () => {
-		test("parses a one-shot slash command", () => {
-			const result = parseArgs(["--startup-command", "/setup"]);
-			expect(result.startupCommand).toBe("/setup");
+		test("rejects missing or non-slash values", () => {
+			expect(parseArgs(["--startup-command"]).diagnostics).toEqual([
+				{ type: "error", message: "--startup-command requires a slash command" },
+			]);
+			expect(parseArgs(["--startup-command", "setup"]).diagnostics).toEqual([
+				{ type: "error", message: "--startup-command requires a single slash command" },
+		]);
 		});
 	});
 
