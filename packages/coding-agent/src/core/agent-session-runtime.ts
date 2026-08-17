@@ -216,22 +216,7 @@ export class AgentSessionRuntime {
 		if (!this.metapiLifecycle) {
 			throw new Error("Profile switching is not available in this runtime");
 		}
-		const previousSessionFile = this.session.sessionFile;
-		const sessionManager = this.session.sessionManager;
-		const cwd = this.cwd;
-		await this.teardownCurrent("reload", previousSessionFile);
-		this.apply(
-			await this.createRuntime({
-				cwd,
-				agentDir: this.services.agentDir,
-				sessionManager,
-				sessionStartEvent: { type: "session_start", reason: "reload", previousSessionFile },
-				profileName,
-			}),
-		);
-		this.metapiLifecycle.setProfileName(this.session.sessionManager, profileName);
-		await this.finishSessionReplacement();
-		return { cancelled: false };
+		return this.newSession({ profileName, preserveWorkspace: true });
 	}
 
 	async switchSession(
@@ -268,6 +253,8 @@ export class AgentSessionRuntime {
 
 	async newSession(options?: {
 		parentSession?: string;
+		profileName?: string;
+		preserveWorkspace?: boolean;
 		setup?: (sessionManager: SessionManager) => Promise<void>;
 		withSession?: (ctx: ReplacedSessionContext) => Promise<void>;
 	}): Promise<{ cancelled: boolean }> {
@@ -278,24 +265,38 @@ export class AgentSessionRuntime {
 
 		const previousSessionFile = this.session.sessionFile;
 		const sourceCwd = this.cwd;
-		const profileName = this.getCurrentProfileName();
+		const profileName = options?.profileName ?? this.getCurrentProfileName();
 		const workspaceRoot = this.metapiLifecycle?.getWorkspaceRoot(this.session.sessionManager, sourceCwd);
 		let targetCwd = sourceCwd;
 		let sessionManager: SessionManager;
 		if (workspaceRoot && this.metapiLifecycle && profileName) {
-			const provisional = SessionManager.inMemory(sourceCwd);
-			targetCwd = this.metapiLifecycle.createEmptyWorkspace(workspaceRoot, provisional.getSessionId());
+			const provisional = options?.preserveWorkspace ? undefined : SessionManager.inMemory(sourceCwd);
+			targetCwd = options?.preserveWorkspace
+				? sourceCwd
+				: this.metapiLifecycle.createEmptyWorkspace(workspaceRoot, provisional!.getSessionId());
 			const sessionDir = this.metapiLifecycle.getSessionDir(targetCwd, profileName);
 			sessionManager = this.session.sessionManager.isPersisted()
-				? SessionManager.create(targetCwd, sessionDir, { id: provisional.getSessionId() })
-				: SessionManager.inMemory(targetCwd, { id: provisional.getSessionId() });
+				? SessionManager.create(
+					targetCwd,
+					sessionDir,
+					provisional ? { id: provisional.getSessionId() } : undefined,
+				)
+				: provisional
+					? SessionManager.inMemory(targetCwd, { id: provisional.getSessionId() })
+					: SessionManager.inMemory(targetCwd);
 			this.metapiLifecycle.setProfileName(sessionManager, profileName);
 			this.metapiLifecycle.setWorkspaceRoot(sessionManager, workspaceRoot);
 		} else {
-			const sessionDir = this.session.sessionManager.getSessionDir();
+			const sessionDir =
+				options?.profileName && this.metapiLifecycle
+					? this.metapiLifecycle.getSessionDir(sourceCwd, options.profileName)
+					: this.session.sessionManager.getSessionDir();
 			sessionManager = this.session.sessionManager.isPersisted()
 				? SessionManager.create(sourceCwd, sessionDir)
 				: SessionManager.inMemory(sourceCwd);
+			if (options?.profileName && this.metapiLifecycle) {
+				this.metapiLifecycle.setProfileName(sessionManager, options.profileName);
+			}
 		}
 		if (options?.parentSession) {
 			sessionManager.newSession({ parentSession: options.parentSession });

@@ -94,5 +94,12 @@ describe("MetaPi runtime WorkSpace lifecycle", () => {
 
 		expect(runtime.cwd).not.toBe(emptyWorkspace);
 		expect(readFileSync(join(runtime.cwd, "fork.txt"), "utf8")).toBe("copied");
+
+		const forkWorkspace = runtime.cwd;
+		await runtime.switchProfile("work");
+		expect(runtime.cwd).toBe(forkWorkspace);
+		expect(readFileSync(join(runtime.cwd, "fork.txt"), "utf8")).toBe("copied");
+		expect(getSessionProfile(runtime.session.sessionManager)).toBe("work");
+		expect(runtime.session.sessionManager.buildSessionContext().messages).toEqual([]);
 	});
 });

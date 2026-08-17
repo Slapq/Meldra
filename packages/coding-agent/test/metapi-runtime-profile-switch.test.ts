@@ -21,7 +21,10 @@ afterEach(async () => {
 });
 
 describe("MetaPi runtime Profile switching", () => {
-	it("rebuilds the current session and persists the selected Profile", async () => {
+	it.each([
+		{ kind: "persisted", persisted: true },
+		{ kind: "in-memory", persisted: false },
+	])("starts a fresh $kind session owned by the selected Profile", async ({ persisted }) => {
 		const root = join(tmpdir(), `metapi-profile-switch-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 		const cwd = join(root, "workspace");
 		mkdirSync(cwd, { recursive: true });
@@ -58,7 +61,9 @@ describe("MetaPi runtime Profile switching", () => {
 				diagnostics: services.diagnostics,
 			};
 		};
-		const manager = SessionManager.inMemory(cwd);
+		const manager = persisted
+			? SessionManager.create(cwd, join(root, "default-sessions"))
+			: SessionManager.inMemory(cwd);
 		setSessionProfile(manager, "default");
 		const runtime = await createAgentSessionRuntime(createRuntime, {
 			cwd,
@@ -70,7 +75,7 @@ describe("MetaPi runtime Profile switching", () => {
 				setProfileName: replaceSessionProfile,
 				getWorkspaceRoot: () => undefined,
 				setWorkspaceRoot: () => {},
-				getSessionDir: () => root,
+				getSessionDir: (_cwd, profileName) => join(root, `${profileName}-sessions`),
 				createEmptyWorkspace: () => cwd,
 				copyWorkspace: () => cwd,
 			},
@@ -81,12 +86,26 @@ describe("MetaPi runtime Profile switching", () => {
 			if (existsSync(root)) rmSync(root, { recursive: true, force: true });
 		});
 
-		const sessionFile = runtime.session.sessionFile;
+		const previousManager = runtime.session.sessionManager;
+		previousManager.appendMessage({ role: "user", content: "before switch", timestamp: Date.now() });
+		const previousSessionId = previousManager.getSessionId();
+		const previousSessionFile = runtime.session.sessionFile;
 		await runtime.switchProfile("work");
 
-		expect(runtime.session.sessionFile).toBe(sessionFile);
-		expect(runtime.cwd).toBe(cwd);
+		expect(runtime.session.sessionManager).not.toBe(previousManager);
+		expect(runtime.session.sessionManager.getSessionId()).not.toBe(previousSessionId);
+		if (persisted) {
+			expect(runtime.session.sessionFile).not.toBe(previousSessionFile);
+			expect(runtime.session.sessionManager.getSessionDir()).toBe(join(root, "work-sessions"));
+		} else {
+			expect(previousSessionFile).toBeUndefined();
+			expect(runtime.session.sessionFile).toBeUndefined();
+		}
+		expect(runtime.session.sessionManager.buildSessionContext().messages).toEqual([]);
+		expect(getSessionProfile(previousManager)).toBe("default");
+		expect(previousManager.buildSessionContext().messages).toHaveLength(1);
 		expect(getSessionProfile(runtime.session.sessionManager)).toBe("work");
+		expect(runtime.cwd).toBe(cwd);
 		expect(createdProfiles).toEqual(["default", "work"]);
 	});
 });

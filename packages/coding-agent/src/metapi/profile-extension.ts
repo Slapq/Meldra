@@ -148,7 +148,7 @@ async function switchProfile(name: string, ctx: ExtensionCommandContext): Promis
 	if (!ctx.switchProfile) throw new Error("当前运行模式不支持会话内切换配置");
 	const confirmed = await ctx.ui.confirm(
 		`切换到“${label}”？`,
-		"当前会话和工作区保持不变，扩展、模型、设置和环境将按新配置重新加载。",
+		"当前对话将保留在原配置中，并使用目标配置新建对话。Session-bound WorkSpace 也会按新对话创建。",
 	);
 	if (!confirmed) return;
 	await ctx.switchProfile(name);
@@ -198,7 +198,7 @@ async function openProfileHub(ctx: ExtensionCommandContext): Promise<void> {
 export function createMetaPiProfileExtension(): (pi: ExtensionAPI) => void {
 	return (pi) => {
 		pi.registerCommand("profile", {
-			description: "Switch the Profile used by the current MetaPi session",
+			description: "Start a new session with another Profile",
 			getArgumentCompletions,
 			handler: async (args, ctx) => {
 				const parts = args.trim().split(/\s+/).filter(Boolean);

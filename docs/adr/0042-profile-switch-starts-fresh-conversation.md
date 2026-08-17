@@ -1,0 +1,3 @@
+# Profile switching starts a fresh conversation in the current WorkSpace
+
+Switching the active Profile inside a running MetaPi TUI starts a new Pi Session through the existing Session replacement path while preserving the current working directory and WorkSpace. The previous conversation remains owned by its original Profile and can be resumed later; the selected Profile receives a fresh Session context and does not inherit the previous messages. This rule is generic and does not inspect or hard-code any Agent Runtime, provider, or product name. Ordinary `/new` retains its existing behavior, including creation of a new Session-bound WorkSpace where applicable.
