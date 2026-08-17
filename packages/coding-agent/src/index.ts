@@ -4,6 +4,7 @@ export { type Args, parseArgs } from "./cli/args.ts";
 
 // Config paths
 export {
+	APP_NAME,
 	CONFIG_DIR_NAME,
 	getAgentDir,
 	getDocsPath,
@@ -331,6 +332,7 @@ export {
 } from "./core/trust-manager.ts";
 // Main entry point
 export { type MainOptions, main } from "./main.ts";
+export { detectMetaPiLanguage, getMetaPiLanguage, type MetaPiLanguage } from "./metapi/language.ts";
 // Run modes for programmatic SDK usage
 export {
 	InteractiveMode,

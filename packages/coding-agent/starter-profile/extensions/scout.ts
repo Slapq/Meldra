@@ -1,5 +1,5 @@
 /**
- * Scout — disposable read-only subagents for pi
+ * Scout — disposable read-only subagents for MetaPi
  *
  * Inspired by the "拯救 5.6 Sol" Codex subagent practice (linux.do/t/topic/2578075):
  * fight context rot by dispatching cheap, fast, read-only "scouts" that explore the
@@ -8,11 +8,12 @@
  *
  * Design decisions:
  *  - Single blocking `scout` tool: { task, cwd? }. Parallelism comes for free —
- *    pi executes multiple tool calls from one assistant message concurrently,
+ *    MetaPi executes multiple tool calls from one assistant message concurrently,
  *    which is exactly "dispatch in one batch, then wait for all".
- *  - Each scout is an isolated `pi --mode json -p --no-session` subprocess.
- *  - Scout model/thinking is pinned in ~/.pi/agent/scout.json (never exposed as
- *    a tool parameter — the main model cannot pick expensive models).
+ *    Each scout is an isolated `metapi --mode json -p --no-session` subprocess.
+ *  - Scout model/thinking is pinned in `<agentDir>/scout.json` for legacy migration and
+ *    the current Profile Config store (never exposed as a tool parameter — the main model
+ *    cannot pick expensive models).
  *    Fallback: main model + "low" thinking, with a one-time hint to configure
  *    a cheaper model.
  *  - Tools are fixed to read,grep,find,ls,bash. Read-only discipline is enforced
@@ -27,9 +28,9 @@
  *    `"injectGuidelines": false` in scout.json or the /scout panel.
  *
  * Files:
- *  - Config: ~/.pi/agent/scout.json
- *      { "model": "provider/model-id", "thinkingLevel": "low", "injectGuidelines": true }
- *  - Command: /scout — settings panel (model / thinking / guidelines injection)
+ *  - Config: `<agentDir>/plugin-configs/scout.json` (legacy `<agentDir>/scout.json` is read
+ *    as a migration fallback)
+ *  - Command: /scout — alias for the Profile Config Scout page
  */
 
 import { spawn, spawnSync } from "node:child_process";
@@ -38,12 +39,14 @@ import * as os from "node:os";
 import * as path from "node:path";
 import type { Api, Message, Model } from "@earendil-works/pi-ai";
 import {
+	APP_NAME,
 	DEFAULT_MAX_BYTES,
 	DEFAULT_MAX_LINES,
 	type ExtensionAPI,
 	type ExtensionContext,
 	getAgentDir,
 	getMarkdownTheme,
+	getMetaPiLanguage,
 	keyHint,
 	truncateHead,
 } from "@earendil-works/pi-coding-agent";
@@ -64,6 +67,103 @@ const COLLAPSED_ITEM_COUNT = 6;
 const COLLAPSED_TRAIL_MAX_CHARS = 900; // keep live card height stable
 const THINKING_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
 type ThinkingLevel = (typeof THINKING_LEVELS)[number];
+
+type ScoutLanguage = "en" | "zh";
+interface ScoutConfigLabels {
+	model: string;
+	thinking: string;
+	guidelines: string;
+	modelHint: string;
+	thinkingHint: string;
+	guidelinesHint: string;
+	commandDescription: string;
+	unavailable: string;
+}
+
+const SCOUT_CONFIG_I18N: Record<ScoutLanguage, ScoutConfigLabels> = {
+	en: {
+		model: "Model",
+		thinking: "Thinking level",
+		guidelines: "Inject orchestration guidelines",
+		modelHint: "Leave empty to follow the main model",
+		thinkingHint: "Thinking level for Scout subagents",
+		guidelinesHint: "Inject Scout read-only orchestration rules",
+		commandDescription: "Open Scout configuration",
+		unavailable: "Scout configuration is unavailable in the current mode",
+	},
+	zh: {
+		model: "模型",
+		thinking: "Thinking 等级",
+		guidelines: "注入编排指南",
+		modelHint: "留空以跟随当前主模型",
+		thinkingHint: "Scout 子 Agent 的思考等级",
+		guidelinesHint: "将 Scout 只读协作规则注入主 Agent",
+		commandDescription: "打开 Scout 配置",
+		unavailable: "当前模式无法打开 Scout 配置",
+	},
+};
+
+interface ScoutResultLabels {
+	task: string;
+	trail: string;
+	toolCalls: string;
+	report: string;
+	scouting: string;
+	noOutput: string;
+	expand: string;
+	earlierItems: (count: number) => string;
+	timeout: string;
+	failed: string;
+	defaultModel: string;
+	noAuth: string;
+	notFound: string;
+	modelFallback: (configured: string, reason: string) => string;
+	fallbackHint: (model: string, thinking: string) => string;
+}
+
+const SCOUT_RESULT_I18N: Record<ScoutLanguage, ScoutResultLabels> = {
+	en: {
+		task: "Task",
+		trail: "Trail",
+		toolCalls: "tool calls",
+		report: "Report",
+		scouting: "(scouting...)",
+		noOutput: "(no output)",
+		expand: "to expand",
+		earlierItems: (count) => `... ${count} earlier items`,
+		timeout: "[timeout]",
+		failed: "[failed]",
+		defaultModel: "(default)",
+		noAuth: "no API key configured",
+		notFound: "not found in model registry",
+		modelFallback: (configured, reason) =>
+			`scout: configured model "${configured}" unusable (${reason}); falling back to the main model.`,
+		fallbackHint: (model, thinking) =>
+			`scout: no Scout model configured — using the main model (${model}) with "${thinking}" thinking. Configure a cheaper/faster model via /scout.`,
+	},
+	zh: {
+		task: "任务",
+		trail: "轨迹",
+		toolCalls: "次工具调用",
+		report: "报告",
+		scouting: "（调查中…）",
+		noOutput: "（无输出）",
+		expand: "展开",
+		earlierItems: (count) => `…之前 ${count} 项`,
+		timeout: "[超时]",
+		failed: "[失败]",
+		defaultModel: "（默认）",
+		noAuth: "未配置 API Key",
+		notFound: "模型目录中不存在",
+		modelFallback: (configured, reason) => `scout：配置的模型“${configured}”不可用（${reason}），已回退到主模型。`,
+		fallbackHint: (model, thinking) =>
+			`scout：未配置 Scout 模型，当前使用主模型（${model}）和“${thinking}”thinking；可通过 /scout 配置更便宜、更快的模型。`,
+	},
+};
+
+function getScoutResultLabels(): ScoutResultLabels {
+	return SCOUT_RESULT_I18N[getMetaPiLanguage() as ScoutLanguage];
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Prompts (hardcoded, English; scout reports follow the task's language)
@@ -182,29 +282,34 @@ function configPath(): string {
 	return path.join(getAgentDir(), "scout.json");
 }
 
-function loadConfig(): ScoutConfig {
+function normalizeConfig(value: unknown): ScoutConfig {
+	const parsed = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+	const cfg: ScoutConfig = {};
+	if (typeof parsed.model === "string" && parsed.model.includes("/")) cfg.model = parsed.model;
+	if (typeof parsed.thinkingLevel === "string" && (THINKING_LEVELS as readonly string[]).includes(parsed.thinkingLevel)) {
+		cfg.thinkingLevel = parsed.thinkingLevel as ThinkingLevel;
+	}
+	if (typeof parsed.injectGuidelines === "boolean") cfg.injectGuidelines = parsed.injectGuidelines;
+	return cfg;
+}
+
+function loadLegacyConfig(): ScoutConfig {
 	try {
-		const raw = fs.readFileSync(configPath(), "utf-8");
-		const parsed = JSON.parse(raw) as ScoutConfig;
-		const cfg: ScoutConfig = {};
-		if (typeof parsed.model === "string" && parsed.model.includes("/")) cfg.model = parsed.model;
-		if (
-			typeof parsed.thinkingLevel === "string" &&
-			(THINKING_LEVELS as readonly string[]).includes(parsed.thinkingLevel)
-		) {
-			cfg.thinkingLevel = parsed.thinkingLevel as ThinkingLevel;
-		}
-		if (typeof parsed.injectGuidelines === "boolean") cfg.injectGuidelines = parsed.injectGuidelines;
-		return cfg;
+		return normalizeConfig(JSON.parse(fs.readFileSync(configPath(), "utf-8")));
 	} catch {
 		return {};
 	}
 }
 
-function saveConfig(cfg: ScoutConfig): void {
-	const dir = getAgentDir();
-	fs.mkdirSync(dir, { recursive: true });
-	fs.writeFileSync(configPath(), `${JSON.stringify(cfg, null, 2)}\n`, "utf-8");
+function readConfigFromHost(pi: ExtensionAPI): ScoutConfig {
+	let value: Record<string, unknown> | undefined;
+	pi.events.emit("config:get", {
+		id: "scout",
+		callback: (config: Record<string, unknown>) => {
+			value = config;
+		},
+	});
+	return value ? normalizeConfig(value) : loadLegacyConfig();
 }
 
 function splitModelRef(ref: string): { provider: string; id: string } {
@@ -304,6 +409,7 @@ function formatCollapsedTrail(
 	maxItems = COLLAPSED_ITEM_COUNT,
 	maxChars = COLLAPSED_TRAIL_MAX_CHARS,
 ): string {
+	const labels = getScoutResultLabels();
 	const toolItems = items.filter((i) => i.type === "toolCall");
 	const textItems = items.filter((i) => i.type === "text");
 	// Prefer tool trail while running; text deltas cause height thrash and scroll jumps.
@@ -311,7 +417,7 @@ function formatCollapsedTrail(
 	const toShow = preferred.slice(-maxItems);
 	const skipped = preferred.length - toShow.length;
 	const lines: string[] = [];
-	if (skipped > 0) lines.push(fg("muted", `... ${skipped} earlier items`));
+	if (skipped > 0) lines.push(fg("muted", labels.earlierItems(skipped)));
 	for (const item of toShow) {
 		if (item.type === "toolCall") {
 			lines.push(`${fg("muted", "→ ")}${formatToolCall(item.name, item.args, fg)}`);
@@ -455,11 +561,11 @@ function getPiInvocation(args: string[]): { command: string; args: string[] } {
 	if (!isGenericRuntime) {
 		return { command: process.execPath, args };
 	}
-	return { command: "pi", args };
+	return { command: APP_NAME, args };
 }
 
 async function writePromptTempFile(content: string): Promise<{ dir: string; filePath: string }> {
-	const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pi-scout-"));
+	const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "metapi-scout-"));
 	const filePath = path.join(dir, "scout-prompt.md");
 	await fs.promises.writeFile(filePath, content, { encoding: "utf-8", mode: 0o600 });
 	return { dir, filePath };
@@ -790,24 +896,24 @@ interface ResolvedScoutModel {
 }
 
 function resolveScoutModel(cfg: ScoutConfig, ctx: ExtensionContext): ResolvedScoutModel {
+	const labels = getScoutResultLabels();
 	if (cfg.model) {
 		const { provider, id } = splitModelRef(cfg.model);
 		const model: Model<Api> | undefined = ctx.modelRegistry.find(provider, id);
 		if (model && ctx.modelRegistry.hasConfiguredAuth(model)) {
 			return { modelRef: cfg.model, label: cfg.model, usedFallback: false };
 		}
-		const reason = model ? "no API key configured" : "not found in model registry";
+		const reason = model ? labels.noAuth : labels.notFound;
 		const main = ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : undefined;
 		return {
 			modelRef: main,
-			label: main ?? "(default)",
+			label: main ?? labels.defaultModel,
 			usedFallback: true,
-			warning: `scout: configured model "${cfg.model}" unusable (${reason}); falling back to main model.`,
-		};
+			warning: labels.modelFallback(cfg.model, reason),		};
 	}
 
 	const main = ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : undefined;
-	return { modelRef: main, label: main ?? "(default)", usedFallback: true };
+	return { modelRef: main, label: main ?? labels.defaultModel, usedFallback: true };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -816,6 +922,41 @@ function resolveScoutModel(cfg: ScoutConfig, ctx: ExtensionContext): ResolvedSco
 
 export default function scoutExtension(pi: ExtensionAPI) {
 	let fallbackHintShown = false;
+	const labels = SCOUT_CONFIG_I18N[getMetaPiLanguage() as ScoutLanguage];
+	const legacyConfig = loadLegacyConfig();
+	const readConfig = () => readConfigFromHost(pi);
+	pi.events.emit("config:register", {
+		id: "scout",
+		label: "Scout",
+		icon: "S",
+		fields: [
+			{
+				key: "model",
+				label: labels.model,
+				type: "string",
+				placeholder: "provider/model-id",
+				hint: labels.modelHint,
+			},
+			{
+				key: "thinkingLevel",
+				label: labels.thinking,
+				type: "select",
+				options: [...THINKING_LEVELS],
+				hint: labels.thinkingHint,
+			},
+			{
+				key: "injectGuidelines",
+				label: labels.guidelines,
+				type: "boolean",
+				hint: labels.guidelinesHint,
+			},
+		],
+		defaults: {
+			model: legacyConfig.model ?? "",
+			thinkingLevel: legacyConfig.thinkingLevel ?? "low",
+			injectGuidelines: legacyConfig.injectGuidelines ?? true,
+		},
+	});
 	const activeScoutPids = new Set<number>();
 	const cleanupActiveScouts = () => {
 		for (const pid of activeScoutPids) killProcessTree(pid);
@@ -836,7 +977,7 @@ export default function scoutExtension(pi: ExtensionAPI) {
 
 	// Inject orchestration doctrine into the main agent's system prompt
 	pi.on("before_agent_start", async (event) => {
-		const cfg = loadConfig();
+		const cfg = readConfig();
 		if (cfg.injectGuidelines === false) return;
 		return { systemPrompt: `${event.systemPrompt}\n\n${ORCHESTRATION_GUIDELINES}` };
 	});
@@ -865,17 +1006,14 @@ export default function scoutExtension(pi: ExtensionAPI) {
 			const task = params.task?.trim();
 			if (!task) throw new Error("scout: task must not be empty");
 
-			const cfg = loadConfig();
+			const cfg = readConfig();
 			const resolved = resolveScoutModel(cfg, ctx);
 
 			if (resolved.warning && ctx.hasUI) {
 				ctx.ui.notify(resolved.warning, "warning");
 			} else if (resolved.usedFallback && !fallbackHintShown && ctx.hasUI) {
 				fallbackHintShown = true;
-				ctx.ui.notify(
-					`scout: no scout model configured — using main model (${resolved.label}) with "${cfg.thinkingLevel ?? "low"}" thinking. Configure a cheaper/faster model via /scout.`,
-					"info",
-				);
+				ctx.ui.notify(getScoutResultLabels().fallbackHint(resolved.label, cfg.thinkingLevel ?? "low"), "info");
 			}
 
 			let scoutCwd = ctx.cwd;
@@ -970,6 +1108,7 @@ export default function scoutExtension(pi: ExtensionAPI) {
 		},
 
 		renderResult(result, { expanded, isPartial }, theme, context) {
+			const labels = getScoutResultLabels();
 			const details = result.details as ScoutResultDetails | undefined;
 			if (!details) {
 				const c = result.content[0];
@@ -994,9 +1133,9 @@ export default function scoutExtension(pi: ExtensionAPI) {
 
 			const statusSuffix =
 				details.status === "timeout"
-					? ` ${theme.fg("warning", "[timeout]")}`
+					? ` ${theme.fg("warning", labels.timeout)}`
 					: details.status === "error"
-						? ` ${theme.fg("error", `[${details.errorMessage ?? "failed"}]`)}`
+						? ` ${theme.fg("error", labels.failed)}`
 						: "";
 
 			const header = `${statusIcon} ${theme.fg("toolTitle", theme.bold("scout"))}${statusSuffix}`;
@@ -1012,13 +1151,13 @@ export default function scoutExtension(pi: ExtensionAPI) {
 				const container = new Container();
 				container.addChild(new Text(header, 0, 0));
 				container.addChild(new Spacer(1));
-				container.addChild(new Text(theme.fg("muted", "─── Task ───"), 0, 0));
+				container.addChild(new Text(theme.fg("muted", `─── ${labels.task} ───`), 0, 0));
 				container.addChild(new Text(theme.fg("dim", details.task), 0, 0));
 
 				const toolCalls = items.filter((i) => i.type === "toolCall");
 				if (toolCalls.length > 0) {
 					container.addChild(new Spacer(1));
-					container.addChild(new Text(theme.fg("muted", `─── Trail (${toolCalls.length} tool calls) ───`), 0, 0));
+					container.addChild(new Text(theme.fg("muted", `─── ${labels.trail} (${toolCalls.length} ${labels.toolCalls}) ───`), 0, 0));
 					for (const item of toolCalls) {
 						if (item.type === "toolCall") {
 							container.addChild(new Text(theme.fg("muted", "→ ") + formatToolCall(item.name, item.args, fg), 0, 0));
@@ -1028,11 +1167,11 @@ export default function scoutExtension(pi: ExtensionAPI) {
 
 				const report = resultText;
 				container.addChild(new Spacer(1));
-				container.addChild(new Text(theme.fg("muted", "─── Report ───"), 0, 0));
+				container.addChild(new Text(theme.fg("muted", `─── ${labels.report} ───`), 0, 0));
 				if (report && report !== "(scouting...)") {
 					container.addChild(new Markdown(report.trim(), 0, 0, getMarkdownTheme()));
 				} else {
-					container.addChild(new Text(theme.fg("muted", "(no report)"), 0, 0));
+					container.addChild(new Text(theme.fg("muted", labels.noOutput), 0, 0));
 				}
 				if (details.status === "error") {
 					const stderrTail = "stderrTail" in details ? details.stderrTail : undefined;
@@ -1052,10 +1191,10 @@ export default function scoutExtension(pi: ExtensionAPI) {
 			let text = header;
 			const trail = formatCollapsedTrail(items, fg);
 			if (trail) text += `\n${trail}`;
-			else text += `\n${theme.fg("muted", details.status === "running" ? "(scouting...)" : "(no output)")}`;
+			else text += `\n${theme.fg("muted", details.status === "running" ? labels.scouting : labels.noOutput)}`;
 			if (usageLine && details.status !== "running") text += `\n${theme.fg("dim", usageLine)}`;
 			if (details.status !== "running")
-				text += `\n${theme.fg("muted", `(${keyHint("app.tools.expand", "to expand")})`)}`;
+				text += `\n${theme.fg("muted", `(${keyHint("app.tools.expand", labels.expand)})`)}`;
 
 			const node = (context?.lastComponent as Text | undefined) ?? new Text("", 0, 0);
 			node.setText(text);
@@ -1063,55 +1202,13 @@ export default function scoutExtension(pi: ExtensionAPI) {
 		},
 	});
 
-	// ── /scout settings panel ──────────────────────────────────────────────────
-
+	// /scout remains a compatibility alias for the unified Profile Config page.
 	pi.registerCommand("scout", {
-		description: "Scout settings: model, thinking level, guidelines injection",
+		description: labels.commandDescription,
 		handler: async (_args, ctx) => {
 			if (!ctx.hasUI) return;
-
-			while (true) {
-				const cfg = loadConfig();
-				const modelLabel = cfg.model ?? "(follow main model)";
-				const thinkingLabel = cfg.thinkingLevel ?? "low";
-				const guidelinesLabel = cfg.injectGuidelines === false ? "off" : "on";
-
-				const choice = await ctx.ui.select(`Scout settings  (${configPath()})`, [
-					`Model:       ${modelLabel}`,
-					`Thinking:    ${thinkingLabel}`,
-					`Guidelines:  ${guidelinesLabel}`,
-				]);
-				if (!choice) return;
-
-				if (choice.startsWith("Model:")) {
-					const available = ctx.modelRegistry
-						.getAvailable()
-						.map((m) => `${m.provider}/${m.id}`)
-						.sort();
-					const picked = await ctx.ui.select("Scout model (cheap + fast recommended):", [
-						"(follow main model)",
-						...available,
-					]);
-					if (picked === undefined) continue;
-					if (picked === "(follow main model)") {
-						const next = { ...cfg };
-						delete next.model;
-						saveConfig(next);
-						ctx.ui.notify("scout: model cleared — scouts follow the main model", "info");
-					} else {
-						saveConfig({ ...cfg, model: picked });
-						ctx.ui.notify(`scout: model set to ${picked}`, "info");
-					}
-				} else if (choice.startsWith("Thinking:")) {
-					const picked = await ctx.ui.select("Scout thinking level (low recommended):", [...THINKING_LEVELS]);
-					if (picked === undefined) continue;
-					saveConfig({ ...cfg, thinkingLevel: picked as ThinkingLevel });
-					ctx.ui.notify(`scout: thinking level set to ${picked}`, "info");
-				} else if (choice.startsWith("Guidelines:")) {
-					const next = cfg.injectGuidelines === false;
-					saveConfig({ ...cfg, injectGuidelines: next });
-					ctx.ui.notify(`scout: orchestration guidelines injection ${next ? "enabled" : "disabled"}`, "info");
-				}
+			if (!(await ctx.executeCommand("/config scout"))) {
+				ctx.ui.notify(labels.unavailable, "error");
 			}
 		},
 	});

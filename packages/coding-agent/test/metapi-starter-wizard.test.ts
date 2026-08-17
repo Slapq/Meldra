@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import starterSetup, { __starterSetupInternals as internals } from "../starter-profile/extensions/setup.ts";
 
 const agentDir = "C:/tmp/metapi-starter-wizard-test/agent";
+const scoutConfigPath = join(agentDir, "plugin-configs", "scout.json");
 const originalLang = process.env.LANG;
 
 type Handler = (...args: any[]) => any;
@@ -25,9 +26,9 @@ function context(options: { authenticated?: boolean; activeModel?: boolean } = {
 			if (command === "/login") state.authenticated = true;
 			if (command === "/model") state.activeModel = true;
 			if (command === "/scout") {
-				mkdirSync(agentDir, { recursive: true });
+				mkdirSync(dirname(scoutConfigPath), { recursive: true });
 				writeFileSync(
-					join(agentDir, "scout.json"),
+					scoutConfigPath,
 					JSON.stringify({ model: "fixture/fixture-model", thinkingLevel: "low" }),
 					"utf8",
 				);
@@ -80,12 +81,8 @@ describe("MetaPi Starter setup wizard", () => {
 	});
 
 	test("recognizes configured Provider, active model, and explicit Scout settings", () => {
-		mkdirSync(agentDir, { recursive: true });
-		writeFileSync(
-			join(agentDir, "scout.json"),
-			JSON.stringify({ model: "fixture/fixture-model", thinkingLevel: "low" }),
-			"utf8",
-		);
+		mkdirSync(dirname(scoutConfigPath), { recursive: true });
+		writeFileSync(scoutConfigPath, JSON.stringify({ model: "fixture/fixture-model", thinkingLevel: "low" }), "utf8");
 		const status = internals.inspectStatus(context({ authenticated: true, activeModel: true }));
 		expect(status).toEqual({
 			providerReady: true,
@@ -98,13 +95,21 @@ describe("MetaPi Starter setup wizard", () => {
 		expect(internals.completedCount(status)).toBe(3);
 	});
 
-	test("keeps an unavailable configured Scout model incomplete", () => {
+	test("reads legacy Scout settings as a migration fallback", () => {
 		mkdirSync(agentDir, { recursive: true });
 		writeFileSync(
 			join(agentDir, "scout.json"),
-			JSON.stringify({ model: "missing/model", thinkingLevel: "low" }),
+			JSON.stringify({ model: "fixture/fixture-model", thinkingLevel: "low" }),
 			"utf8",
 		);
+		const status = internals.inspectStatus(context({ authenticated: true, activeModel: true }));
+		expect(status.scoutModelReady).toBe(true);
+		expect(status.scoutThinkingReady).toBe(true);
+	});
+
+	test("keeps an unavailable configured Scout model incomplete", () => {
+		mkdirSync(dirname(scoutConfigPath), { recursive: true });
+		writeFileSync(scoutConfigPath, JSON.stringify({ model: "missing/model", thinkingLevel: "low" }), "utf8");
 		const status = internals.inspectStatus(context({ authenticated: true, activeModel: true }));
 		expect(status.scoutModelConfigured).toBe(true);
 		expect(status.scoutModelReady).toBe(false);
@@ -113,8 +118,8 @@ describe("MetaPi Starter setup wizard", () => {
 	});
 
 	test("classifies selected-but-unavailable model and incomplete Scout settings as partial", () => {
-		mkdirSync(agentDir, { recursive: true });
-		writeFileSync(join(agentDir, "scout.json"), JSON.stringify({ thinkingLevel: "low" }), "utf8");
+		mkdirSync(dirname(scoutConfigPath), { recursive: true });
+		writeFileSync(scoutConfigPath, JSON.stringify({ thinkingLevel: "low" }), "utf8");
 		const status = internals.inspectStatus(context({ activeModel: true }));
 		expect(internals.configurationState("provider", status)).toBe("unconfigured");
 		expect(internals.configurationState("model", status)).toBe("partial");
@@ -122,12 +127,8 @@ describe("MetaPi Starter setup wizard", () => {
 	});
 
 	test("shows all configured steps instead of skipping directly to the summary", async () => {
-		mkdirSync(agentDir, { recursive: true });
-		writeFileSync(
-			join(agentDir, "scout.json"),
-			JSON.stringify({ model: "fixture/fixture-model", thinkingLevel: "low" }),
-			"utf8",
-		);
+		mkdirSync(dirname(scoutConfigPath), { recursive: true });
+		writeFileSync(scoutConfigPath, JSON.stringify({ model: "fixture/fixture-model", thinkingLevel: "low" }), "utf8");
 		const { commands } = loadExtension();
 		const ctx = context({ authenticated: true, activeModel: true });
 		ctx.ui.select.mockImplementation(async (_title: string, options: string[]) =>
