@@ -1,0 +1,3 @@
+# Import Profile snapshots and apply updates explicitly
+
+A Profile import creates a local snapshot while retaining non-secret source and version metadata for update discovery. After the TUI is usable, MetaPi may perform a due update check asynchronously and cache a reminder; the check never blocks startup, is skipped in offline mode, and does not download or execute updated resources. MetaPi will never synchronize or apply Profile changes automatically: the user must request or accept an update, review additions, removals, package and executable-resource changes, and confirm before the portable configuration is replaced; local credentials, sessions, environment values, and directory bindings remain untouched, and the previous snapshot remains available for rollback.

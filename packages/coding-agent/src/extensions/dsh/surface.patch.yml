@@ -1,0 +1,136 @@
+# MetaPi owns only the stdio surface. Harness base/web bundles continue to
+# provide the native host services, per-session preset composition, and APIs.
+
+- id: hmr
+  disabled: true
+
+- id: directory-picker
+  disabled: true
+
+- insert:
+    - id: metapi-directory-picker
+      name: '@deepseek-ai/dsh-host-directory-picker-browse'
+
+- id: web-startup
+  disabled: true
+
+- id: webserver
+  disabled: true
+
+- id: web-runtime
+  disabled: true
+
+- id: client-hmr
+  disabled: true
+
+- id: modules
+  disabled: true
+
+- id: connection
+  disabled: true
+
+- id: api-remotes
+  disabled: true
+
+- id: client-runtime
+  disabled: true
+
+- id: cordis-client-runner
+  disabled: true
+
+- id: ui-theme
+  disabled: true
+
+- id: locale
+  disabled: true
+
+- id: ui-layout
+  disabled: true
+
+- id: ui-sidebar
+  disabled: true
+
+- id: ui-settings
+  disabled: true
+
+- id: ui-settings-general
+  disabled: true
+
+- id: ui-settings-models
+  disabled: true
+
+- id: ui-settings-plugin-inventory
+  disabled: true
+
+- id: ui-conversation
+  disabled: true
+
+- id: ui-tool
+  disabled: true
+
+- id: ui-cordis
+  disabled: true
+
+- id: ui-workflow-run
+  disabled: true
+
+- id: ui-deliverables
+  disabled: true
+
+- id: ui-workspace
+  disabled: true
+
+- id: ui-input-trigger
+  disabled: true
+
+- id: ui-commands
+  disabled: true
+
+- id: ui-skill
+  disabled: true
+
+- id: ui-subagent
+  disabled: true
+
+- id: ui-jobs
+  disabled: true
+
+- id: ui-goal
+  disabled: true
+
+- id: ui-message-feedback
+  disabled: true
+
+- id: ui-model-selection
+  disabled: true
+
+- id: ui-permission
+  disabled: true
+
+- id: ui-agent-preset
+  disabled: true
+
+- id: ui-settings-plugins
+  disabled: true
+
+- id: ui-plan
+  disabled: true
+
+- id: ui-user-questions
+  disabled: true
+
+- id: ui-trajectory
+  disabled: true
+
+- id: agent-presets
+  config:
+    default: standard
+    roots:
+      - path: !!js process.env.DSH_SHIPPED_PRESET_ROOT
+        trust: system
+
+- insert:
+    - id: metapi-tui-jsonrpc-server
+      name: '__METAPI_DSH_SERVER_PATH__'
+      config:
+        maxTokensAsSuccess: true
