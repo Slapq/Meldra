@@ -333,6 +333,8 @@ export interface InteractiveModeOptions {
 	initialImages?: ImageContent[];
 	/** Additional messages to send after the initial message */
 	initialMessages?: string[];
+	/** Run one slash command after interactive startup completes. */
+	startupCommand?: string;
 	/** Force verbose startup (overrides quietStartup setting) */
 	verbose?: boolean;
 	/** TUI layout mode. */
@@ -1117,7 +1119,8 @@ export class InteractiveMode {
 		});
 
 		// Show startup warnings
-		const { migratedProviders, modelFallbackMessage, initialMessage, initialImages, initialMessages } = this.options;
+		const { migratedProviders, modelFallbackMessage, initialMessage, initialImages, initialMessages, startupCommand } =
+			this.options;
 
 		if (migratedProviders && migratedProviders.length > 0) {
 			this.showWarning(`Migrated credentials to auth.json: ${migratedProviders.join(", ")}`);
@@ -1153,6 +1156,11 @@ export class InteractiveMode {
 					this.showError(errorMessage);
 				}
 			}
+		}
+
+		if (startupCommand) {
+			const executed = await this.executeCommandFromExtension(startupCommand);
+			if (!executed) this.showError(`Unable to run startup command: ${startupCommand}`);
 		}
 
 		// Main interactive loop

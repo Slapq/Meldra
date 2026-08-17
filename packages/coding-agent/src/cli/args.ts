@@ -45,6 +45,7 @@ export interface Args {
 	noPromptTemplates?: boolean;
 	themes?: string[];
 	useTheme?: string;
+	startupCommand?: string;
 	noThemes?: boolean;
 	noContextFiles?: boolean;
 	listModels?: string | true;
@@ -185,6 +186,8 @@ export function parseArgs(args: string[]): Args {
 			result.noSkills = true;
 		} else if (arg === "--no-prompt-templates" || arg === "-np") {
 			result.noPromptTemplates = true;
+		} else if (arg === "--startup-command" && i + 1 < args.length) {
+			result.startupCommand = args[++i];
 		} else if (arg === "--no-themes") {
 			result.noThemes = true;
 		} else if (arg === "--no-context-files" || arg === "-nc") {
@@ -314,6 +317,7 @@ ${chalk.bold("Options:")}
   --no-prompt-templates, -np     Disable prompt template discovery and loading
   --theme <path>                 Load a theme file or directory (can be used multiple times)
   --use-theme <name[/name]>      Set the initial interactive theme for this run
+  --startup-command <command>    Run one slash command after the TUI starts
   --no-themes                    Disable theme discovery and loading
   --no-context-files, -nc        Disable AGENTS.md and CLAUDE.md discovery and loading
   --export <file>                Export session file to HTML and exit

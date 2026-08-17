@@ -94,6 +94,7 @@ test("first-use onboarding quotes the Windows Terminal title as one argument", (
 	const script = readRepo("scripts/windows-installer/metapi.iss");
 	assert.match(script, /--title ""MetaPi Setup"" -- cmd\.exe \/d \/c/);
 	assert.match(script, /metapi-onboarding\.cmd/);
+	assert.match(readRepo("scripts/windows-installer/metapi-onboarding.cmd"), /--startup-command \/setup/);
 });
 
 test("local release staging is reproducible and keeps DSH rc peer resolution", () => {

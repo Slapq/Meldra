@@ -6,5 +6,5 @@ if errorlevel 1 (
   pause
   exit /b %errorlevel%
 )
-call "%~dp0metapi.cmd" --profile default --workspace
+call "%~dp0metapi.cmd" --profile default --workspace --startup-command /setup
 exit /b %errorlevel%

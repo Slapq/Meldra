@@ -187,6 +187,13 @@ describe("parseArgs", () => {
 		});
 	});
 
+	describe("--startup-command flag", () => {
+		test("parses a one-shot slash command", () => {
+			const result = parseArgs(["--startup-command", "/setup"]);
+			expect(result.startupCommand).toBe("/setup");
+		});
+	});
+
 	describe("--no-session flag", () => {
 		test("parses --no-session flag", () => {
 			const result = parseArgs(["--no-session"]);
