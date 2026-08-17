@@ -3,7 +3,7 @@
 [中文](setup-and-distribution.md) | [English](setup-and-distribution.en.md) | [返回首页](../README.md)
 
 > [!IMPORTANT]
-> Windows x64 双安装器从 `v0.1.0-preview.4` 开始发布。安装器目前未做代码签名，Windows 可能显示 Unknown publisher 或 SmartScreen 提示。scoped npm Bootstrap 仍未发布。
+> Windows x64 双安装器从 `v0.1.0-preview.7` 开始发布。安装器目前未做代码签名，Windows 可能显示 Unknown publisher 或 SmartScreen 提示。scoped npm Bootstrap 仍未发布。
 
 ## 当前状态
 
@@ -18,6 +18,10 @@
 | Starter Profile Bundle Setup | `SUPPORTED` | 干净的首次 MetaPi 初始化自动 provision；已有用户运行 `metapi setup` 安装或恢复 |
 | Provider、模型和 Scout 引导 | `SUPPORTED` | default Profile 中运行 `/setup`；分别转到 `/login`、`/model`、`/scout` 或 `/config` |
 | Windows 桌面快捷方式 | `SUPPORTED` | 使用安装器内置的 portable Windows Terminal 启动 default Profile + WorkSpace |
+
+## 公开快照与发布审计
+
+当前公开仓库发布使用经过脱敏审计的公开树。允许在已脱敏的公开基线上追加经过审计的增量 commit，但禁止直接推送包含本地 Profile、Session、凭据、本机路径、Agent 上下文或私有调查记录的开发历史。每次公开发布前必须审计所有可达公开内容，而不是只审计当前工作树。
 
 ## 双 Bootstrap 入口
 

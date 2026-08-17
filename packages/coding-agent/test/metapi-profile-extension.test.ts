@@ -112,6 +112,10 @@ describe("MetaPi Profile extension", () => {
 		await command.handler("", ctx);
 
 		expect(switchProfile).toHaveBeenCalledWith("work");
+		expect(ctx.ui.confirm).toHaveBeenCalledWith(
+			"切换到“工作配置”？",
+			"当前对话将保留在原配置中；目标配置会在当前 WorkSpace 中新建空对话，不继承上下文。",
+		);
 		expect(vi.mocked(ctx.ui.select).mock.calls[0]?.[1]).not.toContain("原版 Pi 配置");
 		expect(ctx.ui.notify).not.toHaveBeenCalled();
 		expect(bindDirectoryMock).not.toHaveBeenCalled();

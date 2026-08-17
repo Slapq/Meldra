@@ -148,7 +148,7 @@ async function switchProfile(name: string, ctx: ExtensionCommandContext): Promis
 	if (!ctx.switchProfile) throw new Error("当前运行模式不支持会话内切换配置");
 	const confirmed = await ctx.ui.confirm(
 		`切换到“${label}”？`,
-		"当前对话将保留在原配置中，并使用目标配置新建对话。Session-bound WorkSpace 也会按新对话创建。",
+		"当前对话将保留在原配置中；目标配置会在当前 WorkSpace 中新建空对话，不继承上下文。",
 	);
 	if (!confirmed) return;
 	await ctx.switchProfile(name);

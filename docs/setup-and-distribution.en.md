@@ -3,7 +3,7 @@
 [中文](setup-and-distribution.md) | [English](setup-and-distribution.en.md) | [Home](../README.en.md)
 
 > [!IMPORTANT]
-> Dual Windows x64 installers are published starting with `v0.1.0-preview.4`. They are currently unsigned, so Windows may show Unknown publisher or SmartScreen warnings. The scoped npm Bootstrap remains unpublished.
+> Dual Windows x64 installers are published starting with `v0.1.0-preview.7`. They are currently unsigned, so Windows may show Unknown publisher or SmartScreen warnings. The scoped npm Bootstrap remains unpublished.
 
 ## Current Status
 
@@ -18,6 +18,10 @@
 | Starter Profile Bundle Setup | `SUPPORTED` | A clean first MetaPi initialization provisions it automatically; existing users run `metapi setup` to install or restore it |
 | Provider, model, and Scout onboarding | `SUPPORTED` | Run `/setup` in `default`; it points to `/login`, `/model`, `/scout`, or `/config` |
 | Windows desktop shortcut | `SUPPORTED` | Launches the default Profile + WorkSpace in the bundled portable Windows Terminal |
+
+## Public Snapshot and Release Audit
+
+The public repository is published from a redaction-audited public tree. Audited incremental commits may be added on top of an already public base, but a local development history containing Profile, Session, credential, machine-path, Agent-context, or private investigation data must never be pushed directly. Each public release must audit all reachable public content, not only the current working tree.
 
 ## Two Bootstrap Entries
 

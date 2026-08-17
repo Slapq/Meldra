@@ -8,6 +8,28 @@ import { formatChecksums, WINDOWS_RUNTIME } from "./build-windows-installers.mjs
 const repoRoot = new URL("../", import.meta.url);
 const readRepo = (relative) => readFileSync(new URL(relative, repoRoot), "utf8");
 
+function readIcoFrameCorners(icon) {
+	const count = icon.readUInt16LE(4);
+	const corners = [];
+	for (let index = 0; index < count; index++) {
+		const entry = 6 + index * 16;
+		const width = icon[entry] || 256;
+		const height = icon[entry + 1] || 256;
+		const bitDepth = icon.readUInt16LE(entry + 6);
+		const offset = icon.readUInt32LE(entry + 12);
+		assert.equal(bitDepth, 32);
+		const stride = width * 4;
+		for (const y of [0, height - 1]) {
+			const row = offset + 40 + y * stride;
+			for (const x of [0, width - 1]) {
+				const pixel = row + x * 4;
+				corners.push({ red: icon[pixel + 2], green: icon[pixel + 1], blue: icon[pixel], alpha: icon[pixel + 3] });
+			}
+		}
+	}
+	return corners;
+}
+
 test("pins official Windows runtime artifacts by SHA-256", () => {
 	assert.equal(WINDOWS_RUNTIME.node.version, "24.19.0");
 	assert.match(WINDOWS_RUNTIME.node.url, /^https:\/\/nodejs\.org\/download\/release\//);
@@ -62,6 +84,10 @@ test("desktop shortcut and installer use the official Pi favicon with transparen
 	assert.match(script, /UninstallDisplayIcon=\{app\}\\pi-app\.ico/);
 	assert.match(script, /IconFilename: "\{app\}\\pi-app\.ico"/);
 	assert.deepEqual([...icon.subarray(0, 4)], [0, 0, 1, 0]);
+	for (const corner of readIcoFrameCorners(icon)) {
+		assert.ok(corner.alpha < 128);
+		assert.ok(corner.red <= 16 && corner.green <= 16 && corner.blue <= 16);
+	}
 });
 
 test("first-use onboarding quotes the Windows Terminal title as one argument", () => {
