@@ -1,15 +1,33 @@
-# MetaPi 更新日志
+# Meldra 更新日志
+
+## v0.1.1-fix
+
+本修复版本完成 MetaPi 到 Meldra 的品牌迁移，同时保留现有用户数据、Profile、Session、Pi compatibility 和外部 Runtime 兼容路径。
+
+### 修复
+
+- 主 CLI、Windows 安装器、桌面快捷方式、README、用户文档和发布资产统一使用 Meldra 品牌。
+- `meldra` 成为主命令，`metapi` 继续作为兼容别名。
+- 保留 `~/.metapi`、`METAPI_*`、`.pi/metapi.json`、Bundle/Session 元数据和 `metapi/*` RPC 标识，避免已有用户环境失联。
+- Windows 安装器改用 Meldra 显示名称和文件名，同时保留旧 AppId、安装目录和升级路径。
+- 增加 Meldra 品牌和兼容性回归测试。
+
+### 发布边界
+
+- Windows x64 安装器提供内置 Node.js 和使用系统 Node.js 两个版本。
+- 安装器当前未签名，Windows 可能显示 Unknown publisher 或 SmartScreen 提示。
+- scoped npm Bootstrap 尚未发布。
 
 ## v0.1.1
 
-本版本面向 MetaPi Starter Profile、插件配置和 Provider 管理流程，重点提升首次配置、模型发现和运行时排错体验。
+本版本面向 Meldra Starter Profile、插件配置和 Provider 管理流程，重点提升首次配置、模型发现和运行时排错体验。
 
 ### 新增
 
-- 新增 MetaPi Starter 插件开发指南，补充 Profile Config、Provider Manager、Scout、Workflows、Setup、打包和验收说明。
+- 新增 Meldra Starter 插件开发指南，补充 Profile Config、Provider Manager、Scout、Workflows、Setup、打包和验收说明。
 - Profile Config 的字符串字段支持运行时模型候选补全。候选值只用于当前运行时，不写入 Profile 配置文件。
 - Scout 配置支持从当前 Model Registry 补全 `provider/model-id`，同时保留手动输入自定义模型的能力。
-- 系统提示增加 MetaPi、Starter Profile 和外部 Agent Runtime 的文档边界说明。
+- 系统提示增加 Meldra、Starter Profile 和外部 Agent Runtime 的文档边界说明。
 
 ### 改进
 
@@ -25,8 +43,8 @@
 
 - 增加 Scout 模型补全、语言显示、异常标签渲染和配置隔离测试。
 - 增加 Provider Manager 模型发现路径、API 版本识别和协议覆盖保护测试。
-- 增加 MetaPi 系统提示边界测试。
-- 已验证 coding-agent 构建、MetaPi Config focused tests、Starter tests 和 OllamaWebSearch 插件测试。
+- 增加 Meldra 系统提示边界测试。
+- 已验证 coding-agent 构建、Meldra Config focused tests、Starter tests 和 OllamaWebSearch 插件测试。
 
 ### 发布边界
 

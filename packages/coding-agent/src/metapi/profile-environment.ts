@@ -41,7 +41,12 @@ function normalizedName(name: string): string {
 
 function isRuntimeVariable(name: string): boolean {
 	const normalized = normalizedName(name);
-	return normalized.startsWith("PI_") || normalized.startsWith("METAPI_") || normalized === "AI_AGENT";
+	return (
+		normalized.startsWith("PI_") ||
+		normalized.startsWith("METAPI_") ||
+		normalized.startsWith("MELDRA_") ||
+		normalized === "AI_AGENT"
+	);
 }
 
 export type ProfileEnvironmentSnapshot = NodeJS.ProcessEnv;

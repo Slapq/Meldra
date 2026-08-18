@@ -100,7 +100,7 @@ function findIscc() {
 
 function copyInstallerSources(repoRoot, payload) {
 	const source = join(repoRoot, "scripts", "windows-installer");
-	for (const name of ["metapi.cmd", "metapi-shell.cmd", "metapi-onboarding.cmd", "pi-app.ico"]) {
+	for (const name of ["meldra.cmd", "meldra-shell.cmd", "meldra-onboarding.cmd", "metapi.cmd", "metapi-shell.cmd", "metapi-onboarding.cmd", "pi-app.ico"]) {
 		cpSync(join(source, name), join(payload, name));
 	}
 	cpSync(join(repoRoot, "LICENSE"), join(payload, "META_LICENSE.txt"));
@@ -110,14 +110,14 @@ function writeNotices(payload) {
 	writeFileSync(
 		join(payload, "THIRD_PARTY_NOTICES.md"),
 		`# Bundled runtime notices\n\n` +
-			`MetaPi redistributes these unmodified official binary distributions:\n\n` +
+			`Meldra redistributes these unmodified official binary distributions:\n\n` +
 			`- Node.js ${WINDOWS_RUNTIME.node.version} x64: ${WINDOWS_RUNTIME.node.url}\n` +
 			`  - SHA-256: \`${WINDOWS_RUNTIME.node.sha256}\`\n` +
 			`  - License: \`runtime/LICENSE\` in the bundled-runtime installation.\n` +
 			`- Windows Terminal ${WINDOWS_RUNTIME.terminal.version} x64: ${WINDOWS_RUNTIME.terminal.url}\n` +
 			`  - SHA-256: \`${WINDOWS_RUNTIME.terminal.sha256}\`\n` +
 			`  - License: \`terminal/LICENSE\`.\n\n` +
-			`Windows Terminal runs in its officially supported portable mode and stores its settings under the MetaPi installation directory.\n`,
+			`Windows Terminal runs in its officially supported portable mode and stores its settings under the Meldra installation directory.\n`,
 		"utf8",
 	);
 }
@@ -175,7 +175,7 @@ async function main() {
 		);
 	}
 	const appSource = join(localRelease, "node");
-	if (!existsSync(join(appSource, "metapi.cmd"))) throw new Error(`MetaPi staging is missing: ${appSource}`);
+	if (!existsSync(join(appSource, "meldra.cmd"))) throw new Error(`Meldra staging is missing: ${appSource}`);
 	cpSync(appSource, join(payload, "app"), { recursive: true });
 
 	const [nodeArchive, terminalArchive, terminalLicense] = await Promise.all([
@@ -206,9 +206,9 @@ async function main() {
 
 	const iscc = findIscc();
 	const issFile = join(repoRoot, "scripts", "windows-installer", "metapi.iss");
-	compileInstaller(iscc, issFile, payload, outputDir, options.version, "MetaPi-Setup.exe", true);
-	compileInstaller(iscc, issFile, payload, outputDir, options.version, "MetaPi-Setup-NodeJS.exe", false);
-	const installers = [join(outputDir, "MetaPi-Setup.exe"), join(outputDir, "MetaPi-Setup-NodeJS.exe")];
+	compileInstaller(iscc, issFile, payload, outputDir, options.version, "Meldra-Setup.exe", true);
+	compileInstaller(iscc, issFile, payload, outputDir, options.version, "Meldra-Setup-NodeJS.exe", false);
+	const installers = [join(outputDir, "Meldra-Setup.exe"), join(outputDir, "Meldra-Setup-NodeJS.exe")];
 	writeFileSync(join(outputDir, "SHA256SUMS.txt"), formatChecksums(installers), "utf8");
 
 	console.log("\nWindows installers created:");

@@ -63,7 +63,7 @@ The built-in may resume only Pi state and fail to restore the corresponding DSH 
 
 ### Initial evaluation
 
-`/resume` is also the MetaPi containing-session and Profile restoration path, so hiding it could break a legitimate cross-Profile workflow.
+`/resume` is also the Meldra containing-session and Profile restoration path, so hiding it could break a legitimate cross-Profile workflow.
 
 ### Information search
 
@@ -79,7 +79,7 @@ The existing resume/Profile/DSH lifecycle tests pass; credentialed interruption 
 
 ### Superseding native-browser decision
 
-The earlier conclusion was correct for the then-approved containing-Session contract, but a later explicit product decision changed the DSH interactive surface. In a DSH Profile, `/resume` now joins `/sessions` as an alias over Harness `session.list` and `sessionId` switching. It reuses the product-neutral core extracted from Pi's cursor Session selector rather than flattening native summaries into string labels. CLI `--resume` remains the containing MetaPi/Pi startup selector, so Profile and WorkSpace restoration still have an explicit host path.
+The earlier conclusion was correct for the then-approved containing-Session contract, but a later explicit product decision changed the DSH interactive surface. In a DSH Profile, `/resume` now joins `/sessions` as an alias over Harness `session.list` and `sessionId` switching. It reuses the product-neutral core extracted from Pi's cursor Session selector rather than flattening native summaries into string labels. CLI `--resume` remains the containing Meldra/Pi startup selector, so Profile and WorkSpace restoration still have an explicit host path.
 
 The same decision routes enabled idle/empty-editor double Escape to the registered DSH `/rewind` command. DSH rewind reuses Pi's cursor user-message selector while Harness remains authoritative for history boundaries, attachments, cancellation, `session.fork({ atSeq })`, and active Session selection. Ordinary Pi `/resume`, tree/fork, and double-Escape behavior remain unchanged.
 
@@ -167,7 +167,7 @@ The built-in offers model scoping that does not constrain Harness execution.
 
 ### Initial evaluation
 
-MetaPi model preferences remain a valid control plane, but Harness `session.models` is the execution authority and only exact current preference bridging is approved.
+Meldra model preferences remain a valid control plane, but Harness `session.models` is the execution authority and only exact current preference bridging is approved.
 
 ### Information search
 

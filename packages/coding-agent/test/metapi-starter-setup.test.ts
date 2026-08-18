@@ -35,7 +35,7 @@ afterEach(() => {
 	rmSync(temporaryHome, { recursive: true, force: true });
 });
 
-describe("MetaPi Starter Profile setup", () => {
+describe("Meldra Starter Profile setup", () => {
 	test("installs the bundled package and preserves existing Profile settings", async () => {
 		const agentDir = getProfileAgentDir("default");
 		const settingsPath = join(agentDir, "settings.json");

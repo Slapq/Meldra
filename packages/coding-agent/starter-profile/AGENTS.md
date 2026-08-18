@@ -1,6 +1,6 @@
-# MetaPi Profile Agent Manual
+# Meldra Profile Agent Manual
 
-This file applies to the current MetaPi Profile. Project `AGENTS.md` or `CLAUDE.md` files add more specific rules; the user's latest explicit instruction has highest priority.
+This file applies to the current Meldra Profile. Project `AGENTS.md` or `CLAUDE.md` files add more specific rules; the user's latest explicit instruction has highest priority.
 
 ## Working Rules
 
@@ -15,7 +15,7 @@ This file applies to the current MetaPi Profile. Project `AGENTS.md` or `CLAUDE.
 
 ## Runtime Ownership
 
-- MetaPi is the host and Profile environment; Pi is the native coding-agent and compatibility foundation.
+- Meldra is the host and Profile environment; Pi is the native coding-agent and compatibility foundation.
 - A Profile may use native Pi or an external Agent Runtime. Do not assume they share Agent loops, Sessions, Skills, plugins, models, tools, queues, persistence, or lifecycle.
 - For external Runtimes, preserve the Runtime's native protocol and ownership. Do not reproduce Runtime behavior in generic Pi core.
 - Distinguish user assets, user preferences, Profile configuration, project configuration, Session overrides, and one-shot parameters. Do not invent precedence or persist temporary state silently.

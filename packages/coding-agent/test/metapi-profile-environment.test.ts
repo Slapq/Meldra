@@ -19,7 +19,7 @@ const profile: ProfileSelection = {
 	compatibility: false,
 };
 
-describe("MetaPi Profile environment declarations", () => {
+describe("Meldra Profile environment declarations", () => {
 	it.each([
 		[{ inherit: "PATH" }, "environment.inherit"],
 		[{ required: [42] }, "environment.required"],

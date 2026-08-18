@@ -490,7 +490,7 @@ export function writeProfileExportAudit(output: string): ProfileExportAudit {
 		? findings.map((finding) => `- ${markdownCode(finding.path)}:${finding.line} — ${finding.kind}`)
 		: ["- No credential-like literals were detected by the advisory scan."];
 	const report = [
-		"# MetaPi Profile Export Audit / 导出审计",
+		"# Meldra Profile Export Audit / 导出审计",
 		"",
 		"> This report is advisory. Source files are exported as-is; review the Bundle before sharing.",
 		"> 本报告仅用于提示。源文件会按原样导出；分享前请自行检查 Bundle。",
@@ -503,8 +503,8 @@ export function writeProfileExportAudit(output: string): ProfileExportAudit {
 		"",
 		...PROFILE_EXPORT_EXCLUDED_CATEGORIES.map((category) => `- ${category}`),
 		"",
-		"> Files already hardcoded into the Profile Bundle are still included. Move credentials to the MetaPi credential service or environment variables, then export again.",
-		"> 已硬编码到 Profile Bundle 源文件中的内容仍会被导出。请将凭据迁移到 MetaPi credential service 或环境变量后重新导出。",
+		"> Files already hardcoded into the Profile Bundle are still included. Move credentials to the Meldra credential service or environment variables, then export again.",
+		"> 已硬编码到 Profile Bundle 源文件中的内容仍会被导出。请将凭据迁移到 Meldra credential service 或环境变量后重新导出。",
 		"",
 		"## Advisory findings / 脱敏提示",
 		"",

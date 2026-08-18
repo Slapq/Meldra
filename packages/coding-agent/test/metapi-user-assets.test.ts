@@ -7,11 +7,11 @@ vi.mock("node:os", async () => ({ homedir: () => temporaryHome }));
 const {
 	composeProfileSettings,
 	getEffectiveModelsPath,
-	getMetaPiModelPaths,
-	hasInitializedMetaPiUser,
-	initializeMetaPiUser,
+	getMeldraModelPaths,
+	hasInitializedMeldraUser,
+	initializeMeldraUser,
 	materializeEffectiveModels,
-	MetaPiSettingsStorage,
+	MeldraSettingsStorage,
 	METAPI_USER_AUTH_PATH,
 	METAPI_USER_MODELS_PATH,
 	METAPI_USER_MODELS_STORE_PATH,
@@ -32,11 +32,11 @@ function writeJson(path: string, value: unknown): void {
 	writeFileSync(path, JSON.stringify(value, null, 2), "utf8");
 }
 
-describe("MetaPi user assets", () => {
-	test("shares MetaPi model assets across ordinary Profiles but preserves pi compatibility", () => {
-		const first = getMetaPiModelPaths(resolveProfile("C:/work", "first"));
-		const second = getMetaPiModelPaths(resolveProfile("C:/work", "second"));
-		const pi = getMetaPiModelPaths(resolveProfile("C:/work", "pi"));
+describe("Meldra user assets", () => {
+	test("shares Meldra model assets across ordinary Profiles but preserves pi compatibility", () => {
+		const first = getMeldraModelPaths(resolveProfile("C:/work", "first"));
+		const second = getMeldraModelPaths(resolveProfile("C:/work", "second"));
+		const pi = getMeldraModelPaths(resolveProfile("C:/work", "pi"));
 
 		expect(first.authPath).toBe(second.authPath);
 		expect(first.modelsStorePath).toBe(second.modelsStorePath);
@@ -65,9 +65,9 @@ describe("MetaPi user assets", () => {
 		const defaultSettings = join(temporaryHome, ".metapi", "profiles", "default", "agent", "settings.json");
 		writeJson(defaultSettings, { defaultModel: "metapi-model" });
 
-		initializeMetaPiUser("migrate");
+		initializeMeldraUser("migrate");
 
-		expect(hasInitializedMetaPiUser()).toBe(true);
+		expect(hasInitializedMeldraUser()).toBe(true);
 		expect(JSON.parse(readFileSync(METAPI_USER_STATE_PATH, "utf8"))).toMatchObject({ piMigration: "migrate" });
 		expect(JSON.parse(readFileSync(METAPI_USER_PREFERENCES_PATH, "utf8"))).toEqual({ theme: "pi-theme" });
 		expect(JSON.parse(readFileSync(METAPI_USER_AUTH_PATH, "utf8"))).toEqual({
@@ -89,7 +89,7 @@ describe("MetaPi user assets", () => {
 		});
 	});
 
-	test("does not overwrite existing MetaPi user assets during accepted migration", () => {
+	test("does not overwrite existing Meldra user assets during accepted migration", () => {
 		const piAgent = join(temporaryHome, ".pi", "agent");
 		writeJson(join(piAgent, "auth.json"), { pi: "source" });
 		writeJson(join(piAgent, "models.json"), { providers: { pi: {} } });
@@ -104,7 +104,7 @@ describe("MetaPi user assets", () => {
 			terminal: { showImages: true, imageWidthCells: 72 },
 		});
 
-		initializeMetaPiUser("migrate");
+		initializeMeldraUser("migrate");
 
 		expect(JSON.parse(readFileSync(METAPI_USER_AUTH_PATH, "utf8"))).toEqual({
 			metapi: "existing",
@@ -122,8 +122,8 @@ describe("MetaPi user assets", () => {
 		writeJson(join(temporaryHome, ".pi", "agent", "models.json"), {
 			providers: { pi: {} },
 		});
-		initializeMetaPiUser("start-fresh");
-		expect(hasInitializedMetaPiUser()).toBe(true);
+		initializeMeldraUser("start-fresh");
+		expect(hasInitializedMeldraUser()).toBe(true);
 		expect(JSON.parse(readFileSync(METAPI_USER_PREFERENCES_PATH, "utf8"))).toEqual({});
 		expect(() => readFileSync(METAPI_USER_AUTH_PATH, "utf8")).toThrow();
 		expect(() => readFileSync(METAPI_USER_MODELS_PATH, "utf8")).toThrow();
@@ -131,12 +131,12 @@ describe("MetaPi user assets", () => {
 	});
 
 	test("keeps the first migration decision on later initialization attempts", () => {
-		initializeMetaPiUser("start-fresh");
+		initializeMeldraUser("start-fresh");
 		writeJson(join(temporaryHome, ".pi", "agent", "models.json"), {
 			providers: { pi: {} },
 		});
 
-		initializeMetaPiUser("migrate");
+		initializeMeldraUser("migrate");
 
 		expect(JSON.parse(readFileSync(METAPI_USER_STATE_PATH, "utf8"))).toMatchObject({ piMigration: "start-fresh" });
 		expect(() => readFileSync(METAPI_USER_MODELS_PATH, "utf8")).toThrow();
@@ -193,7 +193,7 @@ describe("MetaPi user assets", () => {
 
 	test("routes shared UX changes to user preferences and workflow changes to the Profile", async () => {
 		const profile = resolveProfile("C:/work", "settings-routing");
-		const manager = SettingsManager.fromStorage(new MetaPiSettingsStorage("C:/work", profile.agentDir));
+		const manager = SettingsManager.fromStorage(new MeldraSettingsStorage("C:/work", profile.agentDir));
 		manager.setTuiMode("fullscreen");
 		manager.setDefaultModel("workflow-model");
 		manager.setTheme("global-theme");
@@ -208,7 +208,7 @@ describe("MetaPi user assets", () => {
 		});
 
 		const otherManager = SettingsManager.fromStorage(
-			new MetaPiSettingsStorage("C:/work", getProfileAgentDir("other-profile")),
+			new MeldraSettingsStorage("C:/work", getProfileAgentDir("other-profile")),
 		);
 		expect(otherManager.getTuiMode()).toBe("fullscreen");
 		expect(otherManager.getThemeSetting()).toBe("global-theme");
@@ -220,11 +220,11 @@ describe("MetaPi user assets", () => {
 		const profile = resolveProfile(cwd, "project-theme");
 		writeJson(METAPI_USER_PREFERENCES_PATH, { theme: "light" });
 		writeJson(join(cwd, ".pi", "settings.json"), { theme: "dark" });
-		const manager = SettingsManager.fromStorage(new MetaPiSettingsStorage(cwd, profile.agentDir));
+		const manager = SettingsManager.fromStorage(new MeldraSettingsStorage(cwd, profile.agentDir));
 		expect(manager.getThemeSetting()).toBe("dark");
 	});
 
-	test("ignores a Profile theme when no global MetaPi theme is selected", () => {
+	test("ignores a Profile theme when no global Meldra theme is selected", () => {
 		expect(composeProfileSettings({}, { theme: "profile-theme" })).toEqual({});
 	});
 

@@ -1,4 +1,4 @@
-# MetaPi owns only the stdio surface. Harness base/web bundles continue to
+# Meldra owns only the stdio surface. Harness base/web bundles continue to
 # provide the native host services, per-session preset composition, and APIs.
 
 - id: hmr

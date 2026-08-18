@@ -22,7 +22,7 @@ afterEach(() => {
 	for (const path of cleanup.splice(0)) rmSync(path, { recursive: true, force: true });
 });
 
-describe("MetaPi WorkSpace", () => {
+describe("Meldra WorkSpace", () => {
 	it("uses ~/.metapi/workspaces when no root is supplied", () => {
 		expect(resolveWorkspaceRoot()).toBe(METAPI_WORKSPACES_DIR);
 		expect(resolveWorkspaceRoot("", temp("metapi-workspace-default-launch"))).toBe(METAPI_WORKSPACES_DIR);

@@ -192,7 +192,7 @@ gondolin, model, preset, plan-mode, rpc-demo, ssh,
 status-demo, system-prompt, working-indicator
 ```
 
-MetaPi adds `metapi-profile`. Widget keys include `plan-todos`, `rpc-demo`, `widget-above`, `widget-below`, and the local project Extension's `prompt-url`.
+Meldra adds `metapi-profile`. Widget keys include `plan-todos`, `rpc-demo`, `widget-above`, `widget-below`, and the local project Extension's `prompt-url`.
 
 Autocomplete providers form a wrapper stack. `github-issue-autocomplete` is the official example; each wrapper should delegate when its own syntax does not match.
 

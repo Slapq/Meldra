@@ -24,18 +24,18 @@ import {
 
 function printUsage(): void {
 	console.log(`${chalk.bold("Usage:")}
-  metapi profile
-  metapi profile list
-  metapi profile status [name]
-  metapi profile import <source> [--name <name>] [--replace] [--bind-current|--no-bind]
-  metapi profile export <name> [directory]
-  metapi profile update <name>
-  metapi profile plugins <name> list
-  metapi profile plugins <name> add <source>
-  metapi profile plugins <name> remove <package>
-  metapi profile plugins <name> update
-  metapi profile bind [directory] <name>
-  metapi profile unbind [directory]`);
+  meldra profile
+  meldra profile list
+  meldra profile status [name]
+  meldra profile import <source> [--name <name>] [--replace] [--bind-current|--no-bind]
+  meldra profile export <name> [directory]
+  meldra profile update <name>
+  meldra profile plugins <name> list
+  meldra profile plugins <name> add <source>
+  meldra profile plugins <name> remove <package>
+  meldra profile plugins <name> update
+  meldra profile bind [directory] <name>
+  meldra profile unbind [directory]`);
 }
 
 function ask(question: string): Promise<string> {
@@ -107,14 +107,14 @@ async function offerBinding(
 async function runProfilePlugins(args: string[]): Promise<void> {
 	const [name, operation, argument, ...extra] = args;
 	if (!name || !operation || extra.length > 0) {
-		throw new Error("Usage: metapi profile plugins <name> list|add <source>|remove <package>|update");
+		throw new Error("Usage: meldra profile plugins <name> list|add <source>|remove <package>|update");
 	}
 	let request: ProfileRuntimePackageRequest;
 	if (operation === "list" && argument === undefined) request = { operation: "list" };
 	else if (operation === "add" && argument) request = { operation: "add", source: argument };
 	else if (operation === "remove" && argument) request = { operation: "remove", packageName: argument };
 	else if (operation === "update" && argument === undefined) request = { operation: "update" };
-	else throw new Error("Usage: metapi profile plugins <name> list|add <source>|remove <package>|update");
+	else throw new Error("Usage: meldra profile plugins <name> list|add <source>|remove <package>|update");
 
 	const profile = resolveProfile(process.cwd(), name);
 	const record = readProfileRecord(profile.name);
@@ -140,7 +140,7 @@ async function runProfilePlugins(args: string[]): Promise<void> {
 async function runImport(args: string[]): Promise<void> {
 	const options = parseImportOptions(args);
 	if (!options.source)
-		throw new Error("Usage: metapi profile import <source> [--name <name>] [--replace] [--bind-current|--no-bind]");
+		throw new Error("Usage: meldra profile import <source> [--name <name>] [--replace] [--bind-current|--no-bind]");
 	if (options.bindCurrent === undefined && (!process.stdin.isTTY || !process.stdout.isTTY)) {
 		throw new Error("Non-interactive Profile import requires --bind-current or --no-bind");
 	}
@@ -184,16 +184,16 @@ export function isProfileCommand(args: string[]): boolean {
 	return args[0] === "profile";
 }
 
-export async function handleMetaPiInitCommand(args: string[]): Promise<boolean> {
+export async function handleMeldraInitCommand(args: string[]): Promise<boolean> {
 	if (args[0] !== "init") return false;
 	const manifestPath = join(process.cwd(), CONFIG_DIR_NAME, "metapi.json");
 	if (existsSync(manifestPath)) {
-		console.log(`MetaPi project manifest already exists: ${manifestPath}`);
+		console.log(`Meldra project manifest already exists: ${manifestPath}`);
 		return true;
 	}
 	mkdirSync(dirname(manifestPath), { recursive: true });
 	writeFileSync(manifestPath, `${JSON.stringify({ schemaVersion: 1 }, null, 2)}\n`, "utf8");
-	console.log(`Created MetaPi project manifest: ${manifestPath}`);
+	console.log(`Created Meldra project manifest: ${manifestPath}`);
 	return true;
 }
 
@@ -232,7 +232,7 @@ export async function handleProfileCommand(args: string[], requestedProfile?: st
 
 		if (command === "export") {
 			const name = rest[0];
-			if (!name) throw new Error("Usage: metapi profile export <name> [directory]");
+			if (!name) throw new Error("Usage: meldra profile export <name> [directory]");
 			console.log(
 				chalk.yellow(
 					"Profile export copies Bundle source files as-is. Managed credentials and Sessions are excluded, but hardcoded keys can still be included.",
@@ -248,7 +248,7 @@ export async function handleProfileCommand(args: string[], requestedProfile?: st
 
 		if (command === "update") {
 			const name = rest[0];
-			if (!name) throw new Error("Usage: metapi profile update <name>");
+			if (!name) throw new Error("Usage: meldra profile update <name>");
 			const record = await updateProfile(name, process.cwd());
 			console.log(`Updated Profile ${record.displayName} (${record.packageVersion ?? "local"}).`);
 			return true;
@@ -262,7 +262,7 @@ export async function handleProfileCommand(args: string[], requestedProfile?: st
 		if (command === "bind") {
 			const directory = rest.length > 1 ? rest[0] : process.cwd();
 			const name = rest.length > 1 ? rest[1] : rest[0];
-			if (!name) throw new Error("Usage: metapi profile bind [directory] <name>");
+			if (!name) throw new Error("Usage: meldra profile bind [directory] <name>");
 			const path = bindDirectory(directory, name);
 			console.log(`Bound ${path} to Profile ${name}. It applies to descendant directories.`);
 			return true;

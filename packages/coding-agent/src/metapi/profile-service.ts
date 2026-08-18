@@ -156,7 +156,7 @@ export function resolveProfile(cwd: string, requestedName?: string): ProfileSele
 	const displayName = compatibility
 		? "Pi compatibility"
 		: name === DEFAULT_PROFILE_NAME
-			? "MetaPi Starter"
+			? "Meldra Starter"
 			: (readProfileDisplayName(name) ?? name);
 	return {
 		name,
@@ -196,7 +196,7 @@ export function formatProfileStatus(profile: ProfileSelection, cwd: string): str
 		`Display: ${profile.displayName}`,
 		`Agent directory: ${profile.agentDir}`,
 		`Working directory: ${canonicalDirectory(cwd)}`,
-		`Compatibility: ${profile.compatibility ? "original Pi state" : "isolated MetaPi state"}`,
+		`Compatibility: ${profile.compatibility ? "original Pi state" : "isolated Meldra state"}`,
 	];
 	if (profile.bindingPath) lines.push(`Directory binding: ${profile.bindingPath}`);
 	return lines.join("\n");

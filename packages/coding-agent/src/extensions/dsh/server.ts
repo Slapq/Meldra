@@ -110,10 +110,10 @@ export function apply(ctx: Context, config: BridgeConfig): void {
 			throw new TypeError("metapi/api.call requires method and object payload");
 		}
 		const target = API_METHODS.get(method);
-		if (!target) throw new Error(`unsupported MetaPi DSH API method: ${method}`);
+		if (!target) throw new Error(`unsupported Meldra DSH API method: ${method}`);
 		const domain = api[target[0]] as unknown as Record<string, unknown>;
 		const fn = domain[target[1]];
-		if (typeof fn !== "function") throw new Error(`unavailable MetaPi DSH API method: ${method}`);
+		if (typeof fn !== "function") throw new Error(`unavailable Meldra DSH API method: ${method}`);
 		return fn({ type: "client-request", rpcId: RpcId(randomUUID()), payload });
 	};
 

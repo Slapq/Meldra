@@ -126,7 +126,7 @@ async function resolvePnpmEnvironment(
 		return {
 			failure: {
 				code: 127,
-				output: `pnpm is not prepared for this Profile. Run an explicit add, remove, or update operation to let MetaPi fetch pnpm ${COREPACK_PNPM_VERSION} through Corepack.`,
+				output: `pnpm is not prepared for this Profile. Run an explicit add, remove, or update operation to let Meldra fetch pnpm ${COREPACK_PNPM_VERSION} through Corepack.`,
 			},
 		};
 	}

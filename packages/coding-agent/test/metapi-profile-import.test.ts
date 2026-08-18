@@ -16,7 +16,7 @@ afterEach(() => {
 	vi.resetModules();
 });
 
-describe("MetaPi Profile import", () => {
+describe("Meldra Profile import", () => {
 	it("removes a newly created Profile after failure so the same name can be retried", async () => {
 		const root = mkdtempSync(join(tmpdir(), "metapi-profile-import-"));
 		cleanup.push(root);

@@ -10,7 +10,7 @@ import {
 } from "@deepseek-ai/dsh-app-boot";
 
 const ROOT_FILENAME = "cordis.yml";
-const ROOT_CONTENT = `# MetaPi DSH profile root. Bundle and user layers are applied as patches.\n[]\n`;
+const ROOT_CONTENT = `# Meldra DSH profile root. Bundle and user layers are applied as patches.\n[]\n`;
 export const METAPI_DSH_PROFILE = "metapi";
 export const METAPI_DSH_DEFAULT_BUNDLES = ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-web-app"] as const;
 

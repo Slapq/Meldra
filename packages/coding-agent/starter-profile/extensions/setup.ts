@@ -148,8 +148,8 @@ async function runStep(
 		const choices = state === "configured" ? [continueLabel, configure, exit] : [configure, continueLabel, exit];
 		const selected = await ctx.ui.select(
 			zh
-				? `MetaPi 配置向导 · ${position}/${SETUP_STEPS.length} · ${stepName(step.id, zh)} · ${stateLabel(state, zh)}`
-				: `MetaPi Setup · ${position}/${SETUP_STEPS.length} · ${stepName(step.id, zh)} · ${stateLabel(state, zh)}`,
+				? `Meldra 配置向导 · ${position}/${SETUP_STEPS.length} · ${stepName(step.id, zh)} · ${stateLabel(state, zh)}`
+				: `Meldra Setup · ${position}/${SETUP_STEPS.length} · ${stepName(step.id, zh)} · ${stateLabel(state, zh)}`,
 			choices,
 		);
 		if (!selected || selected === exit) return "exit";
@@ -201,11 +201,11 @@ async function openSetup(ctx: ExtensionCommandContext): Promise<void> {
 		const selected = await ctx.ui.select(
 			complete
 				? zh
-					? "MetaPi 配置完成 · 3/3"
-					: "MetaPi Setup complete · 3/3"
+					? "Meldra 配置完成 · 3/3"
+					: "Meldra Setup complete · 3/3"
 				: zh
-					? `MetaPi 配置汇总 · ${completedCount(status)}/3 已完成`
-					: `MetaPi Setup summary · ${completedCount(status)}/3 complete`,
+					? `Meldra 配置汇总 · ${completedCount(status)}/3 已完成`
+					: `Meldra Setup summary · ${completedCount(status)}/3 complete`,
 			choices,
 		);
 		if (!selected || selected === finish) return;
@@ -216,9 +216,9 @@ async function openSetup(ctx: ExtensionCommandContext): Promise<void> {
 	}
 }
 
-export default function metaPiStarterSetup(pi: ExtensionAPI) {
+export default function meldraStarterSetup(pi: ExtensionAPI) {
 	pi.registerCommand("setup", {
-		description: "Configure the MetaPi Starter Profile",
+		description: "Configure the Meldra Starter Profile",
 		handler: async (_args, ctx) => openSetup(ctx),
 	});
 
@@ -227,8 +227,8 @@ export default function metaPiStarterSetup(pi: ExtensionAPI) {
 		if (completedCount(status) < SETUP_STEPS.length && ctx.mode === "tui") {
 			ctx.ui.notify(
 				isChinese()
-					? "MetaPi Starter 配置未完成；运行 /setup 查看连续配置向导。"
-					: "MetaPi Starter setup is incomplete; run /setup for the continuous setup wizard.",
+					? "Meldra Starter 配置未完成；运行 /setup 查看连续配置向导。"
+					: "Meldra Starter setup is incomplete; run /setup for the continuous setup wizard.",
 				"info",
 			);
 		}

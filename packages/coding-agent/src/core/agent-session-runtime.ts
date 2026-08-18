@@ -41,7 +41,7 @@ export type CreateAgentSessionRuntimeFactory = (options: {
 	profileName?: string;
 }) => Promise<CreateAgentSessionRuntimeResult>;
 
-export interface MetaPiSessionLifecycle {
+export interface MeldraSessionLifecycle {
 	getProfileName(sessionManager: SessionManager): string | undefined;
 	setProfileName(sessionManager: SessionManager, profileName: string): void;
 	getWorkspaceRoot(sessionManager: SessionManager, cwd: string): string | undefined;
@@ -90,7 +90,7 @@ export class AgentSessionRuntime {
 	private readonly createRuntime: CreateAgentSessionRuntimeFactory;
 	private _diagnostics: AgentSessionRuntimeDiagnostic[];
 	private _modelFallbackMessage?: string;
-	private readonly metapiLifecycle?: MetaPiSessionLifecycle;
+	private readonly metapiLifecycle?: MeldraSessionLifecycle;
 
 	constructor(
 		_session: AgentSession,
@@ -98,7 +98,7 @@ export class AgentSessionRuntime {
 		createRuntime: CreateAgentSessionRuntimeFactory,
 		_diagnostics: AgentSessionRuntimeDiagnostic[] = [],
 		_modelFallbackMessage?: string,
-		metapiLifecycle?: MetaPiSessionLifecycle,
+		metapiLifecycle?: MeldraSessionLifecycle,
 	) {
 		this._session = _session;
 		this._services = _services;
@@ -527,7 +527,7 @@ export async function createAgentSessionRuntime(
 		sessionManager: SessionManager;
 		sessionStartEvent?: SessionStartEvent;
 		profileName?: string;
-		metapiLifecycle?: MetaPiSessionLifecycle;
+		metapiLifecycle?: MeldraSessionLifecycle;
 	},
 ): Promise<AgentSessionRuntime> {
 	assertSessionCwdExists(options.sessionManager, options.cwd);

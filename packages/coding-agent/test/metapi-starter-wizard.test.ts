@@ -67,7 +67,7 @@ afterEach(() => {
 	else process.env.LANG = originalLang;
 });
 
-describe("MetaPi Starter setup wizard", () => {
+describe("Meldra Starter setup wizard", () => {
 	test("registers /setup and reports truthful incomplete status", async () => {
 		const { commands, events } = loadExtension();
 		const ctx = context();

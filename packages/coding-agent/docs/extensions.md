@@ -1298,7 +1298,7 @@ pi.registerCommand("handoff", {
 
 ### ctx.switchProfile(profileName)
 
-MetaPi command contexts expose `switchProfile()` when the host supports complete in-session Profile replacement. It keeps the current session file and working directory, persists the selected Profile in session metadata, tears down the old runtime, and rebuilds Profile-scoped settings, resources, models, environment, and extensions before rebinding the TUI.
+Meldra command contexts expose `switchProfile()` when the host supports complete in-session Profile replacement. It keeps the current session file and working directory, persists the selected Profile in session metadata, tears down the old runtime, and rebuilds Profile-scoped settings, resources, models, environment, and extensions before rebinding the TUI.
 
 ```typescript
 pi.registerCommand("use-review-profile", {
@@ -1309,7 +1309,7 @@ pi.registerCommand("use-review-profile", {
 });
 ```
 
-This is a MetaPi host capability, not an upstream Pi portability guarantee. Treat the old command context as stale after a successful switch.
+This is a Meldra host capability, not an upstream Pi portability guarantee. Treat the old command context as stale after a successful switch.
 
 ### ctx.reload()
 

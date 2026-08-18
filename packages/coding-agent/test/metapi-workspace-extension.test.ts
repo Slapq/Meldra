@@ -39,7 +39,7 @@ function setup(withWorkspace = true) {
 	return { command, handlers, ctx };
 }
 
-describe("MetaPi WorkSpace extension", () => {
+describe("Meldra WorkSpace extension", () => {
 	it("shows the current WorkSpace and its root", async () => {
 		const { command, ctx } = setup();
 		await command.handler("", ctx as any);

@@ -45,7 +45,7 @@ export interface CreateAgentSessionOptions {
 	/** Canonical model/auth runtime. Defaults to a runtime using agentDir/auth.json and models.json. */
 	modelRuntime?: ModelRuntime;
 
-	/** Profile-owned agent backend selected by MetaPi's composition root. */
+	/** Profile-owned agent backend selected by Meldra's composition root. */
 	profileRuntime?: ProfileAgentRuntime;
 
 	/** Model to use. Default: from settings, else first available */

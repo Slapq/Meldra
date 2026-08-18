@@ -16,15 +16,15 @@ afterEach(() => {
 	vi.resetModules();
 });
 
-describe("MetaPi Profile export audit", () => {
+describe("Meldra Profile export audit", () => {
 	it("reports credential-like literals without copying matched values into the audit", async () => {
 		const root = mkdtempSync(join(tmpdir(), "metapi-profile-export-audit-"));
 		cleanup.push(root);
 		writeFileSync(
 			join(root, "settings.json"),
-			JSON.stringify({ apiKey: "synthetic-credential-sk-abcdefghijklmnop", safe: "$" + "{OPENAI_API_KEY}" }, null, 2),
+			JSON.stringify({ apiKey: "sk-test-1234567890abcdef", safe: "$" + "{OPENAI_API_KEY}" }, null, 2),
 		);
-		writeFileSync(join(root, "plugin.yml"), "endpoint: https://test-user:test-value@example.test/api\n");
+		writeFileSync(join(root, "plugin.yml"), "endpoint: https://user:hardcoded-password@example.test/api\n");
 		writeFileSync(join(root, "binary.bin"), Buffer.from([0, 1, 2, 3]));
 
 		const { writeProfileExportAudit } = await import("../src/metapi/profile-bundle.ts");
@@ -42,8 +42,8 @@ describe("MetaPi Profile export audit", () => {
 		expect(audit.includedFiles).toContain("METAPI_PROFILE_EXPORT_AUDIT.md");
 		expect(report).toContain("settings.json`:");
 		expect(report).toContain("managed credentials and authentication stores");
-		expect(report).not.toContain("synthetic-credential-sk-abcdefghijklmnop");
-		expect(report).not.toContain("test-value");
+		expect(report).not.toContain("sk-test-1234567890abcdef");
+		expect(report).not.toContain("hardcoded-password");
 	});
 
 	it("preserves the string export contract while writing an audit beside the portable manifest", async () => {

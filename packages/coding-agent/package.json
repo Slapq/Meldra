@@ -4,13 +4,14 @@
 	"description": "Coding agent CLI with read, bash, edit, write tools and session management",
 	"type": "module",
 	"piConfig": {
-		"name": "metapi",
+		"name": "meldra",
 		"configDir": ".pi",
 		"update": {
 			"enabled": false
 		}
 	},
 	"bin": {
+		"meldra": "dist/cli.js",
 		"metapi": "dist/cli.js"
 	},
 	"main": "./dist/index.js",

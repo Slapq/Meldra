@@ -39,7 +39,7 @@ function getInstalledProfileNames(currentProfile?: ProfileSelection): string[] {
 }
 
 function getFriendlyProfileLabel(name: string, cwd = process.cwd()): string {
-	if (name === "default") return "MetaPi 默认配置";
+	if (name === "default") return "Meldra 默认配置";
 	if (name === "pi") return "原版 Pi 配置";
 	return resolveProfile(cwd, name).displayName;
 }
@@ -142,7 +142,7 @@ async function switchProfile(name: string, ctx: ExtensionCommandContext): Promis
 	}
 	if (profile.compatibility !== target.compatibility) {
 		throw new Error(
-			`“${label}”使用独立的 Session 存储，不能在当前会话内切换。请退出后运行 metapi --profile ${name}。`,
+			`“${label}”使用独立的 Session 存储，不能在当前会话内切换。请退出后运行 meldra --profile ${name}。`,
 		);
 	}
 	if (!ctx.switchProfile) throw new Error("当前运行模式不支持会话内切换配置");
@@ -195,7 +195,7 @@ async function openProfileHub(ctx: ExtensionCommandContext): Promise<void> {
 	}
 }
 
-export function createMetaPiProfileExtension(): (pi: ExtensionAPI) => void {
+export function createMeldraProfileExtension(): (pi: ExtensionAPI) => void {
 	return (pi) => {
 		pi.registerCommand("profile", {
 			description: "Start a new session with another Profile",

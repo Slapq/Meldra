@@ -1,5 +1,5 @@
 /**
- * Scout — disposable read-only subagents for MetaPi
+ * Scout — disposable read-only subagents for Meldra
  *
  * Inspired by the "拯救 5.6 Sol" Codex subagent practice (linux.do/t/topic/2578075):
  * fight context rot by dispatching cheap, fast, read-only "scouts" that explore the
@@ -8,9 +8,9 @@
  *
  * Design decisions:
  *  - Single blocking `scout` tool: { task, cwd? }. Parallelism comes for free —
- *    MetaPi executes multiple tool calls from one assistant message concurrently,
+ *    Meldra executes multiple tool calls from one assistant message concurrently,
  *    which is exactly "dispatch in one batch, then wait for all".
- *  - Each scout is an isolated `metapi --mode json -p --no-session` subprocess.
+ *  - Each scout is an isolated `meldra --mode json -p --no-session` subprocess.
  *  - Scout model/thinking is stored by Profile Config in
  *    `<agentDir>/plugin-configs/scout.json` (legacy `<agentDir>/scout.json` remains a
  *    read-only fallback). It is never exposed as a tool parameter, so the main model
@@ -123,8 +123,38 @@ Write your report in the same language as the task you were given.
 `.trim();
 
 const ORCHESTRATION_GUIDELINES = `
-## Scout subagents (context hygiene)
+## Primary agent
 
+You are the primary coding agent and task orchestrator.
+
+Your job is to:
+- understand the user's goal, constraints, exclusions, and acceptance conditions;
+- inspect the exact code and foundational documents needed for the task;
+- decide what to read directly and what read-only exploration to delegate;
+- evaluate evidence, choose the implementation, make approved changes, and validate them.
+
+Definitions:
+- A requirement is a user goal, constraint, exclusion, or acceptance condition.
+- Evidence is a traceable fact from source, tests, docs, history, logs, or runtime output.
+- A decision changes the task scope, implementation, validation, user-visible claim, or external action.
+- Acceptance means the approved behavior is verified within the claimed boundary.
+
+Rules:
+- Scouts may explore, search, and report facts. They do not decide scope, design,
+  risk, implementation, acceptance, or authorization.
+- Scout reports are evidence, not decisions. Preserve uncertainty, conflicts,
+  partial results, and unverified gaps.
+- Read the complete files you will modify and the foundational documents that
+  define the relevant contract. Do not delegate those readings.
+- Delegate broad or independent read-only exploration only when it reduces context
+  noise or provides useful parallel verification.
+- Do not silently expand the request, invent acceptance criteria, or turn adjacent
+  findings into additional work.
+- Do not claim completion for checks that were not actually performed.
+- Stop and ask when requirements, authority, scope, or acceptance remain materially
+  ambiguous, or when the next step has external or irreversible consequences.
+
+## Scout subagents (context hygiene)
 The \`scout\` tool spawns a disposable, read-only subagent in an isolated context. Use
 it for wide, heavy reads so raw exploration debris (long grep output, dozens of file
 reads, dead ends) never enters this conversation — only compressed, evidence-backed
@@ -462,7 +492,7 @@ function getPiInvocation(args: string[]): { command: string; args: string[] } {
 	if (!isGenericRuntime) {
 		return { command: process.execPath, args };
 	}
-	return { command: "metapi", args };
+	return { command: "meldra", args };
 }
 
 async function writePromptTempFile(content: string): Promise<{ dir: string; filePath: string }> {

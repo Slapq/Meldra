@@ -2,7 +2,7 @@
   "name": "@slapq/metapi-starter-profile",
   "version": "0.1.0",
   "private": true,
-  "description": "Project-maintained Starter Profile resources for MetaPi.",
+  "description": "Project-maintained Starter Profile resources for Meldra.",
   "license": "MIT",
   "type": "module",
   "keywords": [
@@ -20,7 +20,7 @@
   },
   "metapi": {
     "profileVersion": 1,
-    "displayName": "MetaPi Starter"
+    "displayName": "Meldra Starter"
   },
   "peerDependencies": {
     "@earendil-works/pi-agent-core": "*",

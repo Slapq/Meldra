@@ -259,7 +259,7 @@ export interface ProfileAgentCommandSurface {
 }
 
 /**
- * Profile-owned agent backend selected by MetaPi's composition root.
+ * Profile-owned agent backend selected by Meldra's composition root.
  * Ordinary Pi sessions omit this and keep the native Pi agent path.
  */
 export interface ProfileAgentRuntime {

@@ -17,11 +17,11 @@ pi --fork <path|id>    # Fork a session file or partial session ID into a new se
 
 Use `/session` in interactive mode to see the current session file, session ID, message count, tokens, and cost.
 
-MetaPi can start a conversation in a dedicated WorkSpace:
+Meldra can start a conversation in a dedicated WorkSpace:
 
 ```bash
-metapi --workspace                 # ~/.metapi/workspaces/<session-id>/
-metapi --workspace D:/WorkSpaces  # explicit root override
+meldra --workspace                 # ~/.metapi/workspaces/<session-id>/
+meldra --workspace D:/WorkSpaces  # explicit root override
 ```
 
 The WorkSpace is the session's Pi working directory. Profile resources remain Profile-scoped by default; choosing Current WorkSpace scope stores project-local resources under that WorkSpace's `.pi` directory. `/workspace` shows the current binding.
@@ -47,7 +47,7 @@ For the JSONL file format and SessionManager API, see [Session Format](session-f
 
 `/resume` opens an interactive session picker for the current project. `pi -r` opens the same picker at startup.
 
-For a native Pi Agent Profile, `/resume` searches session files across the physical directories of ordinary Profiles but lists only sessions whose latest `metapi-session-profile` metadata belongs to the current Pi Agent Profile. A legacy session without that metadata falls back to its physical Profile directory. This preserves resume after an in-session Profile switch without mixing default Pi Agent and external-Runtime conversations. A Profile Runtime may transparently claim `/resume` and reuse the same Pi browser with its own structured Session adapter; DSH does this for Harness Sessions. Sessions from the separate Pi installation are never included. The explicit `metapi --profile pi` compatibility launch discovers only original Pi sessions.
+For a native Pi Agent Profile, `/resume` searches session files across the physical directories of ordinary Profiles but lists only sessions whose latest `metapi-session-profile` metadata belongs to the current Pi Agent Profile. A legacy session without that metadata falls back to its physical Profile directory. This preserves resume after an in-session Profile switch without mixing default Pi Agent and external-Runtime conversations. A Profile Runtime may transparently claim `/resume` and reuse the same Pi browser with its own structured Session adapter; DSH does this for Harness Sessions. Sessions from the separate Pi installation are never included. The explicit `meldra --profile pi` compatibility launch discovers only original Pi sessions.
 
 In the picker you can:
 

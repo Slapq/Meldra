@@ -3,7 +3,7 @@ import { join, resolve } from "node:path";
 import { getPackageDir } from "../config.ts";
 import { type PackageSource, SettingsManager } from "../core/settings-manager.ts";
 import { DEFAULT_PROFILE_NAME, getProfileAgentDir } from "./profile-service.ts";
-import { MetaPiSettingsStorage } from "./user-assets.ts";
+import { MeldraSettingsStorage } from "./user-assets.ts";
 
 export const STARTER_PROFILE_PACKAGE_ENTRY = "packages/metapi-starter";
 
@@ -85,7 +85,7 @@ export async function setupStarterProfile(
 	const source = starterSourcePath();
 	const target = starterTargetPath();
 	if (!existsSync(join(source, "package.json"))) {
-		throw new Error(`MetaPi Starter Bundle is missing from this distribution: ${source}`);
+		throw new Error(`Meldra Starter Bundle is missing from this distribution: ${source}`);
 	}
 
 	const targetExists = existsSync(target);
@@ -106,7 +106,7 @@ export async function setupStarterProfile(
 		cpSync(bundledInstructions, profileInstructions);
 	}
 
-	const settingsManager = SettingsManager.fromStorage(new MetaPiSettingsStorage(cwd, agentDir), {
+	const settingsManager = SettingsManager.fromStorage(new MeldraSettingsStorage(cwd, agentDir), {
 		projectTrusted: false,
 	});
 	const packages = settingsManager.getPackages();

@@ -1,6 +1,6 @@
-# MetaPi Starter 插件开发指南
+# Meldra Starter 插件开发指南
 
-本文是 MetaPi Starter Profile 插件的源码级开发手册，面向维护 Extension、Profile Config、Provider Manager、
+本文是 Meldra Starter Profile 插件的源码级开发手册，面向维护 Extension、Profile Config、Provider Manager、
 Scout、工作流和 Setup 的开发者。
 
 用户只需要了解命令时，先阅读 [Starter README](README.md)。Pi Extension API 的完整参考见
@@ -20,7 +20,7 @@ Starter Bundle 声明以下运行时入口：
 
 `questionnaire.ts` 由 Workflows 直接导入，不是 `package.json` 中的独立 Extension 入口。
 
-Profile Config Host 不属于 Starter Bundle。它是普通 MetaPi Profile 自动加载的 hidden inline Extension：
+Profile Config Host 不属于 Starter Bundle。它是普通 Meldra Profile 自动加载的 hidden inline Extension：
 
 ```text
 packages/coding-agent/src/extensions/metapi-config/index.ts
@@ -60,7 +60,7 @@ packages/coding-agent/starter-profile/
 
 ### 2.2 Profile 部署副本
 
-`metapi setup` 将 Starter 复制到默认 Profile 的本地 Package 存储，并在 Profile settings 中保留一个相对 Package
+`meldra setup` 将 Starter 复制到默认 Profile 的本地 Package 存储，并在 Profile settings 中保留一个相对 Package
 条目。典型部署位置是：
 
 ```text
@@ -72,11 +72,11 @@ packages/coding-agent/starter-profile/
 ```text
 仓库源码修改
 → build / focused tests
-→ metapi setup 恢复部署副本
-→ 启动新的 MetaPi 进程进行真实 TUI 验证
+→ meldra setup 恢复部署副本
+→ 启动新的 Meldra 进程进行真实 TUI 验证
 ```
 
-直接修改部署副本只适合本机诊断；后续 `metapi setup` 可能用 Starter 权威源码重新恢复它。最终修复必须回到仓库源码。
+直接修改部署副本只适合本机诊断；后续 `meldra setup` 可能用 Starter 权威源码重新恢复它。最终修复必须回到仓库源码。
 
 ### 2.3 Extension 生命周期
 
@@ -101,7 +101,7 @@ Starter Extension factory 在 Runtime 加载时执行并注册命令、工具、
 | Profile 插件 scalar config | `<agentDir>/plugin-configs/<id>.json` | 当前 Profile | 保存后持续存在 |
 | Provider Manager 语言 | `<agentDir>/plugin-configs/provider-manager.json` | 当前 Profile | 持续存在 |
 | Scout legacy fallback | `<agentDir>/scout.json` | 旧版 Profile | 只读兼容来源 |
-| 共享用户模型目录 | `~/.metapi/user/models.json` 的实际解析路径 | MetaPi 用户资产 | 普通 Profile 共享 |
+| 共享用户模型目录 | `~/.metapi/user/models.json` 的实际解析路径 | Meldra 用户资产 | 普通 Profile 共享 |
 | `pi` Profile 模型目录 | `<pi-agentDir>/models.json` | Pi Compatibility Profile | 与普通 Profile 隔离 |
 | 工作流 Profile Presets | `<agentDir>/presets.json` | 当前 Profile | 跨项目复用 |
 | 工作流项目 Presets | `<cwd>/.pi/presets.json` | 当前可信项目 | 同名覆盖 Profile Preset |
@@ -236,7 +236,7 @@ cost, compat, thinkingLevelMap
 5. 调用 `pi.registerProvider()` 注册最新 Provider；
 6. 当前 Session 立即看到新的 Provider 和模型。
 
-普通 MetaPi Profile 使用共享用户模型目录；保留的 `pi` Profile 使用其 agent-local `models.json`。不要把两者合并。
+普通 Meldra Profile 使用共享用户模型目录；保留的 `pi` Profile 使用其 agent-local `models.json`。不要把两者合并。
 
 API Key、headers 和模型目录属于真实运行时配置。测试应使用临时 `agentDir` 或脱敏 fixture，不得操作真实用户文件。
 
@@ -360,7 +360,7 @@ Scout 是一次性、单回合、只读信息压缩工具。它不是主 Agent�
 每次调用创建独立子进程，等价于：
 
 ```text
-metapi --mode json -p --no-session --no-extensions
+meldra --mode json -p --no-session --no-extensions
   --tools read,grep,find,ls,bash
   --thinking <configured-level>
   [--model provider/model-id]
@@ -426,7 +426,7 @@ metapi --mode json -p --no-session --no-extensions
 - 父 Session 不包含原始 child messages；
 - `/reload` 与 `session_shutdown` 后无残留进程。
 
-## 7. MetaPi Workflows
+## 7. Meldra Workflows
 
 ### 7.1 表面和配置
 
@@ -538,7 +538,7 @@ Questionnaire 是 Workflows 内嵌工具，适合模型一次提出多项结构�
 CLI：
 
 ```text
-metapi setup
+meldra setup
 ```
 
 负责安装或恢复 Starter Bundle，不执行 Provider 登录、模型选择或 Scout 配置。
@@ -730,7 +730,7 @@ Content-Type 和流格式；不要根据发现成功推断生成协议正确。
 ### 修改源码后 `/reload` 没变化
 
 确认修改的是当前 Runtime 实际加载的文件。仓库 Starter 源码和已部署 Profile Package 是两份文件；先 build，运行
-`metapi setup` 恢复部署副本，再启动新进程。内建 `metapi-config` 随 build/process 更新，不是普通源码热重载边界。
+`meldra setup` 恢复部署副本，再启动新进程。内建 `metapi-config` 随 build/process 更新，不是普通源码热重载边界。
 
 ## 15. 文档维护清单
 

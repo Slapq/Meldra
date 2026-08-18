@@ -1,6 +1,6 @@
 <div align="center">
 
-# MetaPi Coding Agent
+# Meldra Coding Agent
 
 ### 🧭 An AI coding terminal with Pi's TUI and Profile-isolated environments
 
@@ -17,11 +17,11 @@
 </div>
 
 > [!IMPORTANT]
-> The repository does not yet define an official MetaPi npm release or self-update source. The package manifest provides
+> The repository does not yet define an official Meldra npm release or self-update source. The package manifest provides
 > the `metapi` command, but development work should use a trusted source checkout and build.
 
 <p align="center">
-  <img src="docs/images/metapi-profile-tui.png" alt="MetaPi Profile selector" width="100%">
+  <img src="docs/images/metapi-profile-tui.png" alt="Meldra Profile selector" width="100%">
 </p>
 
 ## ✨ Features
@@ -32,8 +32,8 @@
 - Session-bound WorkSpaces and Portable Profile import/export.
 - A generic Profile Runtime provider boundary for external Agent backends.
 - A DeepSeek Harness adapter that keeps Harness state authoritative.
-- A shared `/config` surface for ordinary MetaPi Profile plugin settings.
-- A restorable Starter Bundle for `default`, with `metapi setup` and `/setup` onboarding for Provider, model, and Scout configuration.
+- A shared `/config` surface for ordinary Meldra Profile plugin settings.
+- A restorable Starter Bundle for `default`, with `meldra setup` and `/setup` onboarding for Provider, model, and Scout configuration.
 
 ## 🚀 Run From Source
 
@@ -66,11 +66,11 @@ node packages/coding-agent/dist/cli.js --profile default
 ## 🧰 Common Commands
 
 ```bash
-metapi --profile default
-metapi setup
-metapi profile status
-metapi profile list
-metapi --workspace
+meldra --profile default
+meldra setup
+meldra profile status
+meldra profile list
+meldra --workspace
 metapi -c
 metapi -r
 ```
@@ -81,9 +81,9 @@ Common TUI entries are `/setup`, `/model`, `/profile`, `/workspace`, `/config`, 
 
 | Profile | State location | Behavior |
 |---|---|---|
-| `default` | `~/.metapi/profiles/default/` | MetaPi's default isolated environment |
+| `default` | `~/.metapi/profiles/default/` | Meldra's default isolated environment |
 | Ordinary Profile | `~/.metapi/profiles/<name>/` | Independent Pi resources and optional Runtime |
-| `pi` | `~/.pi/agent/` | Original Pi compatibility; no MetaPi-only injection |
+| `pi` | `~/.pi/agent/` | Original Pi compatibility; no Meldra-only injection |
 
 Profile selection is explicit `--profile`, then the nearest directory binding, then `default`.
 
@@ -92,19 +92,19 @@ Profile selection is explicit `--profile`, then the nearest directory binding, t
 Pi Packages manage Extensions, Skills, Prompts, and Themes:
 
 ```bash
-metapi install <source>
-metapi update --extensions
-metapi list
-metapi config
+meldra install <source>
+meldra update --extensions
+meldra list
+meldra config
 ```
 
 An external Profile Runtime may expose its own native package capability:
 
 ```bash
-metapi profile plugins <profile> list
-metapi profile plugins <profile> add <source>
-metapi profile plugins <profile> remove <package>
-metapi profile plugins <profile> update
+meldra profile plugins <profile> list
+meldra profile plugins <profile> add <source>
+meldra profile plugins <profile> remove <package>
+meldra profile plugins <profile> update
 ```
 
 These scopes are different and cannot replace each other.
@@ -112,11 +112,11 @@ These scopes are different and cannot replace each other.
 ## ◈ DeepSeek Harness
 
 A Portable Profile selects DSH with `runtime.provider: "deepseek-harness"`. Harness owns the Agent loop, Sessions,
-models, tools, Settings, plugins, and persistence. MetaPi owns process lifecycle, protocol adaptation, and Pi TUI
+models, tools, Settings, plugins, and persistence. Meldra owns process lifecycle, protocol adaptation, and Pi TUI
 presentation.
 
 ```bash
-metapi --profile research-harness
+meldra --profile research-harness
 ```
 
 Use `/dsh` for the management center. Common entries include `/sessions`, `/model`, `/preset`, `/settings`, `/queue`,
@@ -125,7 +125,7 @@ Use `/dsh` for the management center. Common entries include `/sessions`, `/mode
 ## ⚠️ Security Boundary
 
 > [!WARNING]
-> MetaPi and Pi use the launching user's filesystem, process, and network permissions by default. They do not provide a
+> Meldra and Pi use the launching user's filesystem, process, and network permissions by default. They do not provide a
 > built-in sandbox. Third-party Packages, Extensions, and Runtime plugins may execute code or access the network; inspect
 > sources before installation.
 
@@ -134,8 +134,8 @@ Real credentials must not enter source, Profile Bundles, Session exports, logs, 
 
 ## 📚 Documentation
 
-- [MetaPi User Guide](../../docs/user-guide.en.md)
-- [MetaPi Development Guide](../../docs/development.en.md)
+- [Meldra User Guide](../../docs/user-guide.en.md)
+- [Meldra Development Guide](../../docs/development.en.md)
 - [Pi documentation index](docs/index.md)
 - [Profile Runtime providers](docs/profile-runtimes.md)
 - [DeepSeek Harness](docs/deepseek-harness.md)
@@ -151,10 +151,10 @@ npm run check
 npm test
 ```
 
-MetaPi is maintained as an exact Pi baseline plus an auditable patch layer. Runtime changes require evidence, scoped
+Meldra is maintained as an exact Pi baseline plus an auditable patch layer. Runtime changes require evidence, scoped
 approval, and validation for ordinary Pi, the `pi` compatibility Profile, and affected Profile Runtimes.
 
 ## 🌱 Upstream and License
 
-MetaPi is maintained from the complete source of [earendil-works/pi](https://github.com/earendil-works/pi) and retains
+Meldra is maintained from the complete source of [earendil-works/pi](https://github.com/earendil-works/pi) and retains
 the MIT license and upstream compatibility path.

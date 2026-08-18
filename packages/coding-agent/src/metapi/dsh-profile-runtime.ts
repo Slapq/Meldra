@@ -774,16 +774,16 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 		);
 	}
 
-	private async selectMetaPiModel(model: Model<any>): Promise<void> {
+	private async selectMeldraModel(model: Model<any>): Promise<void> {
 		const modelRuntime = this.options.modelRuntime;
-		if (!modelRuntime) throw new Error("当前 DSH Runtime 没有 MetaPi 模型目录。");
+		if (!modelRuntime) throw new Error("当前 DSH Runtime 没有 Meldra 模型目录。");
 		if (!DSH_PI_AI_SUPPORTED_APIS.has(model.api)) {
 			throw new Error(
-				`当前 DSH llm-pi-ai 不支持 MetaPi 模型 API“${model.api}”（${model.provider}/${model.id}）。当前可桥接：openai-completions、openai-responses、anthropic-messages。`,
+				`当前 DSH llm-pi-ai 不支持 Meldra 模型 API“${model.api}”（${model.provider}/${model.id}）。当前可桥接：openai-completions、openai-responses、anthropic-messages。`,
 			);
 		}
 		const settings = await this.settings();
-		if (settings.writable !== true) throw new Error("当前 Harness Settings 不可写，无法注册 MetaPi 模型。");
+		if (settings.writable !== true) throw new Error("当前 Harness Settings 不可写，无法注册 Meldra 模型。");
 		const namespace = records(settings.namespaces).find((entry) => entry.ns === DSH_PI_AI_SETTINGS_NAMESPACE);
 		if (!namespace || typeof namespace.revision !== "number") {
 			throw new Error("当前 Harness 没有可写的 llm-pi-ai Settings namespace。");
@@ -822,7 +822,7 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 	async selectModel(model: Model<any>): Promise<void>;
 	async selectModel(provider: string, model: string, reasoningEffort?: string): Promise<unknown>;
 	async selectModel(providerOrModel: string | Model<any>, model?: string, reasoningEffort?: string): Promise<unknown> {
-		if (typeof providerOrModel !== "string") return this.selectMetaPiModel(providerOrModel);
+		if (typeof providerOrModel !== "string") return this.selectMeldraModel(providerOrModel);
 		if (!model) throw new Error("选择 Harness 模型时缺少 model id。");
 		const active = await this.start();
 		return apiValue(

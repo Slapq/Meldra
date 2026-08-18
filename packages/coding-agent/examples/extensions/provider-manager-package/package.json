@@ -13,7 +13,7 @@
   ],
   "license": "MIT",
   "author": "Slapq",
-  "repository": "https://github.com/Slapq/MetaPi",
+  "repository": "https://github.com/Slapq/Meldra",
   "type": "module",
   "pi": {
     "extensions": ["./extensions"]

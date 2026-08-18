@@ -1,6 +1,6 @@
 # Profile Agent Runtimes
 
-MetaPi can construct a Profile-owned agent backend while retaining Pi's session host, extensions, terminal lifecycle, and TUI. This is a composition interface for external runtimes, not a second agent implementation inside Pi core.
+Meldra can construct a Profile-owned agent backend while retaining Pi's session host, extensions, terminal lifecycle, and TUI. This is a composition interface for external runtimes, not a second agent implementation inside Pi core.
 
 ## Responsibilities
 
@@ -23,9 +23,9 @@ A provider and its runtime own all product-specific behavior, including upstream
 - `cwd` is the session WorkSpace;
 - `compatibility` identifies the reserved original-Pi compatibility path;
 - optional `runtime` is the Profile's portable `{ provider, config? }` selection;
-- `modelRuntime` provides the already-composed MetaPi model and credential boundary.
+- `modelRuntime` provides the already-composed Meldra model and credential boundary.
 
-The `runtime.provider` string is a stable provider identity, not a Profile name. `runtime.config` is opaque to MetaPi/Pi core and interpreted only by the matching provider. A Profile without a runtime declaration follows the native Pi path unless a provider supplies a documented legacy compatibility match. This allows differently named Profiles to select the same external runtime while retaining separate `agentDir`, settings, sessions, packages, and provider-owned state.
+The `runtime.provider` string is a stable provider identity, not a Profile name. `runtime.config` is opaque to Meldra/Pi core and interpreted only by the matching provider. A Profile without a runtime declaration follows the native Pi path unless a provider supplies a documented legacy compatibility match. This allows differently named Profiles to select the same external runtime while retaining separate `agentDir`, settings, sessions, packages, and provider-owned state.
 
 A Profile Bundle declares the selection under its existing `metapi` manifest:
 
@@ -46,9 +46,9 @@ A Profile Bundle declares the selection under its existing `metapi` manifest:
 
 The `config` example is provider-owned data, not a generic plugin schema. Profile import/export preserves it without interpreting, executing, or merging it into project configuration. Runtime-specific provisioning is performed only through an explicit provider capability and user operation.
 
-MetaPi passes this descriptor to each registered provider. Zero matches keeps Pi's native agent backend. One match constructs that Profile runtime. Multiple matches are rejected as an ambiguous composition instead of choosing by registration order. Provider selection is part of the Profile environment: a project may recommend, bind, or activate the Profile, but project `.pi` configuration does not replace its provider or mutate provider-owned packages.
+Meldra passes this descriptor to each registered provider. Zero matches keeps Pi's native agent backend. One match constructs that Profile runtime. Multiple matches are rejected as an ambiguous composition instead of choosing by registration order. Provider selection is part of the Profile environment: a project may recommend, bind, or activate the Profile, but project `.pi` configuration does not replace its provider or mutate provider-owned packages.
 
-The current `builtInProfileRuntimeProviders` registry is a MetaPi composition seam for bundled providers. It is not yet a public dynamic package registration API. A provider's matching rules and factory belong in that provider's module.
+The current `builtInProfileRuntimeProviders` registry is a Meldra composition seam for bundled providers. It is not yet a public dynamic package registration API. A provider's matching rules and factory belong in that provider's module.
 
 ## Profile Runtime package capability
 
@@ -79,7 +79,7 @@ type ProfileRuntimePackageRequest =
 
 `ProfileEnvironmentDescriptor` carries the Profile identity, `agentDir`, current command `cwd`, compatibility fact, and portable runtime declaration; unlike `ProfileRuntimeDescriptor`, it has no `ModelRuntime` and can be used by one-shot Profile CLI operations without constructing an agent Runtime. `resolveProfileRuntimeProvider()` applies the same zero/one/many matching contract for both runtime construction and management commands.
 
-The package manager owns source syntax, native executable selection, storage, reconciliation, and exit semantics. MetaPi passes source/package strings unchanged, streams optional output through `onOutput`, propagates `AbortSignal`, and treats only `code: 0` as command completion. A mutation result may set `verificationRequired`; when the provider also implements `verify()`, one-shot CLI and Profile restore construct a fresh provider-owned Loader/Runtime check before reporting activation success. TUI flows may satisfy the same contract by restarting their already-owned Runtime and reading its inventory. Package operations are always Profile-scoped. Project `.pi`, WorkSpace resources, directory bindings, and the current process directory do not acquire package ownership from this capability.
+The package manager owns source syntax, native executable selection, storage, reconciliation, and exit semantics. Meldra passes source/package strings unchanged, streams optional output through `onOutput`, propagates `AbortSignal`, and treats only `code: 0` as command completion. A mutation result may set `verificationRequired`; when the provider also implements `verify()`, one-shot CLI and Profile restore construct a fresh provider-owned Loader/Runtime check before reporting activation success. TUI flows may satisfy the same contract by restarting their already-owned Runtime and reading its inventory. Package operations are always Profile-scoped. Project `.pi`, WorkSpace resources, directory bindings, and the current process directory do not acquire package ownership from this capability.
 
 The optional `snapshot()` and `restore()` methods connect provider-owned packages to Portable Profile export/import without exposing a provider's config schema to Pi core. Export passes the current opaque `runtime.config` to `snapshot()` and writes the returned value back under the provider declaration. Import and update pass that config to `restore()` after Pi packages are installed; a nonzero result fails the Profile operation and is never reported as successful. Providers without these methods retain the declaration-only behavior. Snapshot data must contain source declarations needed for restoration, not native caches, Loader state, Sessions, Settings, or credentials.
 

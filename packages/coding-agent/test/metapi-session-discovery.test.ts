@@ -16,7 +16,7 @@ afterEach(() => {
 	vi.resetModules();
 });
 
-describe("MetaPi Session discovery ownership", () => {
+describe("Meldra Session discovery ownership", () => {
 	it.skipIf(process.platform === "win32")(
 		"filters across physical Profile directories by the latest stored Profile",
 		async () => {

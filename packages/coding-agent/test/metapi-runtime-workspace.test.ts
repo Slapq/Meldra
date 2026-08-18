@@ -26,7 +26,7 @@ afterEach(async () => {
 	while (cleanups.length > 0) await cleanups.pop()?.();
 });
 
-describe("MetaPi runtime WorkSpace lifecycle", () => {
+describe("Meldra runtime WorkSpace lifecycle", () => {
 	it("creates empty /new workspaces and copies fork workspaces", async () => {
 		const root = join(tmpdir(), `metapi-runtime-workspace-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 		const workspaceRoot = join(root, "workspaces");

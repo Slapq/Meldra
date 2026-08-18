@@ -34,6 +34,7 @@ import { selectSession } from "./cli/session-picker.ts";
 import { shouldRunFirstTimeSetup, showFirstTimeSetup, showStartupSelector } from "./cli/startup-ui.ts";
 import {
 	APP_NAME,
+	ENV_AGENT_DIR,
 	ENV_AUTH_PATH,
 	ENV_MODELS_PATH,
 	ENV_MODELS_STORE_PATH,
@@ -71,7 +72,7 @@ import { printTimings, resetTimings, time } from "./core/timings.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "./core/trust-manager.ts";
 import { builtInExtensions } from "./extensions/index.ts";
 import { readProfileRecord } from "./metapi/profile-bundle.ts";
-import { handleMetaPiInitCommand, handleProfileCommand } from "./metapi/profile-cli.ts";
+import { handleMeldraInitCommand, handleProfileCommand } from "./metapi/profile-cli.ts";
 import { applyProfileEnvironment, captureProfileEnvironment } from "./metapi/profile-environment.ts";
 import { builtInProfileRuntimeProviders } from "./metapi/profile-runtime-providers.ts";
 import {
@@ -94,13 +95,13 @@ import {
 import { setupStarterProfile } from "./metapi/starter-setup.ts";
 import {
 	composeProfileSettings,
-	getMetaPiModelPaths,
-	hasInitializedMetaPiUser,
+	getMeldraModelPaths,
+	hasInitializedMeldraUser,
 	hasMigratablePiState,
-	initializeMetaPiUser,
-	MetaPiSettingsStorage,
+	initializeMeldraUser,
+	MeldraSettingsStorage,
 	materializeEffectiveModels,
-	readMetaPiUserPreferences,
+	readMeldraUserPreferences,
 } from "./metapi/user-assets.ts";
 import { copyWorkspace, createEmptyWorkspace, resolveWorkspaceRoot } from "./metapi/workspace-service.ts";
 import { runMigrations, showDeprecationWarnings } from "./migrations.ts";
@@ -185,11 +186,11 @@ function commandNeedsModelsBeforeRuntime(args: string[]): boolean {
 	return args[0] === "update" && args.includes("--models");
 }
 
-async function handleMetaPiSetupCommand(args: string[]): Promise<boolean> {
+async function handleMeldraSetupCommand(args: string[]): Promise<boolean> {
 	if (args[0] !== "setup") return false;
 	const options = new Set(args.slice(1));
 	if (options.has("--help") || options.has("-h")) {
-		console.log("Usage: metapi setup [--migrate|--start-fresh]");
+		console.log(`Usage: ${APP_NAME} setup [--migrate|--start-fresh]`);
 		return true;
 	}
 	const unknown = [...options].find((option) => !["--migrate", "--start-fresh"].includes(option));
@@ -204,7 +205,7 @@ async function handleMetaPiSetupCommand(args: string[]): Promise<boolean> {
 		return true;
 	}
 
-	if (!hasInitializedMetaPiUser()) {
+	if (!hasInitializedMeldraUser()) {
 		let decision: "migrate" | "start-fresh" | undefined = options.has("--migrate")
 			? "migrate"
 			: options.has("--start-fresh")
@@ -213,34 +214,36 @@ async function handleMetaPiSetupCommand(args: string[]): Promise<boolean> {
 		if (!decision && hasMigratablePiState()) {
 			if (!process.stdin.isTTY || !process.stdout.isTTY) {
 				console.error(
-					chalk.red("Error: Existing Pi state was detected. Use metapi setup --migrate or --start-fresh."),
+					chalk.red(`Error: Existing Pi state was detected. Use ${APP_NAME} setup --migrate or --start-fresh.`),
 				);
 				process.exitCode = 1;
 				return true;
 			}
 			const settingsManager = SettingsManager.fromStorage(
-				new MetaPiSettingsStorage(process.cwd(), getProfileAgentDir(DEFAULT_PROFILE_NAME)),
+				new MeldraSettingsStorage(process.cwd(), getProfileAgentDir(DEFAULT_PROFILE_NAME)),
 				{ projectTrusted: false },
 			);
 			decision = await showStartupSelector(
 				settingsManager,
-				"检测到现有 Pi 配置。是否一次性迁移到 MetaPi？迁移后两者保持独立。",
+				"检测到现有 Pi 配置。是否一次性迁移到 Meldra？迁移后两者保持独立。",
 				[
 					{ label: "迁移现有 Pi 配置", value: "migrate" as const },
-					{ label: "从全新的 MetaPi 开始", value: "start-fresh" as const },
+					{ label: "从全新的 Meldra 开始", value: "start-fresh" as const },
 				],
 			);
 			if (!decision) return true;
 		}
-		initializeMetaPiUser(decision ?? "start-fresh");
+		initializeMeldraUser(decision ?? "start-fresh");
 	}
 
 	try {
 		const result = await setupStarterProfile(process.cwd(), { restore: true });
 		console.log(
-			`MetaPi Starter ${result.bundleAction}; ${result.packageAdded ? "package enabled" : result.packageUpdated ? "package compatibility updated" : "package already enabled"}.`,
+			`Meldra Starter ${result.bundleAction}; ${result.packageAdded ? "package enabled" : result.packageUpdated ? "package compatibility updated" : "package already enabled"}.`,
 		);
-		console.log("Launch metapi --profile default and run /setup to finish Provider, model, and Scout configuration.");
+		console.log(
+			`Launch ${APP_NAME} --profile default and run /setup to finish Provider, model, and Scout configuration.`,
+		);
 	} catch (error) {
 		console.error(chalk.red(`Error: ${error instanceof Error ? error.message : String(error)}`));
 		process.exitCode = 1;
@@ -732,7 +735,7 @@ export async function main(args: string[], options?: MainOptions) {
 		process.env.PI_SKIP_VERSION_CHECK = "1";
 	}
 
-	if (await handleMetaPiInitCommand(effectiveArgs)) {
+	if (await handleMeldraInitCommand(effectiveArgs)) {
 		return;
 	}
 
@@ -740,7 +743,7 @@ export async function main(args: string[], options?: MainOptions) {
 		return;
 	}
 
-	if (await handleMetaPiSetupCommand(effectiveArgs)) {
+	if (await handleMeldraSetupCommand(effectiveArgs)) {
 		return;
 	}
 
@@ -775,16 +778,23 @@ export async function main(args: string[], options?: MainOptions) {
 		const importedSettings = record?.portable.settings ?? {};
 		const baseSettings = profile.compatibility
 			? importedSettings
-			: composeProfileSettings(readMetaPiUserPreferences(), importedSettings);
-		const modelPaths = getMetaPiModelPaths(profile);
+			: composeProfileSettings(readMeldraUserPreferences(), importedSettings);
+		const modelPaths = getMeldraModelPaths(profile);
 		if (!profile.compatibility && options.materializeModels) {
 			modelPaths.modelsPath = materializeEffectiveModels(profile, record?.installedPackagePath);
 		}
 		const missingEnvironment = applyProfileEnvironment(profile, record, hostEnvironment);
 		const runtime = record?.portable.runtime;
+		process.env.MELDRA_PROFILE_NAME = profile.name;
 		process.env.METAPI_PROFILE_NAME = profile.name;
-		if (runtime) process.env.METAPI_PROFILE_RUNTIME_PROVIDER = runtime.provider;
-		else delete process.env.METAPI_PROFILE_RUNTIME_PROVIDER;
+		if (runtime) {
+			process.env.MELDRA_PROFILE_RUNTIME_PROVIDER = runtime.provider;
+			process.env.METAPI_PROFILE_RUNTIME_PROVIDER = runtime.provider;
+		} else {
+			delete process.env.MELDRA_PROFILE_RUNTIME_PROVIDER;
+			delete process.env.METAPI_PROFILE_RUNTIME_PROVIDER;
+		}
+		process.env[ENV_AGENT_DIR] = profile.agentDir;
 		process.env.METAPI_CODING_AGENT_DIR = profile.agentDir;
 		process.env[ENV_AUTH_PATH] = modelPaths.authPath;
 		process.env[ENV_MODELS_PATH] = modelPaths.modelsPath;
@@ -805,13 +815,13 @@ export async function main(args: string[], options?: MainOptions) {
 		const importedSettings = record?.portable.settings ?? {};
 		const baseSettings = profile.compatibility
 			? importedSettings
-			: composeProfileSettings(readMetaPiUserPreferences(), importedSettings);
+			: composeProfileSettings(readMeldraUserPreferences(), importedSettings);
 		return profile.compatibility
 			? SettingsManager.create(settingsCwd, profile.agentDir, {
 					...options,
 					baseSettings,
 				})
-			: SettingsManager.fromStorage(new MetaPiSettingsStorage(settingsCwd, profile.agentDir), {
+			: SettingsManager.fromStorage(new MeldraSettingsStorage(settingsCwd, profile.agentDir), {
 					...options,
 					baseSettings,
 				});
@@ -886,7 +896,7 @@ export async function main(args: string[], options?: MainOptions) {
 		!parsed.help &&
 		parsed.listModels === undefined &&
 		!selectedProfile.compatibility &&
-		!hasInitializedMetaPiUser()
+		!hasInitializedMeldraUser()
 	) {
 		let decision: "migrate" | "start-fresh" = "start-fresh";
 		if (hasMigratablePiState()) {
@@ -895,16 +905,16 @@ export async function main(args: string[], options?: MainOptions) {
 					projectTrusted: false,
 					baseSettings: profileBaseSettings,
 				}),
-				"检测到现有 Pi 配置。是否一次性迁移到 MetaPi？迁移后两者保持独立。",
+				"检测到现有 Pi 配置。是否一次性迁移到 Meldra？迁移后两者保持独立。",
 				[
 					{ label: "迁移现有 Pi 配置", value: "migrate" as const },
-					{ label: "从全新的 MetaPi 开始", value: "start-fresh" as const },
+					{ label: "从全新的 Meldra 开始", value: "start-fresh" as const },
 				],
 			);
 			if (!selected) return;
 			decision = selected;
 		}
-		initializeMetaPiUser(decision);
+		initializeMeldraUser(decision);
 		await setupStarterProfile(cwd);
 	}
 

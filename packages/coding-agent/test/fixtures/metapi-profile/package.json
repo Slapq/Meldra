@@ -12,7 +12,7 @@
 	},
 	"metapi": {
 		"profileVersion": 1,
-		"displayName": "MetaPi Test Profile",
+		"displayName": "Meldra Test Profile",
 		"settings": {
 			"defaultThinkingLevel": "medium"
 		},

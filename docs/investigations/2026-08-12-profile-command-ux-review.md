@@ -6,7 +6,7 @@ Baseline: `4d9a852` on `metapi/main`
 
 ## 1. Hypothesis
 
-MetaPi's Profile domain capabilities are present, but `/profile` is not useful enough because it behaves as a thin textual subcommand dispatcher rather than a discoverable management workflow. The expected contract is that a user can understand which Profile applies, why it applies, what changes on the next launch, and safely complete common Profile operations without memorizing commands.
+Meldra's Profile domain capabilities are present, but `/profile` is not useful enough because it behaves as a thin textual subcommand dispatcher rather than a discoverable management workflow. The expected contract is that a user can understand which Profile applies, why it applies, what changes on the next launch, and safely complete common Profile operations without memorizing commands.
 
 ## 2. Initial evaluation
 
@@ -28,7 +28,7 @@ Candidate risks identified before search:
 - Pi's shipped `/llama` extension uses an action loop and refreshes its view after actions; destructive operations use explicit confirmation.
 - The stable extension-facing UI is `ctx.ui.select/input/confirm/notify/custom`. Internal configuration components require host-only dependencies and are not a suitable downstream extension dependency.
 
-### Current MetaPi behavior
+### Current Meldra behavior
 
 - `packages/coding-agent/src/metapi/profile-extension.ts:68-75`: bare `/profile` resolves to `status` and emits a notification.
 - `profile-extension.ts:79`: installed Profiles are formatted as notification lines.

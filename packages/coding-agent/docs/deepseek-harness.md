@@ -1,10 +1,10 @@
 # DeepSeek Harness Profile Runtime
 
-> For a workflow-oriented introduction, start with the Chinese [MetaPi User
+> For a workflow-oriented introduction, start with the Chinese [Meldra User
 > Guide](../../../docs/user-guide.md#12-使用-deepseek-harness-profile) or the [English
 > guide](../../../docs/user-guide.en.md#12-run-a-deepseek-harness-profile).
 
-MetaPi can run DeepSeek Harness (DSH) as the agent backend of an independent Profile while retaining the Pi terminal
+Meldra can run DeepSeek Harness (DSH) as the agent backend of an independent Profile while retaining the Pi terminal
 interface. A portable Profile selects it with `metapi.runtime.provider: "deepseek-harness"`; Profile names are
 user-owned and do not determine the Runtime.
 
@@ -18,27 +18,27 @@ native Pi agent path and command registry.
 
 ## Start
 
-Configure the `deepseek` provider through MetaPi `/login`, then launch an imported DSH Profile by its own name:
+Configure the `deepseek` provider through Meldra `/login`, then launch an imported DSH Profile by its own name:
 
 ```bash
-metapi --profile research-harness
+meldra --profile research-harness
 ```
 
 Existing installations may continue to use the legacy compatibility name:
 
 ```bash
-metapi --profile dsh
+meldra --profile dsh
 ```
 
 Normal editor input is delegated by `AgentSession` to the Profile-owned DSH Runtime. Pi's agent loop does not receive
 those prompts.
 
 The Runtime submits prompts through Harness's native `session.prompt` ApiProxy method; Harness owns admission, commands,
-queueing, Agent creation/resume, preset composition, tools, and durable events. MetaPi consumes those events through the
+queueing, Agent creation/resume, preset composition, tools, and durable events. Meldra consumes those events through the
 native mux and host streams and renders them in Pi's TUI.
 
 For the DSH Profile only, selecting an `@` file or directory from Pi's native completion marks that exact path as an
-input attachment. At submission, the original mention remains visible and MetaPi appends deterministic source-delimited
+input attachment. At submission, the original mention remains visible and Meldra appends deterministic source-delimited
 content before calling the ordinary Runtime prompt chain.
 
 UTF-8 text is capped at 50,000 characters per file and 200,000 characters across one prompt; a directory contributes at
@@ -58,24 +58,24 @@ Terminal newline compatibility.
 
 Harness native cancellation preserves pending FIFO work, so the replacement message is admitted after previously queued
 items instead of replacing them. These calls finish when Harness confirms native inbox admission; they do not create
-another MetaPi turn tracker or replace the foreground task awaited by cancel, Session replacement, and shutdown.
+another Meldra turn tracker or replace the foreground task awaited by cancel, Session replacement, and shutdown.
 
 Harness's `session/queue` snapshot remains authoritative for pending work.
 
-MetaPi initializes and loads Harness's native `$DSH_HOME/profiles/metapi` profile tree. Its default
+Meldra initializes and loads Harness's native `$DSH_HOME/profiles/metapi` profile tree. Its default
 `dsh.profile.bundles` roster is the published `@deepseek-ai/dsh-base` plus `@deepseek-ai/dsh-web-app` rc.7 layers,
 preserving the previous zero-configuration composition.
 
 The profile manifest, profile-local dependencies, installed bundle layers, and `cordis.patch.yml` are resolved by
-`dsh-app-boot`; the profile's user patch is applied after bundles, then MetaPi's small surface overlay disables
+`dsh-app-boot`; the profile's user patch is applied after bundles, then Meldra's small surface overlay disables
 HTTP/browser transport, selects Harness's browse directory provider, injects the published `@deepseek-ai/dsh` preset
 root, and adds the absolute stdio bridge module. This makes bundles installed through Harness's native `dsh plugin
---profile metapi ...` contract part of the next Runtime boot without introducing a MetaPi Loader state.
+--profile metapi ...` contract part of the next Runtime boot without introducing a Meldra Loader state.
 
 The `/dsh plugins` package manager delegates list/add/remove/update to that CLI, requires `pnpm` on `PATH`, confirms
 source/install lifecycle effects before writes, preserves native failure output, and can gracefully reload the same
 Profile Runtime after a successful mutation. The live Loader inventory remains authoritative and directly inspectable;
-MetaPi does not infer package success from the requested operation.
+Meldra does not infer package success from the requested operation.
 
 ## Runtime commands
 
@@ -142,10 +142,10 @@ The most common Harness operations are also available directly in any Profile se
 From a normal terminal, the same Profile-owned package adapter is available without starting the TUI:
 
 ```bash
-metapi profile plugins research-harness list
-metapi profile plugins research-harness add github:owner/dsh-plugin
-metapi profile plugins research-harness remove package-name
-metapi profile plugins research-harness update
+meldra profile plugins research-harness list
+meldra profile plugins research-harness add github:owner/dsh-plugin
+meldra profile plugins research-harness remove package-name
+meldra profile plugins research-harness update
 ```
 
 These commands never write project `.pi` settings and never install into another Profile. They stream the native
@@ -154,12 +154,12 @@ DSH/pnpm output and return a nonzero process status on failure.
 In a DSH Profile, `/resume` and `/sessions` are exact aliases over the same Harness-native Session browser. The browser
 reuses Pi's cursor, current/all scope, search, sort, title, lineage, cwd, status-badge, loading, and cancellation grammar;
 DSH supplies structured `session.list` rows and the selected `sessionId`. It does not manufacture Pi Session files or
-offer file delete for Harness Sessions. CLI `--resume` remains the containing MetaPi/Pi startup selector.
+offer file delete for Harness Sessions. CLI `--resume` remains the containing Meldra/Pi startup selector.
 
-An explicit mutation may use Corepack to fetch MetaPi's pinned pnpm when no `pnpm` command is on PATH; read-only `list`
+An explicit mutation may use Corepack to fetch Meldra's pinned pnpm when no `pnpm` command is on PATH; read-only `list`
 does not trigger that download. Package changes require a fresh Runtime boot.
 
-In the TUI, MetaPi asks before external writes and then asks whether to restart the current Runtime; after restart it
+In the TUI, Meldra asks before external writes and then asks whether to restart the current Runtime; after restart it
 reads the native Loader Inventory and reports the entry delta. Terminal mutations are themselves the explicit write
 request; after DSH reconciliation they start a short-lived isolated Harness Runtime, read Loader Inventory, print the
 active entry count, and tear it down.
@@ -176,23 +176,23 @@ machine; use a registry, git, tarball, or alias source for cross-machine bundles
 
 ### Plugin workflow
 
-MetaPi passes every source unchanged to `dsh plugin --profile metapi add`, so the current DSH/pnpm grammar is
+Meldra passes every source unchanged to `dsh plugin --profile metapi add`, so the current DSH/pnpm grammar is
 authoritative. Typical forms are a registry package (`@scope/plugin@1.2.3`), a git shorthand
 (`github:owner/repository`), a local directory (`C:\\plugins\\my-dsh-plugin`), a tarball URL, or a pnpm alias.
 
 Do not put credentials in source URLs: terminal output, native manifests, and exported source declarations are not
 credential stores.
 
-In the TUI, use `/plugins` for the Loader/package view or `/plugin add <source>` for a direct operation. MetaPi confirms
+In the TUI, use `/plugins` for the Loader/package view or `/plugin add <source>` for a direct operation. Meldra confirms
 the external write, shows cancellable streamed progress, reports the native exit status, offers to restart Harness, and
 then compares Loader Inventory before and after restart.
 
 A zero exit code with no inventory delta means the package manifest changed but no new Loader entry was observed;
 inspect whether the source is a DSH bundle and whether its patch entries are enabled. Native plugin commands, tools,
-services, or UI become available according to that plugin's own contract; MetaPi does not invent a second activation or
+services, or UI become available according to that plugin's own contract; Meldra does not invent a second activation or
 command namespace.
 
-From a terminal, use `metapi profile plugins <profile> list|add|remove|update`. `add` accepts one source, `remove`
+From a terminal, use `meldra profile plugins <profile> list|add|remove|update`. `add` accepts one source, `remove`
 accepts the native dependency package name, and `update` updates the Profile's current native dependency set.
 
 Mutations stream DSH/pnpm output, then boot a temporary Harness instance for Loader verification and tear it down.
@@ -201,8 +201,8 @@ Mutations stream DSH/pnpm output, then boot a temporary Harness instance for Loa
 If pnpm is absent, only an explicit mutation may fetch pinned pnpm through Corepack; the Profile-local shim is reused
 afterward.
 
-For migration, run `metapi profile export <profile> <directory>` and inspect `package.json` under `metapi.runtime`.
-Import with `metapi profile import <directory> --name <new-profile> --no-bind` (or choose binding interactively).
+For migration, run `meldra profile export <profile> <directory>` and inspect `package.json` under `metapi.runtime`.
+Import with `meldra profile import <directory> --name <new-profile> --no-bind` (or choose binding interactively).
 
 The destination gets its own `agent/dsh-runtime`, package manifest, shim, Harness Settings, Sessions, and later Runtime
 process; none of those writable paths are shared with the source Profile. Registry/git/tarball restoration may access
@@ -223,7 +223,7 @@ Common failures are explicit:
 `/new`, `/fork`, `/name`, `/compact`, `/session`, and `/settings` use the generic Profile Runtime command-surface
 declaration so their same-name DSH extension handlers replace Pi's built-in discovery and interactive dispatch only
 while the DSH Runtime is attached. `/model` deliberately remains Pi-owned: it uses the native Pi selector, search,
-catalog refresh, exact `provider/model` arguments, scoped-model rules, and authentication check over the active MetaPi
+catalog refresh, exact `provider/model` arguments, scoped-model rules, and authentication check over the active Meldra
 Profile's effective `ModelRuntime`.
 
 After the user confirms one model, or cycles to one with Pi's ordinary model-cycle action, `AgentSession` calls the
@@ -235,7 +235,7 @@ asynchronous bridge finishes, rejects duplicate confirmation, closes only after 
 forces the current Pi footer to render the new provider/model immediately rather than waiting for the next prompt. The DSH
 status listens to the committed Pi `model_select` event, re-reads `session.models`, and labels the Pi active model
 separately from the authoritative Harness native route instead of presenting either value as a generic Profile preference.
-Opening or cancelling `/model` performs no DSH write, and MetaPi does not bulk-copy its model catalog or auth files. The
+Opening or cancelling `/model` performs no DSH write, and Meldra does not bulk-copy its model catalog or auth files. The
 bundled rc.7 `llm-pi-ai` configuration supports
 `openai-completions`, `openai-responses`, and
 `anthropic-messages`. Anthropic routes preserve the selected model's endpoint, credential reference, headers, reasoning
@@ -243,10 +243,10 @@ metadata, and capacities; use the same endpoint root required by Pi's native Ant
 `https://api.anthropic.com`, with the SDK appending `/v1/messages`). Completion-only `thinkingFormat` and
 `supportsReasoningEffort` switches are serialized only for `openai-completions`.
 
-Other MetaPi APIs remain visible in Pi's catalog but are rejected before any Harness Settings write because rc.7 cannot
+Other Meldra APIs remain visible in Pi's catalog but are rejected before any Harness Settings write because rc.7 cannot
 express their required transport/auth configuration: `bedrock-converse-stream`, `azure-openai-responses`,
 `openai-codex-responses`, `google-generative-ai`, `google-vertex`, and `mistral-conversations`. The error names the
-selected API and the currently bridgeable set; MetaPi does not guess a different wire protocol. Route collisions,
+selected API and the currently bridgeable set; Meldra does not guess a different wire protocol. Route collisions,
 read-only Settings, revision conflicts, and native selection errors also remain explicit and leave the Pi selection
 unchanged. `/dsh model` remains the explicitly namespaced Harness native-catalog selector.
 
@@ -280,7 +280,7 @@ The second page shows a Chinese label, a concise purpose, and the compatible dir
 `Esc` returns from a capability page to the group page and closes from the group page.
 
 Direct commands and `/dsh run`/`/dsh invoke` remain available for scripting and experienced users; non-TUI modes receive
-the textual action list instead of attempting a terminal dialog. MetaPi-owned titles, operations, statuses, and
+the textual action list instead of attempting a terminal dialog. Meldra-owned titles, operations, statuses, and
 explanations in the queue, feedback, attachment, trajectory, settings, package, Goal, Job, Subagent, Workspace, and
 compact status surfaces use Chinese labels.
 
@@ -289,7 +289,7 @@ payloads remain unchanged.
 
 `/dsh exit` requests Pi's existing graceful process shutdown, which owns Profile Runtime teardown and Harness process
 cleanup; it does not send a Harness prompt or introduce a parallel exit state machine. Use `/profile` instead when the
-intent is to keep MetaPi open and switch to another Profile.
+intent is to keep Meldra open and switch to another Profile.
 
 These commands operate on DSH Sessions, Workspaces, direct Subagents, the native Agent Preset roster, and the DSH model
 catalog. `/dsh effort` reads the exact current route and adapter-owned effort roster from `session.models`, returns the
@@ -297,7 +297,7 @@ selected opaque effort through native `session.selectModel`, and can restore Pro
 field.
 
 Switching `/dsh model` to another route carries that target model's declared default effort, while reselecting the
-current route preserves its current effort. MetaPi does not map these values to Pi thinking levels or write them through
+current route preserves its current effort. Meldra does not map these values to Pi thinking levels or write them through
 Settings.
 
 Preset selection uses Harness's `agentPreset.select` contract and is therefore limited to blank Sessions by Harness. The
@@ -364,7 +364,7 @@ event timestamps; unmatched events remain duration-free. A bounded cross-page ti
 durable index.
 
 Every row still selects the same raw entry. The Plugin Inventory reads the Harness Loader directly on every call and
-exposes its authoritative entry id, module specifier, effective enablement, and live fiber phase; MetaPi maintains no
+exposes its authoritative entry id, module specifier, effective enablement, and live fiber phase; Meldra maintains no
 parallel plugin state.
 
 The Settings view reads native redacted namespace descriptors and the provider directory. It shows resolved/base/user
@@ -376,7 +376,7 @@ object paths and currently resolved dictionary keys; enum and boolean values use
 input, and the reconstructed schema node validates each value before mutation. Schema-declared array fields, including
 provider model arrays, are available through a complete JSON draft editor.
 
-The reconstructed array node validates the parsed draft before one exact path set/reset operation; MetaPi does not
+The reconstructed array node validates the parsed draft before one exact path set/reset operation; Meldra does not
 derive provider routes, adapter defaults, model fields, or credential references from the draft. Writable
 schema-declared secret slots can be set through Pi's additive masked `secretInput()` path or unset after confirmation.
 
@@ -430,7 +430,7 @@ to the active DSH Session; user `queued` and `steering` items appear in a compac
 
 `/dsh queue` edits text-only items, removes pending items, strictly steers a queued item while the current turn is
 running, or withdraws a selected text item through native `session.updateQueue(remove)` and restores it to Pi's editor
-only after the native mutation succeeds. MetaPi does not mutate the displayed queue optimistically; the next complete
+only after the native mutation succeeds. Meldra does not mutate the displayed queue optimistically; the next complete
 Harness snapshot is authoritative.
 
 Pending user prompts remain in that queue surface until Harness emits a durable `user/message`. A message with
@@ -446,12 +446,12 @@ corrects an incomplete transient projection after reconnect or dropped chunks.
 
 - `main.ts` uses only the generic provider selection interface. The DSH provider module owns DSH Profile matching and
   constructs `DshProfileRuntime`.
-- Profile switching, Runtime reload, and exit use the existing graceful lifecycle. MetaPi attempts native cursor close
+- Profile switching, Runtime reload, and exit use the existing graceful lifecycle. Meldra attempts native cursor close
   with a 500 ms acknowledgement bound, always awaits Harness SDK shutdown and its process-termination ladder, then
   drains event-pump tasks for up to 500 ms before releasing listeners; an unresponsive auxiliary RPC cannot permanently
   block teardown.
-- MetaPi passes an already configured DeepSeek credential and endpoint when available; otherwise Harness's native
-  settings and credential sources remain authoritative. MetaPi does not require a DeepSeek credential merely to start
+- Meldra passes an already configured DeepSeek credential and endpoint when available; otherwise Harness's native
+  settings and credential sources remain authoritative. Meldra does not require a DeepSeek credential merely to start
   the Runtime or use another Harness provider.
 - Harness state stays under `~/.metapi/profiles/<profile>/agent/dsh-runtime/` through the standard `DSH_HOME` contract.
   This includes native JSONL Sessions, settings, credentials, user presets, and other Harness-owned state.
@@ -459,7 +459,7 @@ corrects an incomplete transient projection after reconnect or dropped chunks.
   provider-owned display snapshots for transcript restoration; live projected events are transient and never enter Pi
   model context.
 - Windows exposes DSH's PowerShell executor and `pwsh` tool. POSIX systems expose DSH's Bash executor and `bash` tool.
-- Filesystem and shell tools use the permissions of the MetaPi process, matching the existing unsandboxed Pi default.
+- Filesystem and shell tools use the permissions of the Meldra process, matching the existing unsandboxed Pi default.
 
 ## Migration status
 

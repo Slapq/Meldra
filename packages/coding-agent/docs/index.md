@@ -1,8 +1,8 @@
 # Pi Documentation
 
-> Using the MetaPi distribution? Start with the Chinese-first [MetaPi User Guide](../../../docs/user-guide.md) or its
+> Using the Meldra distribution? Start with the Chinese-first [Meldra User Guide](../../../docs/user-guide.md) or its
 > [English version](../../../docs/user-guide.en.md). This page remains the detailed reference for Pi behavior preserved
-> by MetaPi.
+> by Meldra.
 
 Pi is a minimal terminal coding harness. It is designed to stay small at the core while being extended through
 TypeScript extensions, skills, prompt templates, themes, and pi packages.
@@ -51,7 +51,7 @@ For the full first-run flow, see [Quickstart](quickstart.md).
 - [Providers](providers.md) - subscription and API-key setup for built-in providers.
 - [Profile agent runtimes](profile-runtimes.md) - host an external Profile-owned agent backend without changing native
   Pi sessions.
-- [DeepSeek Harness TUI](deepseek-harness.md) - run DSH behind MetaPi's Pi terminal interface.
+- [DeepSeek Harness TUI](deepseek-harness.md) - run DSH behind Meldra's Pi terminal interface.
 - [llama.cpp](llama-cpp.md) - run a local router and manage models with `/llama`.
 - [Security](security.md) - project trust, sandbox boundaries, and vulnerability reporting.
 - [Containerization](containerization.md) - sandbox pi with Gondolin, Docker, or OpenShell.
@@ -63,7 +63,7 @@ For the full first-run flow, see [Quickstart](quickstart.md).
 ## Customization
 
 - [Extensions](extensions.md) - TypeScript modules for tools, commands, events, and custom UI.
-- [MetaPi Starter plugin development](../starter-profile/DEVELOPMENT.md) - maintain Profile Config, Provider Manager,
+- [Meldra Starter plugin development](../starter-profile/DEVELOPMENT.md) - maintain Profile Config, Provider Manager,
   Scout, Workflows, Questionnaire, and Setup.
 - [Skills](skills.md) - Agent Skills for reusable on-demand capabilities.
 - [Prompt templates](prompt-templates.md) - reusable prompts that expand from slash commands.

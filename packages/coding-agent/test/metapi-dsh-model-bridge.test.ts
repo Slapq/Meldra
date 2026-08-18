@@ -54,7 +54,7 @@ function ok(value: unknown): { result: { ok: true; value: unknown } } {
 	return { result: { ok: true, value } };
 }
 
-describe("DSH MetaPi model bridge", () => {
+describe("DSH Meldra model bridge", () => {
 	it("registers only the selected model, stores the credential by reference, and selects the route", async () => {
 		const calls: Array<{ method: string; payload: Record<string, unknown> }> = [];
 		const request = vi.fn(async (method: string, params?: Record<string, unknown>) => {

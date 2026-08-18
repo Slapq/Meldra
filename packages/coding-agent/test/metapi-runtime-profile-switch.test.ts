@@ -20,7 +20,7 @@ afterEach(async () => {
 	while (cleanup.length > 0) await cleanup.pop()?.();
 });
 
-describe("MetaPi runtime Profile switching", () => {
+describe("Meldra runtime Profile switching", () => {
 	it.each([
 		{ kind: "persisted", persisted: true },
 		{ kind: "in-memory", persisted: false },

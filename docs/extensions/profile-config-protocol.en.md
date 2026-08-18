@@ -1,9 +1,9 @@
 # Profile Config Registration Protocol
 
-Status: normative MetaPi Extension contract.
+Status: normative Meldra Extension contract.
 
 `metapi-config` is the one built-in exception that hosts Profile plugin configuration. It is an inline hidden Extension,
-not a user-editable Profile Package. Its source is refreshed with the MetaPi build and process lifecycle; `/reload`
+not a user-editable Profile Package. Its source is refreshed with the Meldra build and process lifecycle; `/reload`
 re-registers the same loaded factory and is not a source-code hot-reload boundary for this built-in.
 
 Plugins that expose ordinary Profile configuration MUST use this protocol so `/config` keeps one interaction model,
@@ -231,7 +231,7 @@ override registration defaults.
 
 This state is:
 
-- owned by one MetaPi Profile;
+- owned by one Meldra Profile;
 - independent between Profiles;
 - not project `.pi` configuration;
 - not a Session override;

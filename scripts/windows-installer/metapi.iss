@@ -11,9 +11,9 @@
   #error OutputBaseFilename must be defined
 #endif
 
-#define AppName "MetaPi"
+#define AppName "Meldra"
 #define AppPublisher "Slapq"
-#define AppURL "https://github.com/Slapq/MetaPi"
+#define AppURL "https://github.com/Slapq/Meldra"
 
 [Setup]
 AppId={{A50C231D-6B68-4D73-946A-70D6EC066C8D}
@@ -24,7 +24,7 @@ AppPublisherURL={#AppURL}
 AppSupportURL={#AppURL + "/issues"}
 AppUpdatesURL={#AppURL + "/releases"}
 DefaultDirName={localappdata}\Programs\MetaPi
-DefaultGroupName=MetaPi
+DefaultGroupName=Meldra
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
@@ -36,7 +36,7 @@ Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern dynamic
 SetupLogging=yes
-UninstallDisplayName=MetaPi
+UninstallDisplayName=Meldra
 UninstallDisplayIcon={app}\pi-app.ico
 SetupIconFile={#PayloadDir}\pi-app.ico
 LicenseFile={#PayloadDir}\META_LICENSE.txt
@@ -53,6 +53,9 @@ Source: "{#PayloadDir}\terminal\*"; DestDir: "{app}\terminal"; Flags: ignorevers
 #ifdef IncludeNode
 Source: "{#PayloadDir}\runtime\*"; DestDir: "{app}\runtime"; Flags: ignoreversion recursesubdirs createallsubdirs
 #endif
+Source: "{#PayloadDir}\meldra.cmd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#PayloadDir}\meldra-shell.cmd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#PayloadDir}\meldra-onboarding.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#PayloadDir}\metapi.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#PayloadDir}\metapi-shell.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#PayloadDir}\metapi-onboarding.cmd"; DestDir: "{app}"; Flags: ignoreversion
@@ -61,10 +64,10 @@ Source: "{#PayloadDir}\THIRD_PARTY_NOTICES.md"; DestDir: "{app}"; Flags: ignorev
 Source: "{#PayloadDir}\META_LICENSE.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{userdesktop}\MetaPi"; Filename: "{app}\terminal\WindowsTerminal.exe"; Parameters: "-d ""{%USERPROFILE}"" --title MetaPi -- cmd.exe /d /c ""{app}\metapi-shell.cmd"""; WorkingDir: "{%USERPROFILE}"; Comment: "MetaPi"; IconFilename: "{app}\pi-app.ico"
+Name: "{userdesktop}\Meldra"; Filename: "{app}\terminal\WindowsTerminal.exe"; Parameters: "-d ""{%USERPROFILE}"" --title Meldra -- cmd.exe /d /c ""{app}\meldra-shell.cmd"""; WorkingDir: "{%USERPROFILE}"; Comment: "Meldra"; IconFilename: "{app}\pi-app.ico"
 
 [Run]
-Filename: "{app}\terminal\WindowsTerminal.exe"; Parameters: "-d ""{%USERPROFILE}"" --title ""MetaPi Setup"" -- cmd.exe /d /c ""{app}\metapi-onboarding.cmd"""; WorkingDir: "{%USERPROFILE}"; Description: "{cm:LaunchProgram,MetaPi}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\terminal\WindowsTerminal.exe"; Parameters: "-d ""{%USERPROFILE}"" --title ""Meldra Setup"" -- cmd.exe /d /c ""{app}\meldra-onboarding.cmd"""; WorkingDir: "{%USERPROFILE}"; Description: "{cm:LaunchProgram,Meldra}"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\terminal\settings"
@@ -101,10 +104,10 @@ begin
   if BundledNode then
     MessageText := 'This installer includes Node.js 24.19.0. No system Node.js installation is required.'
   else if HasUsableSystemNode() and HasSystemNpm() then
-    MessageText := 'Compatible system Node.js and npm were detected. MetaPi will use that runtime.'
+    MessageText := 'Compatible system Node.js and npm were detected. Meldra will use that runtime.'
   else
-    MessageText := 'Compatible Node.js 22.19.0+ and npm were not both detected. Installation is still allowed. MetaPi will report the missing runtime when launched; you can install Node.js later or use MetaPi-Setup.exe.';
-  RuntimePage := CreateOutputMsgPage(wpSelectDir, 'Runtime status', 'MetaPi runtime selected for this installation', MessageText);
+    MessageText := 'Compatible Node.js 22.19.0+ and npm were not both detected. Installation is still allowed. Meldra will report the missing runtime when launched; you can install Node.js later or use Meldra-Setup.exe.';
+  RuntimePage := CreateOutputMsgPage(wpSelectDir, 'Runtime status', 'Meldra runtime selected for this installation', MessageText);
 end;
 
 function ComparablePath(Value: String): String;
@@ -143,7 +146,7 @@ begin
   end;
 end;
 
-procedure AddMetaPiToUserPath();
+procedure AddMeldraToUserPath();
 var
   AppPath: String;
   CurrentPath: String;
@@ -157,7 +160,7 @@ begin
   end;
 end;
 
-procedure RemoveMetaPiFromUserPath();
+procedure RemoveMeldraFromUserPath();
 var
   AppPath: String;
   CurrentPath: String;
@@ -171,10 +174,10 @@ end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
-  if CurStep = ssPostInstall then AddMetaPiToUserPath();
+  if CurStep = ssPostInstall then AddMeldraToUserPath();
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
-  if CurUninstallStep = usUninstall then RemoveMetaPiFromUserPath();
+  if CurUninstallStep = usUninstall then RemoveMeldraFromUserPath();
 end;

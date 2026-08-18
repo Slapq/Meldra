@@ -38,7 +38,7 @@ pi update npm:@foo/bar      # update one package
 pi update --extension npm:@foo/bar
 ```
 
-These commands manage pi packages and `pi update` can update the official pi CLI installation. In this MetaPi build, distribution self-update and startup release checks are disabled until a MetaPi-owned release source exists; `metapi update --extensions` and `metapi update --models` remain available. To uninstall pi itself, see [Quickstart](quickstart.md#uninstall).
+These commands manage pi packages and `pi update` can update the official pi CLI installation. In this Meldra build, distribution self-update and startup release checks are disabled until a Meldra-owned release source exists; `meldra update --extensions` and `meldra update --models` remain available. To uninstall pi itself, see [Quickstart](quickstart.md#uninstall).
 
 By default, `install` and `remove` write to user settings (`~/.pi/agent/settings.json`). Use `-l` to write to project settings (`.pi/settings.json`) instead. Project settings can be shared with your team, and pi installs any missing packages automatically on startup after the project is trusted.
 

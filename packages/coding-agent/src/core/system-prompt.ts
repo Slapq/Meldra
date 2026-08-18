@@ -2,7 +2,7 @@
  * System prompt construction and project context loading
  */
 
-import { getDocsPath, getExamplesPath, getMetaPiRootPath, getReadmePath } from "../config.ts";
+import { getDocsPath, getExamplesPath, getMeldraRootPath, getReadmePath } from "../config.ts";
 import { formatSkillsForPrompt, type Skill } from "./skills.ts";
 
 export interface BuildSystemPromptOptions {
@@ -76,7 +76,7 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions): string {
 	const docsPath = getDocsPath();
 	const examplesPath = getExamplesPath();
 
-	const metaPiRootPath = getMetaPiRootPath();
+	const meldraRootPath = getMeldraRootPath();
 
 	// Build tools list based on selected tools.
 	// A tool appears in Available tools only when the caller provides a one-line snippet.
@@ -123,11 +123,11 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions): string {
 	let prompt = `You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files.
 
 Current runtime identity:
-- Host: MetaPi
-- MetaPi is a Pi-based coding environment and compatibility distribution.
+- Host: Meldra
+- Meldra is a Pi-based coding environment and compatibility distribution.
 - Pi is the native compatibility and coding-agent foundation.
 - The current Profile may use the native Pi agent or an external Profile Agent Runtime.
-- Do not assume that Pi, MetaPi, and an external Runtime own the same state, lifecycle, Agent loop, Session, Skill, plugin, model, or persistence semantics.
+- Do not assume that Pi, Meldra, and an external Runtime own the same state, lifecycle, Agent loop, Session, Skill, plugin, model, or persistence semantics.
 
 Available tools:
 ${toolsList}
@@ -146,28 +146,28 @@ Pi documentation (read only when the user asks about pi itself, its SDK, extensi
 - When working on pi topics, read the docs and examples, and follow .md cross-references before implementing
 - Always read pi .md files completely and follow links to related docs (e.g., tui.md for TUI API details)
 
-MetaPi documentation (read only when the user asks about MetaPi, Profiles, WorkSpaces, Profile configuration, Profile Runtimes, DSH, or MetaPi development):
-- MetaPi repository root: ${metaPiRootPath}
+Meldra documentation (read only when the user asks about Meldra, Profiles, WorkSpaces, Profile configuration, Profile Runtimes, DSH, or Meldra development):
+- Meldra repository root: ${meldraRootPath}
 - The root contains AGENTS.md, CONTEXT.md, docs/, packages/, and tests
-- docs/ contains the MetaPi user guide, development guide, ADRs, investigations, and extension protocols
-- packages/coding-agent/docs/ contains Pi and MetaPi runtime documentation
+- docs/ contains the Meldra user guide, development guide, ADRs, investigations, and extension protocols
+- packages/coding-agent/docs/ contains Pi and Meldra runtime documentation
 - packages/*/src/ contains implementation and packages/*/test/ contains behavior evidence
-- Start with the relevant documentation under the MetaPi root, then inspect implementation, callers, and tests
+- Start with the relevant documentation under the Meldra root, then inspect implementation, callers, and tests
 - Read relevant Markdown files completely and follow relative links
 - Do not scan the entire repository unless the task requires it
 - Treat current source code, tests, ADRs, and real runtime behavior as the authority; do not infer Profile, Runtime, persistence, or upstream semantics from names alone
 
-MetaPi native Pi Profile and Starter documentation (important when developing MetaPi plugins, Starter resources, Profile configuration, Provider Manager, Scout, Workflows, Questionnaire, or Setup):
-- Starter development guide: ${metaPiRootPath}/packages/coding-agent/starter-profile/DEVELOPMENT.md
-- Profile Config Protocol: ${metaPiRootPath}/docs/extensions/profile-config-protocol.md
-- Related Starter source: ${metaPiRootPath}/packages/coding-agent/starter-profile/
-- Read the Starter development guide and Profile Config Protocol before changing Starter plugins or MetaPi plugin configuration
+Meldra native Pi Profile and Starter documentation (important when developing Meldra plugins, Starter resources, Profile configuration, Provider Manager, Scout, Workflows, Questionnaire, or Setup):
+- Starter development guide: ${meldraRootPath}/packages/coding-agent/starter-profile/DEVELOPMENT.md
+- Profile Config Protocol: ${meldraRootPath}/docs/extensions/profile-config-protocol.md
+- Related Starter source: ${meldraRootPath}/packages/coding-agent/starter-profile/
+- Read the Starter development guide and Profile Config Protocol before changing Starter plugins or Meldra plugin configuration
 - Do not treat Starter conventions as generic Pi Extension conventions
 
 External Agent Profile documentation (important when a Profile uses an external Agent Runtime such as DeepSeek Harness):
-- Profile Runtime boundary: ${metaPiRootPath}/packages/coding-agent/docs/profile-runtimes.md
-- DeepSeek Harness Runtime: ${metaPiRootPath}/packages/coding-agent/docs/deepseek-harness.md
-- Runtime adapter source: ${metaPiRootPath}/packages/coding-agent/src/metapi/
+- Profile Runtime boundary: ${meldraRootPath}/packages/coding-agent/docs/profile-runtimes.md
+- DeepSeek Harness Runtime: ${meldraRootPath}/packages/coding-agent/docs/deepseek-harness.md
+- Runtime adapter source: ${meldraRootPath}/packages/coding-agent/src/metapi/
 - For Runtime-owned behavior, read the active Runtime documentation before changing Agent loop, Session, Skill, plugin, model, queue, persistence, or lifecycle behavior
 - The external Runtime's current source, protocol, and native behavior remain authoritative for Runtime-owned features
 - Do not reimplement external Agent behavior in generic Pi core`;

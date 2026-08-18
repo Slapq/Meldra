@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ExtensionAPI, RegisteredCommand } from "../src/core/extensions/types.ts";
 import { builtInExtensions } from "../src/extensions/index.ts";
-import metaPiConfig from "../src/extensions/metapi-config/index.ts";
+import meldraConfig from "../src/extensions/metapi-config/index.ts";
 import scoutExtension from "../starter-profile/extensions/scout.ts";
 
 interface ConfigHost {
@@ -56,7 +56,7 @@ function createHost(profile: string, agentDir: string, loadConfig = true): Confi
 		},
 		registerTool: () => undefined,
 	} as unknown as ExtensionAPI;
-	if (loadConfig) metaPiConfig(pi);
+	if (loadConfig) meldraConfig(pi);
 	return { commands, emit, pi, lifecycle, registrations };
 }
 
@@ -74,7 +74,7 @@ afterEach(() => {
 	for (const directory of tempDirs.splice(0)) rmSync(directory, { recursive: true, force: true });
 });
 
-describe("MetaPi Profile config extension", () => {
+describe("Meldra Profile config extension", () => {
 	it("is injected before other built-in Profile extensions", () => {
 		expect(builtInExtensions[0]).toMatchObject({ name: "metapi-config", hidden: true });
 	});
@@ -92,7 +92,7 @@ describe("MetaPi Profile config extension", () => {
 	it("registers Scout when Scout loads before the Config Host", async () => {
 		const host = createHost("default", tempAgentDir(), false);
 		scoutExtension(host.pi);
-		metaPiConfig(host.pi);
+		meldraConfig(host.pi);
 		await host.lifecycle.get("session_start")?.({}, {});
 		const configCommand = host.commands.get("config") as any;
 		expect(configCommand.getArgumentCompletions("")).toEqual(

@@ -1,8 +1,8 @@
-# MetaPi Documentation
+# Meldra Documentation
 
 [中文](README.md) | [English](README.en.md)
 
-MetaPi is a Profile-oriented patch layer over Pi. MetaPi-owned behavior is documented here; the detailed Pi references
+Meldra is a Profile-oriented patch layer over Pi. Meldra-owned behavior is documented here; the detailed Pi references
 under `packages/coding-agent/docs/` remain authoritative for unchanged Pi behavior.
 
 ## Guides
@@ -13,7 +13,8 @@ under `packages/coding-agent/docs/` remain authoritative for unchanged Pi behavi
   Bootstrap, Starter Bundle, onboarding, and shortcut.
 - [Development Guide](development.en.md): architecture, repository layout, source workflow, extension points, tests,
   upstream synchronization, and release boundaries.
-- [Architecture Decisions](adr/): public product, ownership, and compatibility decisions.
+- [Domain Context](../CONTEXT.md): canonical terminology and ownership.
+- [Agent Governance](../AGENTS.md): investigation, compatibility, approval, and validation requirements.
 
 ## Architecture and Extensions
 
@@ -21,7 +22,7 @@ under `packages/coding-agent/docs/` remain authoritative for unchanged Pi behavi
 - [Profile Runtime provider contract](../packages/coding-agent/docs/profile-runtimes.md)
 - [DeepSeek Harness Profile Runtime](../packages/coding-agent/docs/deepseek-harness.md)
 - [Pi Extension API](../packages/coding-agent/docs/extensions.md)
-- [MetaPi Extension inventory](extensions/README.md)
+- [Meldra Extension inventory](extensions/README.md)
 - [Profile Config Registration Protocol](extensions/profile-config-protocol.en.md)
 
 ## Pi Reference
@@ -37,5 +38,6 @@ under `packages/coding-agent/docs/` remain authoritative for unchanged Pi behavi
 
 ## Authority
 
-When documents disagree, use current ADRs, source, tests, and CLI help. Investigation notes are evidence records, not
-product specifications unless adopted by current architecture documents.
+When documents disagree, use the user's latest decision, scoped `AGENTS.md`, current ADRs and `CONTEXT.md`, then current
+source/tests/help. Investigation notes are evidence records, not product specifications unless adopted by current
+architecture documents.

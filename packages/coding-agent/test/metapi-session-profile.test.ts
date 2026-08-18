@@ -20,8 +20,8 @@ afterEach(() => {
 	for (const path of cleanup.splice(0)) rmSync(path, { recursive: true, force: true });
 });
 
-describe("MetaPi session Profile metadata", () => {
-	it("isolates Pi compatibility sessions from ordinary MetaPi discovery", () => {
+describe("Meldra session Profile metadata", () => {
+	it("isolates Pi compatibility sessions from ordinary Meldra discovery", () => {
 		expect(getSessionDiscoveryProfiles("default")).not.toContain("pi");
 		expect(getSessionDiscoveryProfiles("work")).not.toContain("pi");
 		expect(getSessionDiscoveryProfiles("pi")).toEqual(["pi"]);

@@ -334,7 +334,7 @@ export interface ExtensionContext {
 	modelRegistry: ModelRegistry;
 	/** Current construction-time Profile agent backend, if this Profile owns one. Read-only. */
 	profileRuntime: ProfileAgentRuntime | undefined;
-	/** Persist a provider/model preference for the current MetaPi Profile without changing the active session model. */
+	/** Persist a provider/model preference for the current Meldra Profile without changing the active session model. */
 	setModelPreference?: (provider: string, modelId: string) => void;
 	/** Current model (may be undefined) */
 	model: Model<any> | undefined;
@@ -408,7 +408,7 @@ export interface ExtensionCommandContext extends ExtensionContext {
 		options?: { withSession?: (ctx: ReplacedSessionContext) => Promise<void> },
 	): Promise<{ cancelled: boolean }>;
 
-	/** Switch the current MetaPi Profile while keeping this session and cwd. */
+	/** Switch the current Meldra Profile while keeping this session and cwd. */
 	switchProfile?(profileName: string): Promise<{ cancelled: boolean }>;
 
 	/** Reload extensions, skills, prompts, themes, and context files. */

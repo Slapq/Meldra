@@ -1,15 +1,15 @@
-# MetaPi 开发文档
+# Meldra 开发文档
 
 [中文](development.md) | [English](development.en.md) | [返回首页](../README.md)
 
-本文说明如何在 MetaPi 仓库中开发、定位修改位置并完成验证。Pi API 的逐项参考保留在 `packages/coding-agent/docs/`；这里集中说明 MetaPi 的架构与交付流程。
+本文说明如何在 Meldra 仓库中开发、定位修改位置并完成验证。Pi API 的逐项参考保留在 `packages/coding-agent/docs/`；这里集中说明 Meldra 的架构与交付流程。
 
 ## 1. 开发原则
 
-MetaPi 使用“精确 Pi baseline + 可审计 patch layer”：
+Meldra 使用“精确 Pi baseline + 可审计 patch layer”：
 
 - 保留完整 Pi 源码、普通 Pi Runtime、CLI、TUI、Session 和 Extension 行为；
-- MetaPi-owned 功能通过小而清晰的提交叠加在已知 upstream baseline 上；
+- Meldra-owned 功能通过小而清晰的提交叠加在已知 upstream baseline 上；
 - 产品专属逻辑不能进入通用 Pi core；
 - 外部 Runtime 保持其 Agent loop、Session、协议、模型、工具和持久化权威；
 - 默认行为、公开接口和已有数据格式在没有明确批准时保持不变。
@@ -47,12 +47,12 @@ npm run build
 node packages/coding-agent/dist/cli.js --profile default
 ```
 
-当前仓库没有正式 MetaPi 发行身份。开发文档不把全局本机 launcher、官方 Pi npm 包或本地 checkout 当作可互换发行物。
+当前仓库没有正式 Meldra 发行身份。开发文档不把全局本机 launcher、官方 Pi npm 包或本地 checkout 当作可互换发行物。
 
 ## 3. 架构概览
 
 ```text
-MetaPi CLI / Pi TUI
+Meldra CLI / Pi TUI
         |
         +-- Profile service -------- Profile、绑定、Bundle、agentDir
         +-- Pi AgentSession -------- 普通 Pi agent path
@@ -69,12 +69,12 @@ External Runtime state remains outside Pi Session state.
 | 模块 | 负责 | 不负责 |
 |---|---|---|
 | Pi core | Session host、Extension API、TUI、通用 Runtime boundary | DSH RPC、Preset、模型或业务状态 |
-| MetaPi Profile domain | Profile 解析、绑定、Bundle、Profile 环境 | 外部 Runtime 内部状态 |
+| Meldra Profile domain | Profile 解析、绑定、Bundle、Profile 环境 | 外部 Runtime 内部状态 |
 | Profile Runtime provider | 匹配、构造、teardown、可选原生 package capability | 普通 Pi 默认行为 |
 | DSH Runtime adapter | Harness 进程、ApiProxy、事件边界和原生生命周期 | 复制 Harness Agent loop |
 | DSH Extension | 命令、renderer、dialog、状态展示 | Harness 子进程或 Session ownership |
 | WorkSpace | Session 工作目录 | Profile 设置或 Runtime plugin |
-| Config Host | 统一插件字段 TUI 与 Profile-local JSON | MetaPi Settings 替代品或 Config Service |
+| Config Host | 统一插件字段 TUI 与 Profile-local JSON | Meldra Settings 替代品或 Config Service |
 
 详细边界见 [Profile Runtime providers](../packages/coding-agent/docs/profile-runtimes.md) 和 [DSH
 Runtime](../packages/coding-agent/docs/deepseek-harness.md)。
@@ -86,7 +86,7 @@ packages/
   ai/                 Provider/model abstraction
   agent/              Native Pi agent loop
   tui/                Terminal rendering and input
-  coding-agent/       CLI, Session host, Extensions, MetaPi, DSH adapter
+  coding-agent/       CLI, Session host, Extensions, Meldra, DSH adapter
   protocol/           Shared protocol contracts
   client/             Client library
   server/             Server package
@@ -95,12 +95,12 @@ packages/
 
 docs/
   adr/                Accepted architecture decisions
-  extensions/         MetaPi Extension inventory and config protocol
+  extensions/         Meldra Extension inventory and config protocol
   investigations/     Evidence records, not automatic product contracts
 scripts/               Build, lock, release, and validation tools
 ```
 
-`packages/coding-agent/src/` 中与 MetaPi 最相关的位置：
+`packages/coding-agent/src/` 中与 Meldra 最相关的位置：
 
 | 路径 | 作用 |
 |---|---|
@@ -164,7 +164,7 @@ Hypothesis -> Initial evaluation -> Information search -> Re-evaluation -> Modif
 优先实现为 Pi Extension。Extension 可以注册 command、tool、event、renderer、shortcut 和 TUI。使用 [Extension
 Guide](../packages/coding-agent/docs/extensions.md) 和 [TUI Components](../packages/coding-agent/docs/tui.md)。
 
-只有 MetaPi 产品每个普通 Profile 都必须拥有的 composition capability 才进入 bundled built-in registry。`metapi-config` 是明确记录的 inline
+只有 Meldra 产品每个普通 Profile 都必须拥有的 composition capability 才进入 bundled built-in registry。`metapi-config` 是明确记录的 inline
 built-in 特例；不要为它另建 provision、package-copy 或源码 hot-reload 生命周期。
 
 ### 插件字段配置
@@ -303,25 +303,25 @@ npm run check
 
 ## 11. Upstream 同步
 
-MetaPi 维护精确 upstream Pi baseline 与可审计 patch commits。升级时：
+Meldra 维护精确 upstream Pi baseline 与可审计 patch commits。升级时：
 
 1. 确认 upstream tag/commit；
 2. 记录干净工作树和测试 baseline；
-3. 使用 merge 保留历史，不用复制覆盖 MetaPi 文件；
-4. 解决冲突时保护普通 Pi 合同和 MetaPi ownership boundary；
+3. 使用 merge 保留历史，不用复制覆盖 Meldra 文件；
+4. 解决冲突时保护普通 Pi 合同和 Meldra ownership boundary；
 5. 重新生成 lock/shrinkwrap/install lock；
 6. 运行普通 Pi、default Profile、`pi` compatibility 和 DSH 聚焦验证；
 7. 记录 upstream baseline 与 patch commits。
 
-不要把 MetaPi 的 `metapi` identity、自更新源或 Profile 行为机械改回 `pi`。
+不要把 Meldra 的 `metapi` identity、自更新源或 Profile 行为机械改回 `pi`。
 
 ## 12. 调试
 
 常用入口：
 
-- `metapi --verbose`：显示启动信息；
+- `meldra --verbose`：显示启动信息；
 - `/debug`：写 TUI 渲染和最后模型消息到当前 agentDir 的 debug log；
-- `metapi profile status`：确认 Profile、agentDir、cwd 与 binding；
+- `meldra profile status`：确认 Profile、agentDir、cwd 与 binding；
 - `/session` 或 DSH `/session`：查看当前状态域；
 - `/dsh trajectory`、`/dsh evidence`：查看 Harness 原生事实；
 - `git diff --check`：提交前检查 whitespace。
@@ -338,10 +338,10 @@ npm run release:local
 
 它执行模型数据、检查、构建、隔离测试、pack 和隔离安装 smoke。选项见 `scripts/local-release.mjs --help`。
 
-当前没有权威 MetaPi package name、latest-version source 或 changelog 服务，因此：
+当前没有权威 Meldra package name、latest-version source 或 changelog 服务，因此：
 
 - 不启用 self-update；
-- 不用 Pi npm 包作为 MetaPi 更新目标；
+- 不用 Pi npm 包作为 Meldra 更新目标；
 - 不在未经批准时 publish、tag 或 push；
 - 本地 launcher 只代表当前 checkout，不代表发行验收。
 
@@ -360,7 +360,7 @@ npm run release:local
 
 ## 相关参考
 
-- [MetaPi 使用教程](user-guide.md)
+- [Meldra 使用教程](user-guide.md)
 - [Pi Development](../packages/coding-agent/docs/development.md)
 - [Extension API](../packages/coding-agent/docs/extensions.md)
 - [Profile Runtime providers](../packages/coding-agent/docs/profile-runtimes.md)

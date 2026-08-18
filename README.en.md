@@ -1,12 +1,12 @@
 <div align="center">
 
-<img src="scripts/windows-installer/pi-favicon.svg" alt="MetaPi Logo" width="160" height="160">
+<img src="scripts/windows-installer/pi-favicon.svg" alt="Meldra Logo" width="160" height="160">
 
-# MetaPi
+# Meldra
 
 ### A Pi-based Agent framework and launcher
 
-MetaPi organizes models, Providers, packages, Sessions, WorkSpaces, and external Agent Runtimes through Profiles while preserving official Pi's terminal experience and compatibility path.
+Meldra organizes models, Providers, packages, Sessions, WorkSpaces, and external Agent Runtimes through Profiles while preserving official Pi's terminal experience and compatibility path.
 
 <p>
   <img alt="Development" src="https://img.shields.io/badge/status-development-f59e0b?style=flat-square">
@@ -22,47 +22,47 @@ MetaPi organizes models, Providers, packages, Sessions, WorkSpaces, and external
 </div>
 
 > [!IMPORTANT]
-> **MetaPi is under active development.** The repository does not yet define an official MetaPi npm package,
+> **Meldra is under active development.** The repository does not yet define an official Meldra npm package,
 > release source, or self-update service. Running from source is the reliable path today;
-> `metapi update --self` remains disabled so it cannot install the official Pi package by mistake.
+> `meldra update --self` remains disabled so it cannot install the official Pi package by mistake.
 
 <p align="center">
-  <img src="docs/images/metapi-profile-tui.png" alt="MetaPi Profile selector showing default, dsh, and original Pi environments" width="100%">
+  <img src="docs/images/metapi-profile-tui.png" alt="Meldra Profile selector showing default, dsh, and original Pi environments" width="100%">
 </p>
 <p align="center"><sub>Real output from the current build: inspect and switch isolated Profiles inside one Session and WorkSpace.</sub></p>
 
-## Why MetaPi
+## Why Meldra
 
 | What you get | What it means |
 |---|---|
 | **A Pi-based Agent framework and launcher** | Reuse Pi's CLI, TUI, tools, and Extension ecosystem while adding Profile, WorkSpace, and external-Runtime boundaries |
-| **A minimal Starter Profile tuned by the project team** | The default `MetaPi Starter` uses a small set of defaults for a stable, direct daily development entry |
+| **A minimal Starter Profile tuned by the project team** | The default `Meldra Starter` uses a small set of defaults for a stable, direct daily development entry |
 | **A complete shareable Profile configuration** | Import model choices, Provider declarations, packages, Scout, and workflows; each user supplies credentials locally |
-| **External Agent Runtimes in one design language** | DSH retains native Agent ownership while adopting MetaPi's Pi TUI, Profile lifecycle, and model-selection experience |
+| **External Agent Runtimes in one design language** | DSH retains native Agent ownership while adopting Meldra's Pi TUI, Profile lifecycle, and model-selection experience |
 | **A second path when DSH fails** | Switch to the default Pi Agent in the same WorkSpace, diagnose and repair the integration, then switch back to DSH |
 
 ## ✨ Core Capabilities
 
-| | Capability | MetaPi boundary |
+| | Capability | Meldra boundary |
 |---|---|---|
 | 🧭 | **Profile isolation** | Independent workflow settings, models, packages, Sessions, and Runtime state; shared UI preferences |
 | π | **Native Pi compatibility** | Preserves Pi's CLI, TUI, tools, Sessions, Extension ecosystem, and original `pi` compatibility entry |
-| 🧳 | **Portable Profiles** | Import, export, update, and share configuration, resources, workflows, and Runtime declarations; official Pi ignores MetaPi metadata |
+| 🧳 | **Portable Profiles** | Import, export, update, and share configuration, resources, workflows, and Runtime declarations; official Pi ignores Meldra metadata |
 | 🗂️ | **Session WorkSpaces** | The built-in WorkSpace plugin assigns a working directory without moving Profile state into project `.pi` |
 | 🔌 | **External Runtimes** | Attach external Agent backends through a product-neutral construction-time provider |
-| ◈ | **DeepSeek Harness** | Shares MetaPi's TUI and model-selection experience while Harness retains Agent loop, tool, Settings, and Session authority |
+| ◈ | **DeepSeek Harness** | Shares Meldra's TUI and model-selection experience while Harness retains Agent loop, tool, Settings, and Session authority |
 | ⚙️ | **Unified plugin configuration** | Ordinary Profiles receive `/config`; the default Starter uses `/setup` for Provider, model, and Scout onboarding |
 
-MetaPi is a Pi-based Agent framework, launcher, and auditable patch layer over the complete source of [Pi](https://github.com/earendil-works/pi).
+Meldra is a Pi-based Agent framework, launcher, and auditable patch layer over the complete source of [Pi](https://github.com/earendil-works/pi).
 It extends Pi without cloning the Pi agent or converting external Runtime state into another Pi Session.
 
 ## 🧭 One Environment, One Profile
 
 | Environment | Default state path | Purpose |
 |---|---|---|
-| `default` | `~/.metapi/profiles/default/` | MetaPi's default isolated environment |
+| `default` | `~/.metapi/profiles/default/` | Meldra's default isolated environment |
 | Ordinary Profile | `~/.metapi/profiles/<name>/` | Independent workflow, models, packages, and optional Runtime |
-| `pi` | `~/.pi/agent/` | Original Pi compatibility with no MetaPi-only injection |
+| `pi` | `~/.pi/agent/` | Original Pi compatibility with no Meldra-only injection |
 | WorkSpace | `~/.metapi/workspaces/` or an explicit directory | Current Session working directory |
 
 > [!NOTE]
@@ -76,19 +76,19 @@ Portable Profiles use a Pi-compatible `package.json`. Another user receives the 
 | Installation entry | Status | Meaning |
 |---|---|---|
 | Run from source | `SUPPORTED` | Development and audit entry |
-| [`MetaPi-Setup.exe`](https://github.com/Slapq/MetaPi/releases/tag/v0.1.1) | `SUPPORTED` | Windows x64; includes Node.js and portable Windows Terminal |
-| [`MetaPi-Setup-NodeJS.exe`](https://github.com/Slapq/MetaPi/releases/tag/v0.1.1) | `SUPPORTED` | Windows x64; uses existing Node.js and warns without blocking installation when it is absent or old |
-| Scoped npm Bootstrap | `PLANNED` | The MetaPi organization and package name are unconfirmed; no fake command is provided |
-| Starter Bundle + onboarding | `SUPPORTED` | `metapi setup` installs or restores the Bundle; `/setup` in `default` guides Provider, model, Scout, and thinking-level configuration and can be skipped |
-| Windows desktop shortcut | `SUPPORTED` | Launches `metapi --profile default --workspace` in the bundled Windows Terminal |
+| [`Meldra-Setup.exe`](https://github.com/Slapq/Meldra/releases/tag/v0.1.1-fix) | `SUPPORTED` | Windows x64; includes Node.js and portable Windows Terminal |
+| [`Meldra-Setup-NodeJS.exe`](https://github.com/Slapq/Meldra/releases/tag/v0.1.1-fix) | `SUPPORTED` | Windows x64; uses existing Node.js and warns without blocking installation when it is absent or old |
+| Scoped npm Bootstrap | `PLANNED` | The Meldra organization and package name are unconfirmed; no fake command is provided |
+| Starter Bundle + onboarding | `SUPPORTED` | `meldra setup` installs or restores the Bundle; `/setup` in `default` guides Provider, model, Scout, and thinking-level configuration and can be skipped |
+| Windows desktop shortcut | `SUPPORTED` | Launches `meldra --profile default --workspace` in the bundled Windows Terminal |
 
-The installer adds `metapi` to the current-user PATH, so it works in any newly opened PowerShell, cmd, Git Bash, Windows Terminal, or VS Code terminal. The bundled Windows Terminal is only the default host for the desktop shortcut and does not restrict other terminals.
+The installer adds `meldra` to the current-user PATH, so it works in any newly opened PowerShell, cmd, Git Bash, Windows Terminal, or VS Code terminal. The bundled Windows Terminal is only the default host for the desktop shortcut and does not restrict other terminals.
 
 See the confirmed [Setup and Distribution Contract](docs/setup-and-distribution.en.md).
 
 ### Requirements
 
-The installers support Windows 10 build 19041+ / Windows 11 x64 and include Windows Terminal. `MetaPi-Setup.exe` also includes Node.js; the smaller `MetaPi-Setup-NodeJS.exe` uses the system Node.js. Both variants still require a Bash implementation for the Bash tool; Git for Windows is recommended.
+The installers support Windows 10 build 19041+ / Windows 11 x64 and include Windows Terminal. `Meldra-Setup.exe` also includes Node.js; the smaller `Meldra-Setup-NodeJS.exe` uses the system Node.js. Both variants still require a Bash implementation for the Bash tool; Git for Windows is recommended.
 
 Running from source requires:
 
@@ -133,15 +133,15 @@ Analyze this repository, explain its structure, and tell me which checks I shoul
 
 | Goal | TUI | Terminal |
 |---|---|---|
-| Manage Profiles | `/profile` | `metapi profile list` |
-| Inspect Profile status | `/profile status` | `metapi profile status` |
-| Create a WorkSpace | `/workspace` | `metapi --workspace [dir]` |
-| Configure the Starter Profile | `/setup` | `metapi setup` |
+| Manage Profiles | `/profile` | `meldra profile list` |
+| Inspect Profile status | `/profile status` | `meldra profile status` |
+| Create a WorkSpace | `/workspace` | `meldra --workspace [dir]` |
+| Configure the Starter Profile | `/setup` | `meldra setup` |
 | Configure plugin fields | `/config` | — |
-| Manage Pi Packages | — | `metapi install` / `list` / `config` |
+| Manage Pi Packages | — | `meldra install` / `list` / `config` |
 | Resume a Session | `/resume` | `metapi -c` / `metapi -r` |
-| Share and audit a Profile | `/profile export` | `metapi profile export <name>` |
-| Export a Session | `/export` | `metapi --export <file>` |
+| Share and audit a Profile | `/profile export` | `meldra profile export <name>` |
+| Export a Session | `/export` | `meldra --export <file>` |
 | Reload resources | `/reload` | — |
 
 See the [complete User Guide](docs/user-guide.en.md) for directory bindings, Profile Bundles, DSH, and troubleshooting.
@@ -152,12 +152,12 @@ See the [complete User Guide](docs/user-guide.en.md) for directory bindings, Pro
 |---|---|---|
 | Manages | Extensions, Skills, Prompts, Themes | Native external-Runtime plugins |
 | Scope | Current Profile; `-l` targets WorkSpace `.pi` | The named Profile Runtime |
-| Entry | `metapi install` / `config` | `metapi profile plugins` |
+| Entry | `meldra install` / `config` | `meldra profile plugins` |
 | Authority | Pi Package manager | The matching Runtime provider |
 
 > [!TIP]
 > `/config` edits Profile plugin fields; `/settings` belongs to the active Agent Runtime;
-> `metapi config` is the Pi Package resource selector. They are separate configuration layers.
+> `meldra config` is the Pi Package resource selector. They are separate configuration layers.
 
 Ordinary plugin configuration follows the fixed
 [Profile Config Registration Protocol](docs/extensions/profile-config-protocol.en.md)
@@ -168,7 +168,7 @@ to keep fields, storage, and interaction consistent.
 Any Portable Profile can select DSH with `runtime.provider: "deepseek-harness"`; the Profile does not need to be named `dsh`.
 
 ```bash
-metapi --profile research-harness
+meldra --profile research-harness
 ```
 
 Open `/dsh` for the management center. Common entries include:
@@ -177,7 +177,7 @@ Open `/dsh` for the management center. Common entries include:
 /resume  /sessions  /model  /preset  /settings  /queue  /plugins  /dsh trajectory
 ```
 
-Harness owns the Agent loop, Session ledger, models, Presets, tools, queue, Settings, plugins, and persistence. MetaPi owns Profile lifecycle, protocol adaptation, Pi TUI presentation, and the verified model bridge. DSH therefore uses the same interface design language and model-selection entry as an ordinary MetaPi Profile without sharing a writable Session.
+Harness owns the Agent loop, Session ledger, models, Presets, tools, queue, Settings, plugins, and persistence. Meldra owns Profile lifecycle, protocol adaptation, Pi TUI presentation, and the verified model bridge. DSH therefore uses the same interface design language and model-selection entry as an ordinary Meldra Profile without sharing a writable Session.
 
 When DSH fails, switch to the default Pi Agent in the same WorkSpace, inspect and repair the project or integration, then switch back to DSH. This is a manual recovery workflow, not automatic multi-Agent orchestration.
 
@@ -190,7 +190,7 @@ When DSH fails, switch to the default Pi Agent in the same WorkSpace, inspect an
 | [User Guide](docs/user-guide.en.md) | Startup, Profiles, WorkSpaces, packages, DSH, Sessions, and export |
 | [Setup and Distribution Contract](docs/setup-and-distribution.en.md) | Current entry and planned installer, Bootstrap, Starter Bundle, onboarding, and shortcut |
 | [Development Guide](docs/development.en.md) | Ownership, extension points, tests, upstream sync, and release boundaries |
-| [Documentation Index](docs/README.en.md) | Complete navigation across MetaPi and preserved Pi references |
+| [Documentation Index](docs/README.en.md) | Complete navigation across Meldra and preserved Pi references |
 | [Profile Runtimes](packages/coding-agent/docs/profile-runtimes.md) | External Agent Runtime provider contract |
 | [Extension Development](packages/coding-agent/docs/extensions.md) | Commands, tools, events, renderers, and TUI |
 | [Domain Context](CONTEXT.md) | Canonical Profile, WorkSpace, Runtime, and Package terminology |
@@ -204,7 +204,7 @@ npm run check
 npm test
 ```
 
-MetaPi follows an **exact Pi baseline + auditable patch layer**. Native Pi behavior, public protocols, and Profile data
+Meldra follows an **exact Pi baseline + auditable patch layer**. Native Pi behavior, public protocols, and Profile data
 remain compatible by default. Runtime changes require evidence, scoped approval, and validation for `default`,
 `pi` compatibility, and every affected Runtime Profile.
 
@@ -213,13 +213,13 @@ remain compatible by default. Runtime changes require evidence, scoped approval,
 ## ⚠️ Current Boundaries
 
 > [!WARNING]
-> - MetaPi and Pi use the launching user's filesystem, process, and network permissions; there is **no built-in sandbox**.
+> - Meldra and Pi use the launching user's filesystem, process, and network permissions; there is **no built-in sandbox**.
 > - Third-party Packages and Runtime plugins may access the network or execute lifecycle scripts. Inspect their source.
 > - DeepSeek Harness is pinned to `0.1.0-rc.7`; its release-candidate protocol may change.
 > - Full Windows tests have recorded platform differences; focused tests do not replace real TUI/Runtime acceptance.
 
 ## 🌱 Upstream and License
 
-MetaPi is maintained from the complete source of [earendil-works/pi](https://github.com/earendil-works/pi)
+Meldra is maintained from the complete source of [earendil-works/pi](https://github.com/earendil-works/pi)
 and retains the MIT license. It does not replace Pi; it adds isolated Profiles, external Runtimes,
 and a multi-environment product layer on an auditable upstream baseline.

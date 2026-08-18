@@ -710,7 +710,7 @@ const DSH_ACTIONS: DshActionDefinition[] = [
 	},
 	{
 		action: "exit",
-		label: "退出 MetaPi",
+		label: "退出 Meldra",
 		description: "通过统一生命周期关闭当前进程",
 		category: "runtime",
 	},
@@ -857,7 +857,7 @@ async function showDshManagementMenu(ctx: ExtensionContext, runtime: DshProfileR
 			})),
 		);
 		if (!action) continue;
-		if (action === "exit" && !(await ctx.ui.confirm("退出 MetaPi", "关闭当前 Harness Runtime 和 MetaPi 进程？")))
+		if (action === "exit" && !(await ctx.ui.confirm("退出 Meldra", "关闭当前 Harness Runtime 和 Meldra 进程？")))
 			continue;
 		return action;
 	}
@@ -1851,7 +1851,7 @@ export default function dshExtension(pi: ExtensionAPI): void {
 					} else if (operation === "更新全部") {
 						confirmation = {
 							title: "更新 Harness 包",
-							message: "通过原生 dsh plugin update 更新当前 MetaPi Profile 的 Harness 依赖？",
+							message: "通过原生 dsh plugin update 更新当前 Meldra Profile 的 Harness 依赖？",
 						};
 						request = { operation: "update" };
 					}
@@ -2873,7 +2873,7 @@ export default function dshExtension(pi: ExtensionAPI): void {
 			})
 			.catch((error) => {
 				if (generation === interactionGeneration)
-					ctx.ui.notify(`MetaPi 模型偏好未同步到 Harness：${String(error)}`, "error");
+					ctx.ui.notify(`Meldra 模型偏好未同步到 Harness：${String(error)}`, "error");
 			});
 		invalidateCommandCatalog();
 		invalidateSkillCatalog();

@@ -82,10 +82,10 @@ function applyChangedValue(target: Record<string, unknown>, key: string, before:
 
 /**
  * Keeps ordinary Profile workflow settings in the Profile while routing shared
- * UI preference writes, including Pi's global Theme setting, to MetaPi user
+ * UI preference writes, including Pi's global Theme setting, to Meldra user
  * storage.
  */
-export class MetaPiSettingsStorage implements SettingsStorage {
+export class MeldraSettingsStorage implements SettingsStorage {
 	private readonly profileStorage: FileSettingsStorage;
 	private readonly preferencesStorage: FileSettingsStorage;
 
@@ -127,15 +127,15 @@ export class MetaPiSettingsStorage implements SettingsStorage {
 	}
 }
 
-export type MetaPiMigrationDecision = "migrate" | "start-fresh";
+export type MeldraMigrationDecision = "migrate" | "start-fresh";
 
-interface MetaPiUserState {
+interface MeldraUserState {
 	schemaVersion: 1;
-	piMigration: MetaPiMigrationDecision;
+	piMigration: MeldraMigrationDecision;
 	initializedAt: string;
 }
 
-export interface MetaPiModelPaths {
+export interface MeldraModelPaths {
 	authPath: string;
 	modelsPath: string;
 	modelsStorePath: string;
@@ -167,7 +167,7 @@ export function getEffectiveModelsPath(profile: ProfileSelection): string {
 	return join(METAPI_HOME, "profiles", profile.name, "runtime", "models.json");
 }
 
-export function getMetaPiModelPaths(profile: ProfileSelection): MetaPiModelPaths {
+export function getMeldraModelPaths(profile: ProfileSelection): MeldraModelPaths {
 	if (profile.compatibility) {
 		const piAgentDir = getOriginalPiAgentDir();
 		return {
@@ -183,10 +183,10 @@ export function getMetaPiModelPaths(profile: ProfileSelection): MetaPiModelPaths
 	};
 }
 
-export function hasInitializedMetaPiUser(): boolean {
+export function hasInitializedMeldraUser(): boolean {
 	if (!existsSync(METAPI_USER_STATE_PATH)) return false;
 	try {
-		const state = readJsonObject(METAPI_USER_STATE_PATH) as Partial<MetaPiUserState>;
+		const state = readJsonObject(METAPI_USER_STATE_PATH) as Partial<MeldraUserState>;
 		return state.schemaVersion === 1 && (state.piMigration === "migrate" || state.piMigration === "start-fresh");
 	} catch {
 		return false;
@@ -216,7 +216,7 @@ function mergeMissing(target: Record<string, unknown>, source: Record<string, un
 	return result;
 }
 
-function prepareUserDirectory(decision: MetaPiMigrationDecision): void {
+function prepareUserDirectory(decision: MeldraMigrationDecision): void {
 	mkdirSync(METAPI_USER_DIR, { recursive: true });
 
 	if (decision === "migrate") {
@@ -239,15 +239,15 @@ function prepareUserDirectory(decision: MetaPiMigrationDecision): void {
 	}
 }
 
-export function initializeMetaPiUser(decision: MetaPiMigrationDecision): void {
-	if (hasInitializedMetaPiUser()) return;
+export function initializeMeldraUser(decision: MeldraMigrationDecision): void {
+	if (hasInitializedMeldraUser()) return;
 	prepareUserDirectory(decision);
 	if (decision === "migrate") migrateDefaultProfileModelPreferences();
 	writeJson(METAPI_USER_STATE_PATH, {
 		schemaVersion: 1,
 		piMigration: decision,
 		initializedAt: new Date().toISOString(),
-	} satisfies MetaPiUserState);
+	} satisfies MeldraUserState);
 }
 
 function migrateDefaultProfileModelPreferences(): void {
@@ -313,7 +313,7 @@ function composeModels(
 }
 
 export function materializeEffectiveModels(profile: ProfileSelection, profileBundlePath?: string): string {
-	if (profile.compatibility) return getMetaPiModelPaths(profile).modelsPath;
+	if (profile.compatibility) return getMeldraModelPaths(profile).modelsPath;
 	const shared = readOptionalJsonObject(METAPI_USER_MODELS_PATH, true);
 	const profilePath = profileBundlePath ? join(profileBundlePath, "models.json") : undefined;
 	const profileModels = profilePath && existsSync(profilePath) ? readJsonObject(profilePath, true) : {};
@@ -322,7 +322,7 @@ export function materializeEffectiveModels(profile: ProfileSelection, profileBun
 	return output;
 }
 
-export function readMetaPiUserPreferences(): Settings {
+export function readMeldraUserPreferences(): Settings {
 	return readOptionalJsonObject(METAPI_USER_PREFERENCES_PATH) as Settings;
 }
 

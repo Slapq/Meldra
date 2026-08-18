@@ -2,9 +2,9 @@
 
 [中文](profile-config-protocol.md) | [English](profile-config-protocol.en.md)
 
-状态：MetaPi Extension 的强制兼容合同。
+状态：Meldra Extension 的强制兼容合同。
 
-`metapi-config` 是承载 Profile 插件配置的内建特例。它是 hidden inline Extension，不是用户可编辑的 Profile Package。它的源码随 MetaPi build
+`metapi-config` 是承载 Profile 插件配置的内建特例。它是 hidden inline Extension，不是用户可编辑的 Profile Package。它的源码随 Meldra build
 和进程更新；`/reload` 会重建当前 factory 的注册，但不是该内建源码的热重载边界。
 
 普通 Profile 插件只要提供可由统一字段表达的配置，就必须使用本协议，使 `/config` 保持一致的字段、交互、持久化和变更通知。插件不得为这些字段另建通用配置中心或第二份配置存储。复杂资源管理、原生 credential
@@ -140,7 +140,7 @@ pi.events.on("config:updated:my-plugin", (config) => {
 
 该状态：
 
-- 归一个 MetaPi Profile 所有；
+- 归一个 Meldra Profile 所有；
 - 不同 Profile 互相隔离；
 - 不是项目 `.pi` 配置；
 - 不是 Session override；

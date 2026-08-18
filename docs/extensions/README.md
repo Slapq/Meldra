@@ -1,7 +1,7 @@
 # Pi Extension Index
 
-This index describes the Extension ecosystem in the MetaPi upstream baseline **Pi v0.84.2**
-(`914cf1472e715297caa30db4b9535d534a9eb718`) plus the current MetaPi patch layer.
+This index describes the Extension ecosystem in the Meldra upstream baseline **Pi v0.84.2**
+(`914cf1472e715297caa30db4b9535d534a9eb718`) plus the current Meldra patch layer.
 
 ## What “plugin” means here
 
@@ -18,7 +18,7 @@ Do not merge these distinct concepts:
 | Skill | On-demand agent instructions | No |
 | Prompt Template | Slash-expanded reusable prompt | No |
 | Theme | JSON terminal color resource | No |
-| Profile Bundle | MetaPi launch-environment package built on Pi Package resources | It may contain Extensions |
+| Profile Bundle | Meldra launch-environment package built on Pi Package resources | It may contain Extensions |
 
 Sources: [`packages/coding-agent/docs/extensions.md`](../../packages/coding-agent/docs/extensions.md),
 [`packages/coding-agent/docs/packages.md`](../../packages/coding-agent/docs/packages.md), and
@@ -28,9 +28,11 @@ Sources: [`packages/coding-agent/docs/extensions.md`](../../packages/coding-agen
 
 | Set | Count | Loaded by default? | Catalog |
 |---|---:|---:|---|
-| Product built-in Extensions | 5 | Yes, as hidden inline factories; DSH activates only for a matching Runtime | [Built-in Extensions](built-in-and-local.md#product-built-in-extensions) |
+| Product built-in Extensions | 5 | Yes, as hidden inline factories; DSH activates only for a matching Runtime | [Built-in and local](built-in-and-local.md#product-built-in-extensions) |
 | Pi official Extension examples | 78 | No | [Official examples](official-examples.md) |
-| **Indexed product and example entries** | **83** | Mixed | 5 built-ins + 78 official examples |
+| Current original-Pi user Extensions | 5 | In the original Pi user scope | [Built-in and local](built-in-and-local.md#current-machine-inventory) |
+| Current Meldra repository project Extensions | 4 | When this project is trusted | [Built-in and local](built-in-and-local.md#current-machine-inventory) |
+| **Indexed runtime entries** | **92** | Mixed | 5 built-ins + 78 official examples + 9 current-machine entries |
 | Test-only Extension factories | Multiple | No; test harness only | [Test fixtures](built-in-and-local.md#test-only-extension-fixtures) |
 
 The 78 official examples are source examples, not a recommended all-at-once plugin set. Sixty-eight appear in the
@@ -38,7 +40,8 @@ example README category tables; ten exist in the directory but are not listed in
 
 ## Documents
 
-- [Built-in Extensions](built-in-and-local.md) — the five product Extensions and the test-only fixture boundary.
+- [Built-in and current-machine Extensions](built-in-and-local.md) — the five product Extensions and the nine currently
+  configured or discovered Extension entries.
 - [Official example catalog](official-examples.md) — every one of the 78 official examples, including entry points, user
   surface, state, dependencies, and direct relationships.
 - [Relationship model](relationships.md) — loading order, collision rules, event chaining, UI replacement, shared state,
@@ -46,7 +49,7 @@ example README category tables; ten exist in the directory but are not listed in
 
 ## Product development guides
 
-- [MetaPi Starter plugin development](../../packages/coding-agent/starter-profile/DEVELOPMENT.md) — Profile Config,
+- [Meldra Starter plugin development](../../packages/coding-agent/starter-profile/DEVELOPMENT.md) — Profile Config,
   Provider Manager, Scout, Workflows, Questionnaire, Setup, packaging, testing, and troubleshooting.
 - [Profile Config registration protocol](profile-config-protocol.md) — normative Chinese contract.
 - [Profile Config registration protocol (English)](profile-config-protocol.en.md) — normative English contract.
@@ -92,10 +95,10 @@ See [relationships.md](relationships.md#load-and-distribution-relationships) for
 When upgrading to a later official Pi release:
 
 1. enumerate `packages/coding-agent/examples/extensions/` again;
-2. compare `builtInExtensions` and MetaPi inline factories;
+2. compare `builtInExtensions` and Meldra inline factories;
 3. compare Extension API events and registration methods;
 4. rerun the command/tool/flag/shortcut/UI relationship scan;
-5. keep machine-local Extension inventories outside the public repository.
+5. update the dated current-machine inventory separately from the official catalog.
 
 Do not infer that a newly added example is enabled by default. Do not infer Package ownership from a command name; Pi
 exposes `sourceInfo` for provenance.

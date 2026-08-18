@@ -1,6 +1,6 @@
 # Inject the simple config host into ordinary Profiles
 
-MetaPi will automatically inject a hidden inline `metapi-config` Extension into every ordinary MetaPi Profile, preserving pi-config's existing `config:*` event protocol, TUI, and `<agentDir>/plugin-configs` files. This makes the same small configuration surface available to more Profile plugins without introducing a parallel core Config API, changing MetaPi settings formats, or moving configuration into project `.pi`; the `pi` Compatibility Profile remains untouched.
+Meldra will automatically inject a hidden inline `metapi-config` Extension into every ordinary Meldra Profile, preserving pi-config's existing `config:*` event protocol, TUI, and `<agentDir>/plugin-configs` files. This makes the same small configuration surface available to more Profile plugins without introducing a parallel core Config API, changing Meldra settings formats, or moving configuration into project `.pi`; the `pi` Compatibility Profile remains untouched.
 
 `metapi-config` is an explicit built-in exception, not a user-editable Profile Package. `/reload` may recreate its registrations but is not required to re-import this built-in's source. It must not gain a separate provision, package-copy, update, or hot-reload lifecycle.
 

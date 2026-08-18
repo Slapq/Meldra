@@ -79,7 +79,7 @@ For VS Code, include `--wait` so pi resumes after the editor exits:
 
 ### Telemetry and update checks
 
-`enableInstallTelemetry` only controls the anonymous install/update ping to `https://pi.dev/api/report-install`. Update checks are a separate distribution capability. Official Pi can fetch `https://pi.dev/api/latest-version`; this MetaPi build has no approved release source and disables both startup distribution checks and self-update.
+`enableInstallTelemetry` only controls the anonymous install/update ping to `https://pi.dev/api/report-install`. Update checks are a separate distribution capability. Official Pi can fetch `https://pi.dev/api/latest-version`; this Meldra build has no approved release source and disables both startup distribution checks and self-update.
 
 `PI_SKIP_VERSION_CHECK=1` also disables an enabled distribution version check. Use `--offline` or `PI_OFFLINE=1` to disable all startup network operations described here, including package update checks and install/update telemetry.
 

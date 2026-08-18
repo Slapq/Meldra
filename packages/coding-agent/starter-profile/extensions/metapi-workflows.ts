@@ -154,7 +154,7 @@ const HANDOFF_SYSTEM_PROMPT = `You are a context transfer assistant. Given a con
 
 Return only the prompt for the new thread, without a preamble.`;
 
-export default function metaPiWorkflows(pi: ExtensionAPI) {
+export default function meldraWorkflows(pi: ExtensionAPI) {
 	let config = { ...DEFAULT_CONFIG };
 	let presets: PresetsConfig = {};
 	let activePresetName: string | undefined;
@@ -169,7 +169,7 @@ export default function metaPiWorkflows(pi: ExtensionAPI) {
 
 	pi.events.emit("config:register", {
 		id: CONFIG_ID,
-		label: "MetaPi 工作流",
+		label: "Meldra 工作流",
 		icon: "◆",
 		fields: [
 			{ type: "section", label: "用户命令" },
@@ -244,7 +244,7 @@ export default function metaPiWorkflows(pi: ExtensionAPI) {
 
 	function featureEnabled(enabled: boolean, name: string, ctx: ExtensionContext): boolean {
 		if (enabled) return true;
-		ctx.ui.notify(`${name} 已在 /config → MetaPi 工作流中关闭`, "info");
+		ctx.ui.notify(`${name} 已在 /config → Meldra 工作流中关闭`, "info");
 		return false;
 	}
 
@@ -356,12 +356,12 @@ export default function metaPiWorkflows(pi: ExtensionAPI) {
 	}
 
 	pi.registerFlag("preset", {
-		description: "MetaPi workflow preset to use",
+		description: "Meldra workflow preset to use",
 		type: "string",
 	});
 
 	pi.registerShortcut(Key.ctrlShift("u"), {
-		description: "Cycle MetaPi workflow modes",
+		description: "Cycle Meldra workflow modes",
 		handler: async (ctx) => {
 			if (!featureEnabled(config.presets, "工作模式", ctx)) return;
 			const names = Object.keys(presets).sort();

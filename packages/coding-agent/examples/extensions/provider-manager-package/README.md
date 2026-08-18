@@ -1,6 +1,6 @@
-# MetaPi Provider Manager Example
+# Meldra Provider Manager Example
 
-A complete interactive TUI provider and model manager for [MetaPi](https://github.com/Slapq/MetaPi) and compatible Pi hosts.
+A complete interactive TUI provider and model manager for [Meldra](https://github.com/Slapq/Meldra) and compatible Pi hosts.
 
 Configure custom LLM providers and models through a visual terminal form — no manual JSON editing needed.
 
@@ -18,7 +18,7 @@ Configure custom LLM providers and models through a visual terminal form — no 
 
 ## Source Example
 
-This directory is a private monorepo example package, not a separately published npm package. To develop or install it, use Pi's documented local-package workflow and point it at this directory after cloning MetaPi. The extension entry is:
+This directory is a private monorepo example package, not a separately published npm package. To develop or install it, use Pi's documented local-package workflow and point it at this directory after cloning Meldra. The extension entry is:
 
 ```text
 extensions/provider-manager.ts
@@ -90,7 +90,7 @@ Model Edit
 
 ## Persistence
 
-MetaPi ordinary Profiles persist this package's providers in the shared user model catalog. The reserved `pi` compatibility Profile uses its native agent-local `models.json`. Saving also registers the provider in the current session, so a restart is not required.
+Meldra ordinary Profiles persist this package's providers in the shared user model catalog. The reserved `pi` compatibility Profile uses its native agent-local `models.json`. Saving also registers the provider in the current session, so a restart is not required.
 
 ## Discovery and import notes
 

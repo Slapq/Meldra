@@ -99,7 +99,7 @@ function printConfigCommandHelp(): void {
   ${CONFIG_COMMAND_USAGE}
 
 Open the resource configuration TUI to enable or disable package resources.
-Without -l, starts in the current MetaPi Profile.
+Without -l, starts in the current Meldra Profile.
 Press Tab in the TUI to switch between Current Profile and Current WorkSpace.
 
 Options:

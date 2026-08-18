@@ -25,7 +25,7 @@ vi.mock("../src/metapi/profile-service.ts", async (importOriginal) => {
 			}
 			return {
 				name,
-				displayName: name === "work" ? "工作配置" : "MetaPi Starter",
+				displayName: name === "work" ? "工作配置" : "Meldra Starter",
 				agentDir: `C:\\Users\\test\\.metapi\\profiles\\${name}\\agent`,
 				compatibility: false,
 			};
@@ -33,7 +33,7 @@ vi.mock("../src/metapi/profile-service.ts", async (importOriginal) => {
 	};
 });
 
-import { createMetaPiProfileExtension } from "../src/metapi/profile-extension.ts";
+import { createMeldraProfileExtension } from "../src/metapi/profile-extension.ts";
 import { METAPI_SESSION_PROFILE_ENTRY } from "../src/metapi/session-profile.ts";
 
 interface SetupOptions {
@@ -50,7 +50,7 @@ function setup(options: SetupOptions = {}) {
 		},
 		on: vi.fn(),
 	} as unknown as ExtensionAPI;
-	createMetaPiProfileExtension()(api);
+	createMeldraProfileExtension()(api);
 
 	let selectIndex = 0;
 	let confirmIndex = 0;
@@ -88,7 +88,7 @@ function setup(options: SetupOptions = {}) {
 	return { command: profileCommand, ctx, switchProfile };
 }
 
-describe("MetaPi Profile extension", () => {
+describe("Meldra Profile extension", () => {
 	it("opens a current-session Profile chooser", async () => {
 		const { command, ctx } = setup();
 
@@ -98,7 +98,7 @@ describe("MetaPi Profile extension", () => {
 		const [title, items] = vi.mocked(ctx.ui.select).mock.calls[0];
 		expect(title).toContain("选择当前会话使用的配置");
 		expect(items).toContain("原版 Pi 配置（当前会话）");
-		expect(items).not.toContain("MetaPi 默认配置");
+		expect(items).not.toContain("Meldra 默认配置");
 		expect(items).not.toContain("工作配置");
 	});
 
@@ -142,7 +142,7 @@ describe("MetaPi Profile extension", () => {
 
 			expect(switchProfile).not.toHaveBeenCalled();
 			expect(ctx.ui.notify).toHaveBeenCalledWith(
-				expect.stringContaining(`metapi --profile ${targetProfile}`),
+				expect.stringContaining(`meldra --profile ${targetProfile}`),
 				"error",
 			);
 		},
@@ -154,7 +154,7 @@ describe("MetaPi Profile extension", () => {
 		await command.handler("status", ctx);
 
 		expect(ctx.ui.notify).toHaveBeenCalledWith(expect.stringContaining("当前会话：原版 Pi 配置"), "info");
-		expect(ctx.ui.notify).toHaveBeenCalledWith(expect.stringContaining("当前目录下次启动：MetaPi 默认配置"), "info");
+		expect(ctx.ui.notify).toHaveBeenCalledWith(expect.stringContaining("当前目录下次启动：Meldra 默认配置"), "info");
 	});
 
 	it("keeps directory binding as an explicit command", async () => {

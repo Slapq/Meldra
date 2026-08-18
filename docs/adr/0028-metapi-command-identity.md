@@ -1,3 +1,3 @@
-# Provide MetaPi as a separate metapi command
+# Provide Meldra with a legacy metapi command
 
-MetaPi will install one user-facing command, `metapi`, and will not overwrite, alias, or replace an existing `pi` command. `metapi` starts the MetaPi Starter Profile by default; `metapi --profile pi` provides explicit access to the original Pi state through the compatibility Profile. This keeps installation and removal reversible and allows direct behavior comparison.
+Superseded by [ADR 0043](0043-rename-metapi-to-meldra.md). The `metapi` command remains a compatibility alias, but `meldra` is now the sole primary user-facing command.

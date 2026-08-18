@@ -10,7 +10,7 @@ import {
 	resolveProfile,
 } from "../src/metapi/profile-service.ts";
 
-describe("MetaPi Profile selection", () => {
+describe("Meldra Profile selection", () => {
 	test("parses and removes the profile startup option", () => {
 		const args = ["--profile", "work", "--model", "gpt", "hello"];
 		expect(extractProfileArgument(args)).toBe("work");

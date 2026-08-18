@@ -1,8 +1,8 @@
-# MetaPi 使用教程
+# Meldra 使用教程
 
 [中文](user-guide.md) | [English](user-guide.en.md) | [返回首页](../README.md)
 
-本教程面向日常使用者，说明如何从源码启动 MetaPi、选择工作环境、管理 Session 与插件，以及使用 DeepSeek Harness Profile。Pi 原有命令的完整参考见 [Pi
+本教程面向日常使用者，说明如何从源码启动 Meldra、选择工作环境、管理 Session 与插件，以及使用 DeepSeek Harness Profile。Pi 原有命令的完整参考见 [Pi
 文档](../packages/coding-agent/docs/index.md)。
 
 ## 1. 准备环境
@@ -15,9 +15,9 @@
 - 可用的终端
 - Windows 上可用的 Bash，推荐 Git for Windows
 
-Windows x64 用户可以从 [`v0.1.0-preview.7`](https://github.com/Slapq/MetaPi/releases/tag/v0.1.0-preview.7) 下载双安装器：`MetaPi-Setup.exe` 内置 Node.js，`MetaPi-Setup-NodeJS.exe` 使用系统 Node.js。两版都内置 portable Windows Terminal，桌面快捷方式默认使用它；安装器同时把 `metapi` 加入当前用户 PATH，因此任意新开的 PowerShell、cmd、Git Bash、Windows Terminal 或 VS Code terminal 都能运行 MetaPi。安装器当前未签名，Windows 可能显示 Unknown publisher 或 SmartScreen 提示。
+Windows x64 用户可以从 [`v0.1.0-preview.7`](https://github.com/Slapq/Meldra/releases/tag/v0.1.0-preview.7) 下载双安装器：`Meldra-Setup.exe` 内置 Node.js，`Meldra-Setup-NodeJS.exe` 使用系统 Node.js。两版都内置 portable Windows Terminal，桌面快捷方式默认使用它；安装器同时把 `metapi` 加入当前用户 PATH，因此任意新开的 PowerShell、cmd、Git Bash、Windows Terminal 或 VS Code terminal 都能运行 Meldra。安装器当前未签名，Windows 可能显示 Unknown publisher 或 SmartScreen 提示。
 
-scoped npm Bootstrap 尚未发布；不要使用官方 Pi 包代替 MetaPi。`metapi update --self` 仍禁用。Starter Bundle Setup 与 Provider/模型/Scout 配置向导已经支持。完整产品边界见 [Setup 与发行合同](setup-and-distribution.md)。
+scoped npm Bootstrap 尚未发布；不要使用官方 Pi 包代替 Meldra。`meldra update --self` 仍禁用。Starter Bundle Setup 与 Provider/模型/Scout 配置向导已经支持。完整产品边界见 [Setup 与发行合同](setup-and-distribution.md)。
 
 安装器支持 Windows 10 build 19041+ / Windows 11 x64。Bash tool 仍需要 Bash，推荐 Git for Windows。使用源码入口时还需要 Node.js `>=22.19.0`、npm 与 Git；Linux 上使用 DSH 还需要 Python 3、Make 和 C++ toolchain。
 
@@ -52,13 +52,13 @@ setup](../packages/coding-agent/docs/terminal-setup.md)。
 
 | 状态 | 默认位置 | 谁拥有 |
 |---|---|---|
-| MetaPi Profile | `~/.metapi/profiles/<name>/` | 对应 Profile |
-| MetaPi 用户偏好 | `~/.metapi/user/preferences.json` | 当前 MetaPi 用户 |
+| Meldra Profile | `~/.metapi/profiles/<name>/` | 对应 Profile |
+| Meldra 用户偏好 | `~/.metapi/user/preferences.json` | 当前 Meldra 用户 |
 | Pi compatibility | `~/.pi/agent/` | 原始 Pi |
-| WorkSpace | `~/.metapi/workspaces/` 或显式目录 | 当前 MetaPi Session |
+| WorkSpace | `~/.metapi/workspaces/` 或显式目录 | 当前 Meldra Session |
 | DSH Runtime | `<profile>/agent/dsh-runtime/` | 对应 Profile 的 Harness |
 
-普通 Profile 不共享 Profile 工作流设置、插件配置、Session 或 Runtime 状态。主题、终端显示、编辑器和导航等界面与控制偏好属于 User Experience Preferences，由普通 Profile 共享，并写入 `~/.metapi/user/preferences.json`。`pi` Profile 是保留的兼容入口，继续使用原始 Pi 状态，不读取这份 MetaPi 用户偏好，也不接受 MetaPi 专属配置宿主或 DSH surface。
+普通 Profile 不共享 Profile 工作流设置、插件配置、Session 或 Runtime 状态。主题、终端显示、编辑器和导航等界面与控制偏好属于 User Experience Preferences，由普通 Profile 共享，并写入 `~/.metapi/user/preferences.json`。`pi` Profile 是保留的兼容入口，继续使用原始 Pi 状态，不读取这份 Meldra 用户偏好，也不接受 Meldra 专属配置宿主或 DSH surface。
 
 WorkSpace 只是会话的工作目录。它不会自动获得 Profile 的模型、插件、设置或 Harness 状态。
 
@@ -67,10 +67,10 @@ WorkSpace 只是会话的工作目录。它不会自动获得 Profile 的模型�
 启动默认 Profile：
 
 ```bash
-metapi --profile default
+meldra --profile default
 ```
 
-`default` 定位为由项目组持续调校的极简 MetaPi Starter Profile，以少量默认能力提供稳定、直接的日常开发入口。干净的首次 MetaPi 初始化会自动 provision Starter Bundle；已有用户可运行 `metapi setup` 安装或恢复。Bundle 提供 Provider Manager、Scout、MetaPi Workflows 和 `/setup`，而 `/config` 继续由内建 Profile Config Host 提供。
+`default` 定位为由项目组持续调校的极简 Meldra Starter Profile，以少量默认能力提供稳定、直接的日常开发入口。干净的首次 Meldra 初始化会自动 provision Starter Bundle；已有用户可运行 `meldra setup` 安装或恢复。Bundle 提供 Provider Manager、Scout、Meldra Workflows 和 `/setup`，而 `/config` 继续由内建 Profile Config Host 提供。
 
 进入 TUI 后运行：
 
@@ -101,7 +101,7 @@ Bundle、命令历史或 Session 分享内容。
 读取 README，说明项目结构，并运行不会修改业务状态的基础检查。
 ```
 
-MetaPi 继承 Pi 的文件与 shell 工具。工具使用启动进程的权限；MetaPi 不提供内建沙箱。需要隔离时参考
+Meldra 继承 Pi 的文件与 shell 工具。工具使用启动进程的权限；Meldra 不提供内建沙箱。需要隔离时参考
 [Containerization](../packages/coding-agent/docs/containerization.md)。
 
 ## 4. 使用编辑器与资源
@@ -125,8 +125,8 @@ MetaPi 继承 Pi 的文件与 shell 工具。工具使用启动进程的权限�
 ### 查看状态
 
 ```bash
-metapi profile status
-metapi profile list
+meldra profile status
+meldra profile list
 ```
 
 选择顺序：
@@ -138,16 +138,16 @@ metapi profile list
 显式启动原始 Pi 状态：
 
 ```bash
-metapi --profile pi
+meldra --profile pi
 ```
 
 ### 绑定目录
 
 ```bash
-metapi profile bind research
-metapi profile bind D:/Projects/team-a research
-metapi profile unbind
-metapi profile unbind D:/Projects/team-a
+meldra profile bind research
+meldra profile bind D:/Projects/team-a research
+meldra profile unbind
+meldra profile unbind D:/Projects/team-a
 ```
 
 绑定适用于该目录及其后代目录。更近的绑定优先。绑定只影响新启动时的默认 Profile，不会自动导入或更新 Profile。
@@ -158,20 +158,20 @@ metapi profile unbind D:/Projects/team-a
 /profile
 ```
 
-普通 MetaPi Profile 之间的切换会重建当前 Profile 的设置、模型、Extension 和可选 Runtime。当前 MetaPi Session 与 WorkSpace 保留，旧 Runtime 必须先完成 teardown。`pi` compatibility 使用独立的原始 Pi Session 存储，不能从普通 Profile 在当前会话内进入或离开；请退出后使用 `metapi --profile pi`，返回普通 Profile 时也应显式新启动。两侧都不会移动、复制或发现对方的 Session 文件。
+普通 Meldra Profile 之间的切换会重建当前 Profile 的设置、模型、Extension 和可选 Runtime。当前 Meldra Session 与 WorkSpace 保留，旧 Runtime 必须先完成 teardown。`pi` compatibility 使用独立的原始 Pi Session 存储，不能从普通 Profile 在当前会话内进入或离开；请退出后使用 `meldra --profile pi`，返回普通 Profile 时也应显式新启动。两侧都不会移动、复制或发现对方的 Session 文件。
 
 ### 导入、导出和更新
 
 ```bash
-metapi profile import <source> --name research --no-bind
-metapi profile import <source> --name research --bind-current
-metapi profile export research ./research-profile
-metapi profile update research
+meldra profile import <source> --name research --no-bind
+meldra profile import <source> --name research --bind-current
+meldra profile export research ./research-profile
+meldra profile update research
 ```
 
 非交互 import 必须明确选择 `--bind-current` 或 `--no-bind`。已有同名 Profile 时使用交互选择，或显式 `--replace`。
 
-Portable Profile 使用 Pi-compatible `package.json`，可以携带 Pi 资源、公开设置、模型选择、Provider 声明、插件、Scout、工作流和 Runtime 声明。官方 Pi 可以读取该 Package，并忽略不认识的 MetaPi metadata。其他用户导入后获得同一套可分享配置，但不会获得作者的：
+Portable Profile 使用 Pi-compatible `package.json`，可以携带 Pi 资源、公开设置、模型选择、Provider 声明、插件、Scout、工作流和 Runtime 声明。官方 Pi 可以读取该 Package，并忽略不认识的 Meldra metadata。其他用户导入后获得同一套可分享配置，但不会获得作者的：
 
 - 真实凭据；
 - Pi 或 Harness Session；
@@ -187,13 +187,13 @@ Portable Profile 使用 Pi-compatible `package.json`，可以携带 Pi 资源、
 创建默认位置的 WorkSpace：
 
 ```bash
-metapi --workspace
+meldra --workspace
 ```
 
 使用显式目录：
 
 ```bash
-metapi --workspace D:/WorkSpaces/release-audit
+meldra --workspace D:/WorkSpaces/release-audit
 ```
 
 查看当前绑定：
@@ -202,7 +202,7 @@ metapi --workspace D:/WorkSpaces/release-audit
 /workspace
 ```
 
-`metapi-workspace` 是普通 MetaPi Profile 自动获得的内建插件。Windows Setup 会在当前用户桌面创建一个快捷方式，以 `metapi --profile default --workspace` 进入干净的 Starter Profile + WorkSpace。快捷方式使用内置 Windows Terminal，但 CLI 不绑定该终端。
+`metapi-workspace` 是普通 Meldra Profile 自动获得的内建插件。Windows Setup 会在当前用户桌面创建一个快捷方式，以 `meldra --profile default --workspace` 进入干净的 Starter Profile + WorkSpace。快捷方式使用内置 Windows Terminal，但 CLI 不绑定该终端。
 
 WorkSpace 与 Profile 是正交的：
 
@@ -216,7 +216,7 @@ WorkSpace 与 Profile 是正交的：
 在当前项目中创建 manifest：
 
 ```bash
-metapi init
+meldra init
 ```
 
 生成 `.pi/metapi.json`。项目可以在其中声明 Profile Bundle 推荐：
@@ -238,20 +238,20 @@ metapi init
 Pi Package 可以提供 Extension、Skill、Prompt Template 和 Theme：
 
 ```bash
-metapi install <source>
-metapi list
-metapi update --extensions
-metapi remove <source>
+meldra install <source>
+meldra list
+meldra update --extensions
+meldra remove <source>
 ```
 
 使用 `-l` 时，目标是当前 WorkSpace/项目的 `.pi` 设置，不是 Profile：
 
 ```bash
-metapi install <source> -l
-metapi config -l
+meldra install <source> -l
+meldra config -l
 ```
 
-项目级资源需要项目受信任。`metapi config` 是 package resource selector，用于启用或禁用 Package 中的资源。
+项目级资源需要项目受信任。`meldra config` 是 package resource selector，用于启用或禁用 Package 中的资源。
 
 来源语法、信任和更新行为见 [Pi Packages](../packages/coding-agent/docs/packages.md)。
 
@@ -259,7 +259,7 @@ metapi config -l
 
 ### `/config`
 
-普通 MetaPi Profile 自动提供：
+普通 Meldra Profile 自动提供：
 
 ```text
 /config
@@ -272,28 +272,28 @@ metapi config -l
 <profile-agentDir>/plugin-configs/<plugin-id>.json
 ```
 
-不同 Profile 互不共享。`pi` compatibility Profile 不注入这个 MetaPi host；如果原始 Pi 自己安装了 `pi-config`，则继续使用原始安装。
+不同 Profile 互不共享。`pi` compatibility Profile 不注入这个 Meldra host；如果原始 Pi 自己安装了 `pi-config`，则继续使用原始安装。
 
 ### `/settings`
 
 在普通 Pi Runtime 中，`/settings` 使用 Pi 的 Settings。在 DSH Runtime 中，同名命令由 DSH surface 接管，使用 Harness 原生模型、reasoning
 effort、Settings、Provider 与 credential service。
 
-### `metapi config`
+### `meldra config`
 
 这是 Package resource selector，与 `/config` 不是同一功能。
 
 ## 10. Session、恢复与分支
 
-MetaPi Session 自动保存。常用启动方式：
+Meldra Session 自动保存。常用启动方式：
 
 ```bash
 metapi -c
 metapi -r
-metapi --session <path-or-id>
-metapi --fork <path-or-id>
-metapi --no-session
-metapi --name "release audit"
+meldra --session <path-or-id>
+meldra --fork <path-or-id>
+meldra --no-session
+meldra --name "release audit"
 ```
 
 TUI 中常用：
@@ -306,7 +306,7 @@ TUI 中常用：
 - `/clone`：复制当前活动分支；
 - `/compact`：压缩上下文。
 
-在使用原生 Pi Agent 的 Profile 中，`/resume` 会跨普通 MetaPi Profile 的物理目录查找 Session，但只显示最新 Profile metadata 归属于当前 Profile 的对话；没有 metadata 的旧 Session 回退到其物理 Profile 目录。这样，切换过 Profile 的同一 Session 仍可恢复，而 default Pi Agent 与 DSH 对话不会互相混入。`metapi --profile pi` 仍只发现 `~/.pi/agent` 下的原始 Pi Session。
+在使用原生 Pi Agent 的 Profile 中，`/resume` 会跨普通 Meldra Profile 的物理目录查找 Session，但只显示最新 Profile metadata 归属于当前 Profile 的对话；没有 metadata 的旧 Session 回退到其物理 Profile 目录。这样，切换过 Profile 的同一 Session 仍可恢复，而 default Pi Agent 与 DSH 对话不会互相混入。`meldra --profile pi` 仍只发现 `~/.pi/agent` 下的原始 Pi Session。
 
 详细行为见 [Sessions](../packages/coding-agent/docs/sessions.md)。
 
@@ -326,12 +326,12 @@ runtime，因此不会假装能渲染未知 custom metadata。
 Profile export 与 Session export 不同：
 
 ```bash
-metapi profile export research ./research-profile
+meldra profile export research ./research-profile
 ```
 
 前者迁移环境声明，后者保存会话记录。
 
-Profile export 会先提醒：Bundle 源文件按原样复制。MetaPi 管理的凭据、Session、Runtime Settings、cache、Loader 状态、项目 `.pi`、目录绑定和单次 CLI 覆盖不会被自动加入；但已经硬编码在 Bundle 源文件中的 Key 或 token 仍可能随文件导出。
+Profile export 会先提醒：Bundle 源文件按原样复制。Meldra 管理的凭据、Session、Runtime Settings、cache、Loader 状态、项目 `.pi`、目录绑定和单次 CLI 覆盖不会被自动加入；但已经硬编码在 Bundle 源文件中的 Key 或 token 仍可能随文件导出。
 
 每次导出都会生成 `METAPI_PROFILE_EXPORT_AUDIT.md`，其中列出：
 
@@ -339,7 +339,7 @@ Profile export 会先提醒：Bundle 源文件按原样复制。MetaPi 管理的
 - 明确未自动导出的托管状态；
 - 疑似硬编码凭据的文件路径、行号和类型。
 
-审计报告永不写入匹配值，也不会阻止导出或自动修改文件。发现提示后，将硬编码值迁移到 MetaPi credential service 或环境变量，再重新导出并检查报告。
+审计报告永不写入匹配值，也不会阻止导出或自动修改文件。发现提示后，将硬编码值迁移到 Meldra credential service 或环境变量，再重新导出并检查报告。
 
 ## 12. 使用 DeepSeek Harness Profile
 
@@ -348,7 +348,7 @@ Profile Bundle 通过 `runtime.provider: "deepseek-harness"` 选择 Harness。Pr
 启动：
 
 ```bash
-metapi --profile research-harness
+meldra --profile research-harness
 ```
 
 打开管理中心：
@@ -374,7 +374,7 @@ DSH 运行时规则：
 
 - Harness Session 与 Pi Session 独立；
 - Harness 保持 Agent loop、队列、实际模型 route、Preset、工具、Settings 和 ledger 权威；
-- `/model` 使用 Pi 原生选择器读取当前 MetaPi Profile 的 Provider 与模型；只有确认选择后，MetaPi 才把该单个模型注册到 DSH `llm-pi-ai` Settings、通过 credential reference 提供凭据，并请求 Harness 切换；取消选择不会写入；
+- `/model` 使用 Pi 原生选择器读取当前 Meldra Profile 的 Provider 与模型；只有确认选择后，Meldra 才把该单个模型注册到 DSH `llm-pi-ai` Settings、通过 credential reference 提供凭据，并请求 Harness 切换；取消选择不会写入；
 - `/dsh model` 继续查看和选择 Harness 原生 catalog；
 - 当前 rc.7 可桥接 `openai-completions`、`openai-responses` 和 `anthropic-messages`；Anthropic endpoint 使用 Pi 原生约定的服务根地址，由 SDK 追加 `/v1/messages`；其他 API 会在写入 DSH Settings 前明确拒绝，不会猜测转换协议；
 - `/tree`、`/clone`、`/scoped-models`、`/import`、`/login`、`/logout` 等不符合 DSH 状态域的 Pi 命令会隐藏或拒绝；
@@ -383,7 +383,7 @@ DSH 运行时规则：
 - `/rewind`、`/dsh rewind` 与启用状态下的双击 `Esc` 使用同一个 Pi cursor message selector，再由 Harness 执行 native fork；
 - Profile 切换和退出必须释放 Harness 进程与 listener。
 
-DSH 出错时，可在同一 WorkSpace 中切换到默认 Pi Agent，检查项目与 MetaPi/DSH 集成状态、实施修复，再切回 DSH。这是人工恢复工作流；当前没有自动多 Agent 编排、自动委派或共享可写 Session。
+DSH 出错时，可在同一 WorkSpace 中切换到默认 Pi Agent，检查项目与 Meldra/DSH 集成状态、实施修复，再切回 DSH。这是人工恢复工作流；当前没有自动多 Agent 编排、自动委派或共享可写 Session。
 
 完整命令和能力见 [DeepSeek Harness Profile Runtime](../packages/coding-agent/docs/deepseek-harness.md)。
 
@@ -392,10 +392,10 @@ DSH 出错时，可在同一 WorkSpace 中切换到默认 Pi Agent，检查项�
 终端：
 
 ```bash
-metapi profile plugins research-harness list
-metapi profile plugins research-harness add <source>
-metapi profile plugins research-harness remove <package>
-metapi profile plugins research-harness update
+meldra profile plugins research-harness list
+meldra profile plugins research-harness add <source>
+meldra profile plugins research-harness remove <package>
+meldra profile plugins research-harness update
 ```
 
 TUI：
@@ -408,7 +408,7 @@ TUI：
 /plugin update
 ```
 
-MetaPi 将 source 原样交给 DSH/pnpm。写操作可能访问网络并运行 lifecycle scripts；TUI 会先确认。命令成功不等于 Loader 已激活，MetaPi 还会通过 fresh
+Meldra 将 source 原样交给 DSH/pnpm。写操作可能访问网络并运行 lifecycle scripts；TUI 会先确认。命令成功不等于 Loader 已激活，Meldra 还会通过 fresh
 Runtime/Loader Inventory 验证。
 
 `list` 是只读操作，不会为了缺失的 pnpm 自动下载工具。显式 mutation 在 PATH 没有 pnpm 时可以通过 Corepack 获取固定版本。
@@ -419,8 +419,8 @@ Runtime/Loader Inventory 验证。
 
 ```bash
 metapi -p "总结这个仓库"
-metapi --mode json -p "运行静态检查"
-metapi --mode rpc
+meldra --mode json -p "运行静态检查"
+meldra --mode rpc
 ```
 
 非交互模式不会显示项目 trust prompt。使用已保存 trust、全局 `defaultProjectTrust`，或本次命令的 `--approve` / `--no-approve`。
@@ -432,25 +432,25 @@ metapi --mode rpc
 ### 启动的是错误 Profile
 
 ```bash
-metapi profile status
+meldra profile status
 ```
 
-检查显式 `--profile` 和最近父目录绑定。必要时 `metapi profile unbind <directory>`。
+检查显式 `--profile` 和最近父目录绑定。必要时 `meldra profile unbind <directory>`。
 
 ### `/config` 中没有插件
 
-确认插件已加载并在 factory 执行时发送 `config:register`。`/reload` 后再检查。`pi` compatibility 不注入 MetaPi Config Host。
+确认插件已加载并在 factory 执行时发送 `config:register`。`/reload` 后再检查。`pi` compatibility 不注入 Meldra Config Host。
 
-### `metapi config` 没有打开插件字段
+### `meldra config` 没有打开插件字段
 
-这是正常的。`metapi config` 管理 Package resources；插件字段使用 TUI `/config`。
+这是正常的。`meldra config` 管理 Package resources；插件字段使用 TUI `/config`。
 
 ### DSH 命令不可用
 
 检查当前 Profile 是否选择 `deepseek-harness`：
 
 ```bash
-metapi profile status <name>
+meldra profile status <name>
 ```
 
 Profile 名称本身不是 Runtime provider 声明。
@@ -461,7 +461,7 @@ Profile 名称本身不是 Runtime provider 声明。
 
 ### `/reload` 没有加载内建源码修改
 
-磁盘 Extension 会清模块 cache 并重新 import。inline built-in 的 factory 来自当前进程；修改 MetaPi 内建源码后需要重新 build 并重启进程。
+磁盘 Extension 会清模块 cache 并重新 import。inline built-in 的 factory 来自当前进程；修改 Meldra 内建源码后需要重新 build 并重启进程。
 
 ### Windows 测试或 shell 失败
 
@@ -469,11 +469,11 @@ Profile 名称本身不是 Runtime provider 声明。
 
 ### Self update 不可用
 
-这是当前设计。MetaPi 没有权威发行源，不能使用 Pi 更新源冒充 MetaPi。通过源码 checkout/build 更新当前开发环境。
+这是当前设计。Meldra 没有权威发行源，不能使用 Pi 更新源冒充 Meldra。通过源码 checkout/build 更新当前开发环境。
 
 ## 16. 数据备份与退出
 
-退出使用 `/quit`；DSH 也可以使用 `/dsh exit`，两者都走 MetaPi 的 graceful teardown。
+退出使用 `/quit`；DSH 也可以使用 `/dsh exit`，两者都走 Meldra 的 graceful teardown。
 
 备份前先退出相关进程。主要目录：
 

@@ -185,7 +185,7 @@ function buildBunBinaryRelease(targetDirectory, archiveDirectory) {
 
 function createCliShim(installDirectory) {
 	const binDirectory = join(installDirectory, "node_modules", ".bin");
-	for (const command of ["metapi", "pi"]) {
+	for (const command of ["meldra", "metapi", "pi"]) {
 		if (process.platform === "win32") {
 			if (existsSync(join(binDirectory, `${command}.cmd`))) {
 				writeFileSync(
@@ -216,7 +216,7 @@ function createCliShim(installDirectory) {
 			return command;
 		}
 	}
-	throw new Error(`No metapi or pi executable was installed under ${binDirectory}`);
+	throw new Error(`No meldra, metapi, or pi executable was installed under ${binDirectory}`);
 }
 
 function packPackage(pkg, tarballDirectory) {

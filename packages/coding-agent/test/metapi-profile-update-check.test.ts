@@ -28,7 +28,7 @@ function writeFakeNpm(binDir: string, version: string): void {
 	chmodSync(path, 0o755);
 }
 
-describe("MetaPi Profile update checks", () => {
+describe("Meldra Profile update checks", () => {
 	it("runs npm through the platform process adapter and caches a newer release", async () => {
 		const root = mkdtempSync(join(tmpdir(), "metapi-profile-update-check-"));
 		cleanup.push(root);

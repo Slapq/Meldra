@@ -3,7 +3,7 @@ import { getSessionWorkspaceRoot } from "./session-profile.ts";
 
 export default function workspaceExtension(pi: ExtensionAPI): void {
 	pi.registerCommand("workspace", {
-		description: "Show the WorkSpace bound to the current MetaPi session",
+		description: "Show the WorkSpace bound to the current Meldra session",
 		handler: async (_args, ctx) => {
 			const root = getSessionWorkspaceRoot(ctx.sessionManager);
 			ctx.ui.notify(
@@ -28,7 +28,7 @@ export default function workspaceExtension(pi: ExtensionAPI): void {
 		return {
 			systemPrompt:
 				event.systemPrompt +
-				"\n\nMetaPi WorkSpace scope:\n" +
+				"\n\nMeldra WorkSpace scope:\n" +
 				"- The current working directory is this session's WorkSpace.\n" +
 				"- Skills, Extensions, Prompt Templates, Themes, and package resources belong to the current Profile by default.\n" +
 				"- If the user asks to add, install, enable, or persist one of those resources without naming a scope, ask them to choose Current Profile or Current WorkSpace before writing settings or files.\n" +

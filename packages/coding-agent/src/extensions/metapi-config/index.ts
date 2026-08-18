@@ -361,7 +361,7 @@ function toggleStr(value: boolean, th: Theme): string {
 // Extension Entry
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export default function metaPiConfig(pi: ExtensionAPI) {
+export default function meldraConfig(pi: ExtensionAPI) {
 	if (process.env.METAPI_PROFILE_NAME === "pi") return;
 
 	const savedPrefs = loadOwnPrefs();

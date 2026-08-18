@@ -1,11 +1,11 @@
 # Built-in and Current-Machine Extensions
 
-Baseline: Pi v0.84.2 plus the current MetaPi patch layer. Current-machine observations were collected on 2026-08-12 and
+Baseline: Pi v0.84.2 plus the current Meldra patch layer. Current-machine observations were collected on 2026-08-12 and
 are not part of the immutable upstream inventory.
 
 ## Product built-in Extensions
 
-MetaPi-owned built-ins are named inline factories with `hidden: true`. Hidden does **not** mean inactive: the loaded
+Meldra-owned built-ins are named inline factories with `hidden: true`. Hidden does **not** mean inactive: the loaded
 Extension still registers commands, providers, or lifecycle guidance. It means the resource is marked hidden in loader
 metadata.
 
@@ -21,10 +21,10 @@ metadata.
 | Files | `<profile-agentDir>/plugin-configs/<id>.json` |
 | Compatibility | Not registered in the reserved `pi` Profile |
 
-**Responsibility.** It automatically gives every ordinary MetaPi Profile the existing simple pi-config TUI and event
-protocol. It does not add a native Config API, reinterpret MetaPi settings, or make plugin configuration project-owned.
+**Responsibility.** It automatically gives every ordinary Meldra Profile the existing simple pi-config TUI and event
+protocol. It does not add a native Config API, reinterpret Meldra settings, or make plugin configuration project-owned.
 The registration object, supported fields, event payloads, persistence scope, and compatibility rules are the normative
-[Profile Config Registration Protocol](profile-config-protocol.en.md); MetaPi Profile plugins use that contract for
+[Profile Config Registration Protocol](profile-config-protocol.en.md); Meldra Profile plugins use that contract for
 ordinary scalar configuration so configuration surfaces retain one style.
 
 ### `llama.cpp`
@@ -88,7 +88,7 @@ Runtime](../../packages/coding-agent/docs/deepseek-harness.md).
 | Configuration | `METAPI_PROFILE_NAME`, `METAPI_CODING_AGENT_DIR`, `PI_OFFLINE` |
 | Files | `~/.metapi/project-bindings.json`, `~/.metapi/profiles/<id>/profile.json`, optional project `.pi/metapi.json` |
 
-**Responsibility.** It presents and switches the Profile used by the current MetaPi session, imports and manages Profile
+**Responsibility.** It presents and switches the Profile used by the current Meldra session, imports and manages Profile
 Bundles, persists the active Profile with the session, and separately records which Profile the current directory will
 use when a new session is launched there.
 
@@ -133,12 +133,12 @@ Evidence: `src/extensions/index.ts`, `src/metapi/workspace-extension.ts`, `src/m
 | Original Pi user Package | `S:\VSCODE\provider-manager\extensions\provider-manager.ts` | `settings.json` local Package | `/provider`, dynamic providers |
 | Original Pi user Package | `S:\VSCODE\pi-config\extensions\pi-config.ts` | `settings.json` local Package | `/config`, shared config event protocol |
 | Original Pi user Package | `C:\Users\Administrator\MyAPPS\pi-claude-code-provider\index.ts` | `settings.json` local Package | Claude setup/status commands and provider |
-| MetaPi repository project | `.pi/extensions/import-repro.ts` | Trusted project Extension directory | `/ir` |
-| MetaPi repository project | `.pi/extensions/prompt-url-widget.ts` | Trusted project Extension directory | Automatic widget |
-| MetaPi repository project | `.pi/extensions/redraws.ts` | Trusted project Extension directory | `/tui` |
-| MetaPi repository project | `.pi/extensions/tps.ts` | Trusted project Extension directory | Automatic notification |
+| Meldra repository project | `.pi/extensions/import-repro.ts` | Trusted project Extension directory | `/ir` |
+| Meldra repository project | `.pi/extensions/prompt-url-widget.ts` | Trusted project Extension directory | Automatic widget |
+| Meldra repository project | `.pi/extensions/redraws.ts` | Trusted project Extension directory | `/tui` |
+| Meldra repository project | `.pi/extensions/tps.ts` | Trusted project Extension directory | Automatic notification |
 
-No project `.pi/settings.json` was present at inspection time. The default MetaPi Profile settings contained two
+No project `.pi/settings.json` was present at inspection time. The default Meldra Profile settings contained two
 temporary local Package paths, but both targets no longer existed; no Extension entry could be loaded from them.
 
 ### `scout.ts`
@@ -150,7 +150,7 @@ temporary local Package paths, but both targets no longer existed; no Extension 
 | Events | `session_start`, `session_shutdown`, `before_agent_start` |
 | State | Active child-process PIDs and per-session fallback-notification state |
 | Config | `<agentDir>/plugin-configs/scout.json` via the Profile Config protocol; legacy `<agentDir>/scout.json` is read as a migration fallback |
-| External process | A disposable child MetaPi process in JSON print mode; Windows cleanup can call `taskkill.exe` |
+| External process | A disposable child Meldra process in JSON print mode; Windows cleanup can call `taskkill.exe` |
 | Child capabilities | `read`, `grep`, `find`, `ls`, `bash`; no session and no Extensions |
 
 The tool delegates a self-contained read/search task to an isolated context and returns a compressed report. `/scout`

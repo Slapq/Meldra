@@ -1,11 +1,11 @@
 # Pi Development Reference
 
-> Developing MetaPi? Use the Chinese-first [MetaPi Development Guide](../../../docs/development.md) or its [English
+> Developing Meldra? Use the Chinese-first [Meldra Development Guide](../../../docs/development.md) or its [English
 > version](../../../docs/development.en.md) for the patch-layer architecture, Profile Runtime boundaries, and validation
 > workflow. This page documents the preserved Pi development baseline.
 
 See [AGENTS.md](https://github.com/earendil-works/pi/blob/main/AGENTS.md) for upstream Pi guidelines and the
-repository-local `AGENTS.md` for MetaPi requirements.
+repository-local `AGENTS.md` for Meldra requirements.
 
 ## Setup
 

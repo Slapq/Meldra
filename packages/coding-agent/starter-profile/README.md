@@ -1,6 +1,6 @@
-# MetaPi Starter Profile
+# Meldra Starter Profile
 
-This private distribution asset is provisioned into MetaPi's reserved `default` Profile. It is not a separately published npm package.
+This private distribution asset is provisioned into Meldra's reserved `default` Profile. It is not a separately published npm package.
 
 It provides:
 
@@ -9,9 +9,9 @@ It provides:
 - `/commands`, `/preset`, `/tools`, and `/handoff` Starter workflows;
 - `/setup` for an always-visible Provider → model → Scout onboarding flow with configured/partial/unconfigured readiness labels.
 
-The Profile Config Host and `/config` remain MetaPi built-ins and are not duplicated here.
+The Profile Config Host and `/config` remain Meldra built-ins and are not duplicated here.
 
-Developer documentation: [MetaPi Starter plugin development guide](DEVELOPMENT.md). It covers Profile Config,
+Developer documentation: [Meldra Starter plugin development guide](DEVELOPMENT.md). It covers Profile Config,
 Provider Manager, Scout, Workflows, Questionnaire, Setup, packaging, validation, and troubleshooting.
 
 ## State boundary

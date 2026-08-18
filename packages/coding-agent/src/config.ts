@@ -387,8 +387,8 @@ export function getPackageDir(): string {
 	return __dirname;
 }
 
-/** Get the MetaPi repository root when running from a MetaPi checkout. */
-export function getMetaPiRootPath(): string {
+/** Get the Meldra repository root when running from a Meldra checkout. */
+export function getMeldraRootPath(): string {
 	const packageDir = getPackageDir();
 	const checkoutRoot = resolve(join(packageDir, "../.."));
 	if (existsSync(join(checkoutRoot, "AGENTS.md")) && existsSync(join(checkoutRoot, "packages"))) {
@@ -523,6 +523,16 @@ export const ENV_AUTH_PATH = `${APP_NAME.toUpperCase()}_AUTH_PATH`;
 export const ENV_MODELS_PATH = `${APP_NAME.toUpperCase()}_MODELS_PATH`;
 export const ENV_MODELS_STORE_PATH = `${APP_NAME.toUpperCase()}_MODELS_STORE_PATH`;
 
+// Meldra environment names remain supported for existing Profiles and launchers.
+const LEGACY_ENV_AGENT_DIR = "METAPI_CODING_AGENT_DIR";
+const LEGACY_ENV_AUTH_PATH = "METAPI_AUTH_PATH";
+const LEGACY_ENV_MODELS_PATH = "METAPI_MODELS_PATH";
+const LEGACY_ENV_MODELS_STORE_PATH = "METAPI_MODELS_STORE_PATH";
+
+function getEnvironmentOverride(name: string, legacyName?: string): string | undefined {
+	return process.env[name] ?? (legacyName ? process.env[legacyName] : undefined);
+}
+
 export function expandTildePath(path: string): string {
 	return normalizePath(path);
 }
@@ -541,7 +551,7 @@ export function getShareViewerUrl(gistId: string): string {
 
 /** Get the agent config directory (e.g., ~/.pi/agent/) */
 export function getAgentDir(): string {
-	const envDir = process.env[ENV_AGENT_DIR];
+	const envDir = getEnvironmentOverride(ENV_AGENT_DIR, LEGACY_ENV_AGENT_DIR);
 	if (envDir) {
 		return expandTildePath(envDir);
 	}
@@ -555,19 +565,19 @@ export function getCustomThemesDir(): string {
 
 /** Get path to models.json */
 export function getModelsPath(): string {
-	const envPath = process.env[ENV_MODELS_PATH];
+	const envPath = getEnvironmentOverride(ENV_MODELS_PATH, LEGACY_ENV_MODELS_PATH);
 	return envPath ? expandTildePath(envPath) : join(getAgentDir(), "models.json");
 }
 
 /** Get path to models-store.json */
 export function getModelsStorePath(): string {
-	const envPath = process.env[ENV_MODELS_STORE_PATH];
+	const envPath = getEnvironmentOverride(ENV_MODELS_STORE_PATH, LEGACY_ENV_MODELS_STORE_PATH);
 	return envPath ? expandTildePath(envPath) : join(dirname(getModelsPath()), "models-store.json");
 }
 
 /** Get path to auth.json */
 export function getAuthPath(): string {
-	const envPath = process.env[ENV_AUTH_PATH];
+	const envPath = getEnvironmentOverride(ENV_AUTH_PATH, LEGACY_ENV_AUTH_PATH);
 	return envPath ? expandTildePath(envPath) : join(getAgentDir(), "auth.json");
 }
 

@@ -36,7 +36,7 @@ afterEach(() => {
 
 describe("DSH Profile composition", () => {
 	it(
-		"initializes the native MetaPi profile with the current bundle roster",
+		"initializes the native Meldra profile with the current bundle roster",
 		() => {
 			const home = mkdtempSync(join(tmpdir(), "metapi-dsh-profile-"));
 			homes.push(home);

@@ -1,16 +1,16 @@
-# MetaPi Development Guide
+# Meldra Development Guide
 
 [中文](development.md) | [English](development.en.md) | [Home](../README.en.md)
 
-This guide explains where MetaPi code belongs, how to work from source, and how to validate a change. Detailed Pi API
-reference remains under `packages/coding-agent/docs/`; this page focuses on MetaPi ownership and delivery.
+This guide explains where Meldra code belongs, how to work from source, and how to validate a change. Detailed Pi API
+reference remains under `packages/coding-agent/docs/`; this page focuses on Meldra ownership and delivery.
 
 ## 1. Development Principles
 
-MetaPi uses an exact Pi baseline plus an auditable patch layer:
+Meldra uses an exact Pi baseline plus an auditable patch layer:
 
 - preserve the complete Pi source, native agent path, CLI, TUI, Sessions, and Extension ecosystem;
-- add MetaPi behavior as small, reviewable commits above a known upstream baseline;
+- add Meldra behavior as small, reviewable commits above a known upstream baseline;
 - keep product-specific behavior out of generic Pi core;
 - let an external Runtime retain ownership of its Agent loop, Sessions, protocol, models, tools, and persistence;
 - preserve defaults, public contracts, and existing data formats unless an explicit change is approved.
@@ -41,13 +41,13 @@ The launchers preserve the caller's working directory. The built CLI can be run 
 node packages/coding-agent/dist/cli.js --profile default
 ```
 
-There is no formal MetaPi release identity in the current repository. A local launcher, the official Pi npm package, and
+There is no formal Meldra release identity in the current repository. A local launcher, the official Pi npm package, and
 this checkout are not interchangeable distribution targets.
 
 ## 3. Architecture
 
 ```text
-MetaPi CLI / Pi TUI
+Meldra CLI / Pi TUI
         |
         +-- Profile domain -------- Profiles, bindings, Bundles, agentDir
         +-- Pi AgentSession -------- native Pi agent path
@@ -62,7 +62,7 @@ External Runtime state remains outside Pi Session state.
 | Module | Owns | Does not own |
 |---|---|---|
 | Pi core | Session host, Extension API, TUI, generic Runtime boundary | DSH RPC, Presets, models, or product state |
-| MetaPi Profile domain | Profile resolution, bindings, Bundles, Profile environment | Internal external-Runtime state |
+| Meldra Profile domain | Profile resolution, bindings, Bundles, Profile environment | Internal external-Runtime state |
 | Runtime provider | Matching, construction, teardown, optional native packages | Native Pi defaults |
 | DSH adapter | Harness process, ApiProxy, event boundary, native lifecycle | A second Harness Agent loop |
 | DSH Extension | Commands, renderers, dialogs, status | Harness process or Session ownership |
@@ -79,7 +79,7 @@ packages/
   ai/                 provider/model abstraction
   agent/              native Pi agent loop
   tui/                terminal rendering and input
-  coding-agent/       CLI, Session host, Extensions, MetaPi, DSH adapter
+  coding-agent/       CLI, Session host, Extensions, Meldra, DSH adapter
   protocol/           shared protocol contracts
   client/             client library
   server/             server package
@@ -88,12 +88,12 @@ packages/
 
 docs/
   adr/                accepted architecture decisions
-  extensions/         MetaPi Extension inventory and config protocol
+  extensions/         Meldra Extension inventory and config protocol
   investigations/     evidence records, not automatic product contracts
 scripts/               build, lock, release, and validation tools
 ```
 
-Key MetaPi locations in `packages/coding-agent/src/`:
+Key Meldra locations in `packages/coding-agent/src/`:
 
 | Path | Role |
 |---|---|
@@ -153,7 +153,7 @@ merely to preserve a plan.
 Use a Pi Extension for commands, tools, events, renderers, shortcuts, and TUI. Follow the [Extension
 Guide](../packages/coding-agent/docs/extensions.md) and [TUI reference](../packages/coding-agent/docs/tui.md).
 
-Only composition capabilities that every ordinary MetaPi Profile must have belong in the bundled built-in registry.
+Only composition capabilities that every ordinary Meldra Profile must have belong in the bundled built-in registry.
 `metapi-config` is an explicit inline built-in exception; do not give it a provision, package-copy, or source hot-reload
 lifecycle.
 
@@ -279,29 +279,29 @@ import/export, DSH capabilities, or validation/rollback requirements.
 Put durable product decisions in ADRs, terminology in `CONTEXT.md`, and complex evidence chains in
 `docs/investigations/`. An investigation is not automatically an ADR.
 
-MetaPi user and developer docs are Chinese-first with English mirrors. Workflows belong in the guides; type and protocol
+Meldra user and developer docs are Chinese-first with English mirrors. Workflows belong in the guides; type and protocol
 details belong in reference pages.
 
 ## 11. Upstream Synchronization
 
-MetaPi maintains an exact upstream Pi baseline plus auditable patch commits:
+Meldra maintains an exact upstream Pi baseline plus auditable patch commits:
 
 1. record the upstream tag/commit and a clean baseline;
-2. merge rather than copy over MetaPi files;
+2. merge rather than copy over Meldra files;
 3. preserve ordinary Pi contracts and ownership boundaries while resolving conflicts;
 4. regenerate lock, shrinkwrap, and installer lock outputs;
 5. run native Pi, default Profile, `pi` compatibility, and affected DSH tests;
 6. record the upstream baseline and patch commits.
 
-Do not mechanically restore the `pi` identity, update source, or Profile behavior into MetaPi.
+Do not mechanically restore the `pi` identity, update source, or Profile behavior into Meldra.
 
 ## 12. Debugging
 
 Useful surfaces:
 
-- `metapi --verbose` for startup details;
+- `meldra --verbose` for startup details;
 - `/debug` for TUI render lines and recent model messages in the active agent directory;
-- `metapi profile status` for Profile, agentDir, cwd, and binding;
+- `meldra profile status` for Profile, agentDir, cwd, and binding;
 - `/session` or DSH `/session` for the current state domain;
 - `/dsh trajectory` and `/dsh evidence` for native Harness facts;
 - `git diff --check` before committing.
@@ -319,10 +319,10 @@ npm run release:local
 It runs model-data checks, repository checks, builds, isolated tests, package packing, and isolated installs. See
 `scripts/local-release.mjs --help` for options.
 
-There is no authoritative MetaPi package name, latest-version source, or changelog service yet. Therefore:
+There is no authoritative Meldra package name, latest-version source, or changelog service yet. Therefore:
 
 - self-update remains disabled;
-- the Pi npm source is not used as a MetaPi update target;
+- the Pi npm source is not used as a Meldra update target;
 - publishing, tagging, and pushing require explicit authorization;
 - a local launcher represents the current checkout, not release acceptance.
 
@@ -341,7 +341,7 @@ Before committing:
 
 ## References
 
-- [MetaPi User Guide](user-guide.en.md)
+- [Meldra User Guide](user-guide.en.md)
 - [Pi Development](../packages/coding-agent/docs/development.md)
 - [Extension API](../packages/coding-agent/docs/extensions.md)
 - [Profile Runtime providers](../packages/coding-agent/docs/profile-runtimes.md)
