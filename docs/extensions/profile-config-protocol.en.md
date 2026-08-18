@@ -102,6 +102,7 @@ type ConfigField =
       hint?: string;
       envVar?: string;
       placeholder?: string;
+      completions?: () => string[];
     }
   | {
       type: "secret";
@@ -153,6 +154,8 @@ The value representation is fixed:
 | `boolean` | boolean |
 | `select` | one string from `options` |
 | `section` | no value; presentation only |
+
+`string.completions` is a runtime-only, read-only candidate provider. When the user presses `Tab`, the Config Host completes a value matching the current prefix. If there are no candidates or no match, `Tab` keeps its existing field-navigation behavior. Users may still enter and save values outside the candidate list. Neither the function nor its returned candidates are persisted to Profile JSON.
 
 `secret` means masked TUI entry and display. It does not declare encryption or a credential-store migration. Plugins
 that require a native credential service must keep that product-specific credential contract separate and must not claim

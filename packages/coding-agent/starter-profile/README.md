@@ -11,6 +11,9 @@ It provides:
 
 The Profile Config Host and `/config` remain MetaPi built-ins and are not duplicated here.
 
+Developer documentation: [MetaPi Starter plugin development guide](DEVELOPMENT.md). It covers Profile Config,
+Provider Manager, Scout, Workflows, Questionnaire, Setup, packaging, validation, and troubleshooting.
+
 ## State boundary
 
 The Bundle contains source and portable defaults only. It does not contain credentials, OAuth tokens, environment-variable values, Sessions, model selections, plugin configuration, directory bindings, or machine-local paths.

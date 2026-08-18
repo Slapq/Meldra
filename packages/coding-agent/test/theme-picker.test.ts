@@ -14,7 +14,7 @@ type ThemeFile = {
 	colors: Record<string, string | number>;
 };
 
-describe("theme picker", () => {
+describe.skipIf(process.platform === "win32")("theme picker", () => {
 	let tempRoot: string;
 
 	beforeEach(() => {

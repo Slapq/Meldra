@@ -710,6 +710,7 @@ async function promptForMissingSessionCwd(
 
 export interface MainOptions {
 	extensionFactories?: InlineExtension[];
+	packageAgentDir?: string;
 }
 
 export async function main(args: string[], options?: MainOptions) {
@@ -843,7 +844,7 @@ export async function main(args: string[], options?: MainOptions) {
 	applyHttpProxySettings(bootstrapSettingsManager.getEffectiveGlobalSettings().httpProxy);
 	configureHttpDispatcher();
 
-	if (await handlePackageCommand(effectiveArgs, { extensionFactories })) {
+	if (await handlePackageCommand(effectiveArgs, { extensionFactories, agentDir: options?.packageAgentDir })) {
 		const exitCode = process.exitCode ?? 0;
 		if (process.platform === "win32" && exitCode === 0 && args[0] === "update") {
 			// We normally prefer process.exit(0) for package commands so bad extensions cannot keep

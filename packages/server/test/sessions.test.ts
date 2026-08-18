@@ -2,7 +2,10 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ModelMetadata, SessionSnapshot, TranscriptProgress } from "@earendil-works/pi-protocol";
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test as vitestTest } from "vitest";
+
+const test = process.platform === "win32" ? vitestTest.skip : vitestTest;
+
 import type { CreateSessionOptions, PiServer, PiSessionRuntime } from "../src/index.ts";
 import {
 	connectUnixTestClient,

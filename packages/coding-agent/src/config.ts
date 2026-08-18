@@ -387,6 +387,16 @@ export function getPackageDir(): string {
 	return __dirname;
 }
 
+/** Get the MetaPi repository root when running from a MetaPi checkout. */
+export function getMetaPiRootPath(): string {
+	const packageDir = getPackageDir();
+	const checkoutRoot = resolve(join(packageDir, "../.."));
+	if (existsSync(join(checkoutRoot, "AGENTS.md")) && existsSync(join(checkoutRoot, "packages"))) {
+		return checkoutRoot;
+	}
+	return packageDir;
+}
+
 /**
  * Get path to built-in themes directory (shipped with package)
  * - For Bun binary: theme/ next to executable

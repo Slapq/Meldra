@@ -39,7 +39,7 @@ afterEach(async () => {
 	tempDirectories.clear();
 });
 
-describe("Unix listener filesystem lifecycle", () => {
+describe.skipIf(process.platform === "win32")("Unix listener filesystem lifecycle", () => {
 	test("rejects a live listener without unlinking it", async () => {
 		const path = await makeSocketPath();
 		const first = makeServer(path);

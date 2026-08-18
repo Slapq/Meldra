@@ -32,6 +32,15 @@ describe("provider manager example", () => {
 		);
 	});
 
+	it("normalizes only the discovered models suffix and detects explicit API versions", () => {
+		expect(internals.normalizeDiscoveredBaseUrl("https://example.test/v1beta/models/")).toBe(
+			"https://example.test/v1beta",
+		);
+		expect(internals.hasVersionedApiPath("https://example.test/v1")).toBe(true);
+		expect(internals.hasVersionedApiPath("https://example.test/v1beta")).toBe(true);
+		expect(internals.hasVersionedApiPath("https://example.test")).toBe(false);
+	});
+
 	it("does not expose a query credential in discovery errors", async () => {
 		vi.stubGlobal(
 			"fetch",

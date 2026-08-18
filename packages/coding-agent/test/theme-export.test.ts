@@ -15,7 +15,7 @@ type ThemeFile = {
 	};
 };
 
-describe("getThemeExportColors", () => {
+describe.skipIf(process.platform === "win32")("getThemeExportColors", () => {
 	let tempRoot: string;
 	let previousAgentDir: string | undefined;
 

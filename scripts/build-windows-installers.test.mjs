@@ -74,7 +74,7 @@ test("desktop shortcut always launches the bundled portable Windows Terminal", (
 	assert.match(script, /\{userdesktop\}\\MetaPi/);
 });
 
-test("desktop shortcut and installer use the official Pi favicon with transparent corners", () => {
+test("MetaPi icon uses the supplied white glyph with transparent rounded corners", () => {
 	const script = readRepo("scripts/windows-installer/metapi.iss");
 	const source = readRepo("scripts/windows-installer/pi-favicon.svg");
 	const icon = readFileSync(new URL("scripts/windows-installer/pi-app.ico", repoRoot));

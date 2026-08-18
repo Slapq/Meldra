@@ -771,10 +771,36 @@ function safeDiscoveryUrl(value: string): string {
 	}
 }
 
+interface ModelDiscoveryResult {
+	models: DiscoveredModel[];
+	baseUrl: string;
+}
+
+function normalizeDiscoveredBaseUrl(value: string): string {
+	try {
+		const url = new URL(value);
+		url.search = "";
+		url.hash = "";
+		url.pathname = url.pathname.replace(/\/models\/?$/i, "").replace(/\/$/, "");
+		return url.toString().replace(/\/$/, "");
+	} catch {
+		return value;
+	}
+}
+
+function hasVersionedApiPath(value: string): boolean {
+	try {
+		const pathname = new URL(value).pathname;
+		return /(^|\/)v\d+(?:beta\d*)?(?:\/|$)/i.test(pathname);
+	} catch {
+		return false;
+	}
+}
+
 async function discoverModels(
 	config: Pick<ProviderConfig, "baseUrl" | "api" | "apiKey" | "headers" | "authHeader">,
 	callerSignal?: AbortSignal,
-): Promise<DiscoveredModel[]> {
+): Promise<ModelDiscoveryResult> {
 	const urls = modelListCandidates(config.baseUrl, config.api, config.apiKey);
 	if (urls.length === 0) throw new Error("UNSUPPORTED");
 	const headers: Record<string, string> = { Accept: "application/json", ...config.headers };
@@ -823,7 +849,7 @@ async function discoverModels(
 									? body.result.models
 									: [];
 				const found = rows.map(metadataFromRaw).filter((x: DiscoveredModel | null): x is DiscoveredModel => x !== null);
-				if (found.length > 0) return found;
+				if (found.length > 0) return { models: found, baseUrl: normalizeDiscoveredBaseUrl(url) };
 				errors.push(`${safeDiscoveryUrl(url)} → no model array found`);
 			} catch (error: any) {
 				if (error?.name === "AbortError") {
@@ -1652,10 +1678,14 @@ class FormComponent implements Focusable {
 		}
 		if (f === "models") {
 			const models = this.filteredModels();
-			if (matchesKey(data, Key.up)) this.modelBrowserIndex = Math.max(0, this.modelBrowserIndex - 1);
-			else if (matchesKey(data, Key.down))
-				this.modelBrowserIndex = Math.min(models.length - 1, this.modelBrowserIndex + 1);
-			else if (matchesKey(data, Key.pageUp)) this.modelBrowserIndex = Math.max(0, this.modelBrowserIndex - 10);
+			if (matchesKey(data, Key.up)) {
+				if (models.length === 0 || this.modelBrowserIndex === 0) this.modelsFocus = Math.max(0, this.modelsFocus - 1);
+				else this.modelBrowserIndex--;
+			} else if (matchesKey(data, Key.down)) {
+				if (models.length === 0 || this.modelBrowserIndex >= models.length - 1)
+					this.modelsFocus = Math.min(this.modelsFields.length - 1, this.modelsFocus + 1);
+				else this.modelBrowserIndex++;
+			} else if (matchesKey(data, Key.pageUp)) this.modelBrowserIndex = Math.max(0, this.modelBrowserIndex - 10);
 			else if (matchesKey(data, Key.pageDown))
 				this.modelBrowserIndex = Math.min(models.length - 1, this.modelBrowserIndex + 10);
 			else if (matchesKey(data, Key.enter) && models[this.modelBrowserIndex]) {
@@ -1939,7 +1969,7 @@ class FormComponent implements Focusable {
 		}
 		this.setFetchStatus(this.t.fetchingModels);
 		try {
-			const found = await discoverModels(
+			const discovery = await discoverModels(
 				{
 					baseUrl,
 					api: API_TYPES[this.apiIdx],
@@ -1949,17 +1979,28 @@ class FormComponent implements Focusable {
 				},
 				signal,
 			);
+			const found = discovery.models;
+			if (API_TYPES[this.apiIdx] === "google-generative-ai" && !hasVersionedApiPath(baseUrl)) {
+				this.urlInp = inp(discovery.baseUrl);
+			}
 			let added = 0;
 			let updated = 0;
 			for (const meta of found) {
 				const index = this.config.models.findIndex((m) => m.id.toLowerCase() === meta.id.toLowerCase());
 				if (index >= 0) {
-					const enriched = enrichModel(this.config.models[index], meta).model;
-					if (JSON.stringify(enriched) !== JSON.stringify(this.config.models[index])) updated++;
+					const current = this.config.models[index];
+					const enriched = enrichModel(current, meta).model;
+					// Model discovery must not infer a protocol override from Pi's global
+					// catalog. Preserve an existing explicit override; otherwise inherit
+					// this provider's API.
+					enriched.api = current.api;
+					if (JSON.stringify(enriched) !== JSON.stringify(current)) updated++;
 					this.config.models[index] = enriched;
 				} else {
 					const seed = { ...defaultModel(), id: meta.id, name: meta.name || meta.id };
-					this.config.models.push(enrichModel(seed, meta).model);
+					const enriched = enrichModel(seed, meta).model;
+					enriched.api = "";
+					this.config.models.push(enriched);
 					added++;
 				}
 			}

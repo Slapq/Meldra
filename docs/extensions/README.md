@@ -44,6 +44,14 @@ example README category tables; ten exist in the directory but are not listed in
 - [Relationship model](relationships.md) — loading order, collision rules, event chaining, UI replacement, shared state,
   and functional clusters.
 
+## Product development guides
+
+- [MetaPi Starter plugin development](../../packages/coding-agent/starter-profile/DEVELOPMENT.md) — Profile Config,
+  Provider Manager, Scout, Workflows, Questionnaire, Setup, packaging, testing, and troubleshooting.
+- [Profile Config registration protocol](profile-config-protocol.md) — normative Chinese contract.
+- [Profile Config registration protocol (English)](profile-config-protocol.en.md) — normative English contract.
+- [Built-in and current-machine Extensions](built-in-and-local.md) — runtime inventory and ownership boundaries.
+
 ## Loading model in one picture
 
 ```mermaid

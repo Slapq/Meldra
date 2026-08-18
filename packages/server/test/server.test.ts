@@ -9,6 +9,7 @@ import { TestServerService } from "../src/testing/index.ts";
 import { createUnixServer } from "../src/transports/unix/index.ts";
 
 const service = new TestServerService();
+const unixTest = process.platform === "win32" ? test.skip : test;
 
 let server: PiServer | undefined;
 let tempDirectory: string | undefined;
@@ -42,7 +43,7 @@ test("rejects an overlong derived private Unix bind path", async () => {
 	await expect(server.start()).rejects.toThrow(/private Unix bind path.*too long/);
 });
 
-test("rejects concurrent start calls without leaking the Unix listener", async () => {
+unixTest("rejects concurrent start calls without leaking the Unix listener", async () => {
 	const path = await makeSocketPath();
 	server = createUnixServer(service, { path });
 	const starting = server.start();

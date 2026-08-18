@@ -20,7 +20,7 @@
  *
  * Field types:
  *
- *   { key, label, type: "string",  placeholder?, hint? }
+ *   { key, label, type: "string",  placeholder?, completions?, hint? }
  *   { key, label, type: "secret",  placeholder?, hint? }       masked input
  *   { key, label, type: "number",  placeholder?, hint?, min?, max?, step? }
  *   { key, label, type: "boolean", hint? }                     toggle
@@ -76,7 +76,9 @@ type Lang = "en" | "zh";
 type LocalizedText = string | Readonly<{ en: string; zh: string }>;
 
 function localize(value: LocalizedText, lang: Lang): string {
-	return typeof value === "string" ? value : value[lang];
+	if (typeof value === "string") return value;
+	if (value && typeof value === "object" && typeof value[lang] === "string") return value[lang];
+	return String(value ?? "");
 }
 
 interface I18n {
@@ -173,6 +175,8 @@ interface FieldBase {
 interface StringField extends FieldBase {
 	type: "string";
 	placeholder?: LocalizedText;
+	/** Runtime-only completion values. The function is never persisted. */
+	completions?: () => string[];
 }
 interface SecretField extends FieldBase {
 	type: "secret";
@@ -626,17 +630,40 @@ class PluginFormComponent implements Focusable {
 		return result;
 	}
 
+	private completeStringField(entry: FormEntry & { kind: "field" }, field: StringField): boolean {
+		const options = [...new Set((field.completions?.() ?? []).filter((value) => value.length > 0))].sort();
+		if (options.length === 0) return false;
+		const current = entry.inputState.text;
+		const matches = options.filter((value) => value.toLowerCase().startsWith(current.toLowerCase()));
+		if (matches.length === 0) return false;
+		const exact = matches.findIndex((value) => value === current);
+		const next = matches[exact >= 0 ? (exact + 1) % matches.length : 0];
+		entry.inputState = inp(next);
+		return true;
+	}
 	private refresh(): void {
 		this.tui.requestRender();
 	}
 
 	// ═════════════════════════════════════════════════════════════════════════
 	// Input
-	// ═════════════════════════════════════════════════════════════════════════
 
 	handleInput(data: string): void {
 		if (matchesKey(data, Key.escape)) {
 			this.done(null);
+			return;
+		}
+
+		// A string field with runtime completions keeps manual editing intact;
+		// Tab completes a matching value before it moves focus to the next field.
+		const currentEntry = this.entries[this.focusIdx];
+		if (
+			matchesKey(data, Key.tab) &&
+			currentEntry?.kind === "field" &&
+			currentEntry.field.type === "string" &&
+			this.completeStringField(currentEntry, currentEntry.field)
+		) {
+			this.refresh();
 			return;
 		}
 

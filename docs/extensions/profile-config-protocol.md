@@ -74,12 +74,14 @@ Config Host 根据当前 Profile 语言偏好选择对象中的文案。插件�
 
 | `type` | 必要/可选属性 | 保存值 |
 |---|---|---|
-| `string` | `placeholder?` | string |
+| `string` | `placeholder?`, `completions?: () => string[]` | string |
 | `secret` | `placeholder?` | string |
 | `number` | `placeholder?`, `min?`, `max?`, `step?` | number |
 | `boolean` | 无额外属性 | boolean |
 | `select` | `options: string[]` | `options` 中的一个 string |
 | `section` | 只有 `label`，没有 `key` | 不保存值 |
+
+`string.completions` 是运行时、只读的候选值提供函数。Config Host 在用户按 `Tab` 时按当前前缀补全，候选为空或不匹配时 `Tab` 保持原有的字段导航行为。用户仍可输入并保存候选列表之外的字符串；该函数和候选值不会写入 Profile JSON。它适用于模型引用等由当前 Runtime 目录动态产生、但仍允许显式自定义的字段。
 
 `secret` 仅表示 TUI 中的遮罩输入与展示，不表示加密，也不把 Profile JSON 变成 credential vault。需要原生 credential service 的插件必须保持独立的产品合同。
 

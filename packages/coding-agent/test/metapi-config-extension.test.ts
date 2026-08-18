@@ -12,6 +12,7 @@ interface ConfigHost {
 	emit(channel: string, data: unknown): void;
 	pi: ExtensionAPI;
 	lifecycle: Map<string, (...args: any[]) => any>;
+	registrations: Map<string, any>;
 }
 
 const tempDirs: string[] = [];
@@ -23,7 +24,12 @@ function createHost(profile: string, agentDir: string, loadConfig = true): Confi
 	process.env.METAPI_CODING_AGENT_DIR = agentDir;
 	const listeners = new Map<string, Array<(data: unknown) => void>>();
 	const commands = new Map<string, Omit<RegisteredCommand, "name" | "sourceInfo">>();
+	const registrations = new Map<string, any>();
 	const emit = (channel: string, data: unknown): void => {
+		if (channel === "config:register") {
+			const registration = data as { id?: string };
+			if (registration.id) registrations.set(registration.id, registration);
+		}
 		for (const listener of listeners.get(channel) ?? []) listener(data);
 	};
 	const lifecycle = new Map<string, (...args: any[]) => any>();
@@ -51,7 +57,7 @@ function createHost(profile: string, agentDir: string, loadConfig = true): Confi
 		registerTool: () => undefined,
 	} as unknown as ExtensionAPI;
 	if (loadConfig) metaPiConfig(pi);
-	return { commands, emit, pi, lifecycle };
+	return { commands, emit, pi, lifecycle, registrations };
 }
 
 function tempAgentDir(): string {
@@ -109,8 +115,49 @@ describe("MetaPi Profile config extension", () => {
 				config = value;
 			},
 		});
-		expect(config).toMatchObject({ thinkingLevel: "low", injectGuidelines: true });
+		expect(config).toMatchObject({ thinkingLevel: "off", injectGuidelines: true });
 		expect(host.commands.has("scout")).toBe(true);
+	});
+
+	it("completes Scout models from the current registry while keeping a string field", async () => {
+		const host = createHost("default", tempAgentDir());
+		scoutExtension(host.pi);
+		const modelRegistry = {
+			getAll: () => [
+				{ provider: "zeta", id: "fast" },
+				{ provider: "alpha", id: "small" },
+			],
+		};
+		await host.lifecycle.get("session_start")?.({}, { modelRegistry });
+
+		const registration = host.registrations.get("scout");
+		const modelField = registration.fields.find((field: any) => field.key === "model");
+		expect(modelField.type).toBe("string");
+		expect(modelField.completions()).toEqual(["alpha/small", "zeta/fast"]);
+
+		let component: any;
+		await (host.commands.get("config") as any).handler("scout", {
+			mode: "tui",
+			hasUI: true,
+			ui: {
+				custom: async (factory: any) => {
+					component = factory(
+						{ requestRender: () => undefined },
+						{
+							fg: (_color: string, text: string) => text,
+							bg: (_color: string, text: string) => text,
+							bold: (text: string) => text,
+						},
+						{},
+						() => undefined,
+					);
+					component.handleInput("\t");
+					return null;
+				},
+				notify: () => undefined,
+			},
+		});
+		expect(component.render(100).join("\n")).toContain("alpha/small");
 	});
 
 	it("renders Scout fields using the Config Host language", async () => {
@@ -143,6 +190,38 @@ describe("MetaPi Profile config extension", () => {
 			},
 		});
 		expect(component.render(100).join("\n")).toContain("模型");
+	});
+
+	it("does not crash when a registered field has a malformed label", async () => {
+		const host = createHost("default", tempAgentDir());
+		host.emit("config:register", {
+			id: "malformed-label",
+			label: "Malformed label",
+			fields: [{ key: "value", label: null, type: "string" }],
+			defaults: { value: "" },
+		});
+		let component: any;
+		await (host.commands.get("config") as any).handler("malformed-label", {
+			mode: "tui",
+			hasUI: true,
+			ui: {
+				custom: async (factory: any) => {
+					component = factory(
+						{ requestRender: () => undefined },
+						{
+							fg: (_color: string, text: string) => text,
+							bg: (_color: string, text: string) => text,
+							bold: (text: string) => text,
+						},
+						{},
+						() => undefined,
+					);
+					return null;
+				},
+				notify: () => undefined,
+			},
+		});
+		expect(() => component.render(100)).not.toThrow();
 	});
 
 	it("preserves the config event contract and isolates values by Profile agent directory", () => {

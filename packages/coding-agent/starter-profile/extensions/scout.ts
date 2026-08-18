@@ -15,7 +15,7 @@
  *    `<agentDir>/plugin-configs/scout.json` (legacy `<agentDir>/scout.json` remains a
  *    read-only fallback). It is never exposed as a tool parameter, so the main model
  *    cannot pick expensive models.
- *    Fallback: main model + "low" thinking, with a one-time hint to configure
+ *    Fallback: main model + "off" thinking, with a one-time hint to configure
  *    a cheaper model.
  *  - Tools are fixed to read,grep,find,ls,bash. Read-only discipline is enforced
  *    by the scout system prompt (same approach as the Codex practice). The prompt
@@ -174,7 +174,7 @@ Verifying results:
 interface ScoutConfig {
 	/** "provider/model-id" for the scout model. Unset = follow main model. */
 	model?: string;
-	/** Thinking level for scouts. Default "low". */
+	/** Thinking level for scouts. Default "off". */
 	thinkingLevel?: ThinkingLevel;
 	/** Inject orchestration guidelines into the main agent's system prompt. Default true. */
 	injectGuidelines?: boolean;
@@ -796,6 +796,10 @@ interface ResolvedScoutModel {
 	warning?: string;
 }
 
+function scoutModelCompletions(ctx: ExtensionContext): string[] {
+	return [...new Set(ctx.modelRegistry.getAll().map((model) => `${model.provider}/${model.id}`))].sort();
+}
+
 function resolveScoutModel(cfg: ScoutConfig, ctx: ExtensionContext): ResolvedScoutModel {
 	if (cfg.model) {
 		const { provider, id } = splitModelRef(cfg.model);
@@ -824,7 +828,7 @@ function resolveScoutModel(cfg: ScoutConfig, ctx: ExtensionContext): ResolvedSco
 export default function scoutExtension(pi: ExtensionAPI) {
 	let fallbackHintShown = false;
 	let configRegistered = false;
-	const registerConfig = () => {
+	const registerConfig = (ctx: ExtensionContext) => {
 		if (configRegistered) return;
 		configRegistered = true;
 		const legacyConfig = loadLegacyConfig();
@@ -838,13 +842,15 @@ export default function scoutExtension(pi: ExtensionAPI) {
 					label: { en: "Model", zh: "模型" },
 					type: "string",
 					placeholder: { en: "provider/model-id (empty follows main model)", zh: "provider/model-id（留空跟随主模型）" },
+					hint: { en: "Tab completes models from the current registry; custom values are allowed", zh: "按 Tab 从当前模型列表补全；也可手动输入自定义模型" },
+					completions: () => scoutModelCompletions(ctx),
 				},
 				{
 					key: "thinkingLevel",
 					label: { en: "Thinking level", zh: "Thinking 等级" },
 					type: "select",
 					options: [...THINKING_LEVELS],
-					hint: { en: "Low is recommended for Scout tasks", zh: "Scout 任务建议使用 low" },
+					hint: { en: "Off is recommended for Scout tasks", zh: "Scout 任务建议使用 off" },
 				},
 				{
 					key: "injectGuidelines",
@@ -854,7 +860,7 @@ export default function scoutExtension(pi: ExtensionAPI) {
 			],
 			defaults: {
 				model: legacyConfig.model ?? "",
-				thinkingLevel: legacyConfig.thinkingLevel ?? "low",
+				thinkingLevel: legacyConfig.thinkingLevel ?? "off",
 				injectGuidelines: legacyConfig.injectGuidelines ?? true,
 			},
 		});
@@ -868,8 +874,8 @@ export default function scoutExtension(pi: ExtensionAPI) {
 	// spawnSync in killProcessTree makes this effective even during Node's exit event.
 	process.once("exit", cleanupActiveScouts);
 
-	pi.on("session_start", async () => {
-		registerConfig();
+	pi.on("session_start", async (_event, ctx) => {
+		registerConfig(ctx);
 		fallbackHintShown = false;
 	});
 
@@ -917,7 +923,7 @@ export default function scoutExtension(pi: ExtensionAPI) {
 			} else if (resolved.usedFallback && !fallbackHintShown && ctx.hasUI) {
 				fallbackHintShown = true;
 				ctx.ui.notify(
-					`scout: no scout model configured — using main model (${resolved.label}) with "${cfg.thinkingLevel ?? "low"}" thinking. Configure a cheaper/faster model via /scout.`,
+					`scout: no scout model configured — using main model (${resolved.label}) with "${cfg.thinkingLevel ?? "off"}" thinking. Configure a cheaper/faster model via /scout.`,
 					"info",
 				);
 			}
@@ -933,7 +939,7 @@ export default function scoutExtension(pi: ExtensionAPI) {
 				task,
 				cwd: scoutCwd,
 				modelRef: resolved.modelRef,
-				thinkingLevel: cfg.thinkingLevel ?? "low",
+				thinkingLevel: cfg.thinkingLevel ?? "off",
 				signal,
 				onSpawn: (pid) => activeScoutPids.add(pid),
 				onExit: (pid) => activeScoutPids.delete(pid),

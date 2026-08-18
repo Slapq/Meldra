@@ -60,6 +60,22 @@ describe("buildSystemPrompt", () => {
 		});
 	});
 
+	describe("MetaPi documentation guidance", () => {
+		test("identifies MetaPi and separates native Starter and external Runtime guidance", () => {
+			const prompt = buildSystemPrompt({
+				contextFiles: [],
+				skills: [],
+				cwd: process.cwd(),
+			});
+
+			expect(prompt).toContain("Host: MetaPi");
+			expect(prompt).toContain("MetaPi native Pi Profile and Starter documentation");
+			expect(prompt).toContain("starter-profile/DEVELOPMENT.md");
+			expect(prompt).toContain("External Agent Profile documentation");
+			expect(prompt).toContain("deepseek-harness.md");
+		});
+	});
+
 	describe("custom tool snippets", () => {
 		test("includes custom tools in available tools section when promptSnippet is provided", () => {
 			const prompt = buildSystemPrompt({

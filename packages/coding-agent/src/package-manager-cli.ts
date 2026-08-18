@@ -541,6 +541,7 @@ function prepareWindowsNpmSelfUpdate(): void {
 
 export interface PackageCommandRuntimeOptions {
 	extensionFactories?: InlineExtension[];
+	agentDir?: string;
 	selfUpdateEnabled?: boolean;
 	versionCheckUrl?: string;
 }
@@ -645,7 +646,7 @@ export async function handleConfigCommand(
 	}
 
 	const cwd = process.cwd();
-	const agentDir = getAgentDir();
+	const agentDir = runtimeOptions.agentDir ?? getAgentDir();
 	const { settingsManager, projectTrustWarnings } = await createCommandSettingsManager({
 		cwd,
 		agentDir,
@@ -743,7 +744,7 @@ export async function handlePackageCommand(
 	}
 
 	const cwd = process.cwd();
-	const agentDir = getAgentDir();
+	const agentDir = runtimeOptions.agentDir ?? getAgentDir();
 	const writesProjectPackageConfig = (options.command === "install" || options.command === "remove") && options.local;
 	const { settingsManager, projectTrustWarnings } = await createCommandSettingsManager({
 		cwd,
@@ -773,6 +774,7 @@ export async function handlePackageCommand(
 		switch (options.command) {
 			case "install":
 				await packageManager.installAndPersist(source!, { local: options.local });
+				await settingsManager.flush();
 				console.log(chalk.green(`Installed ${source}`));
 				return true;
 
@@ -784,6 +786,7 @@ export async function handlePackageCommand(
 					return true;
 				}
 				console.log(chalk.green(`Removed ${source}`));
+				await settingsManager.flush();
 				return true;
 			}
 
