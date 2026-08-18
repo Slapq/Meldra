@@ -28,6 +28,7 @@ beforeEach(() => {
 		pi: { extensions: ["./extensions/setup.ts"] },
 	});
 	write(join(distributionRoot, "starter-profile", "extensions", "setup.ts"), "export default () => {};\n");
+	write(join(distributionRoot, "starter-profile", "AGENTS.md"), "# Default Profile instructions\n");
 });
 
 afterEach(() => {
@@ -51,12 +52,14 @@ describe("MetaPi Starter Profile setup", () => {
 		});
 		expect(JSON.parse(readFileSync(join(result.target, "package.json"), "utf8"))).toMatchObject({ version: "1.0.0" });
 		expect(existsSync(join(result.target, "extensions", "setup.ts"))).toBe(true);
+		expect(readFileSync(join(agentDir, "AGENTS.md"), "utf8")).toBe("# Default Profile instructions\n");
 	});
 
 	test("is idempotent and restores only the managed Starter package when requested", async () => {
 		const cwd = join(temporaryHome, "work");
 		const first = await setupStarterProfile(cwd);
 		write(join(first.target, "extensions", "setup.ts"), "modified locally\n");
+		write(join(getProfileAgentDir("default"), "AGENTS.md"), "custom Profile instructions\n");
 		writeJson(join(getProfileAgentDir("default"), "plugin-configs", "kept.json"), { value: "kept" });
 
 		const unchanged = await setupStarterProfile(cwd);
@@ -66,6 +69,9 @@ describe("MetaPi Starter Profile setup", () => {
 		const restored = await setupStarterProfile(cwd, { restore: true });
 		expect(restored).toMatchObject({ bundleAction: "restored", packageAdded: false });
 		expect(readFileSync(join(first.target, "extensions", "setup.ts"), "utf8")).toBe("export default () => {};\n");
+		expect(readFileSync(join(getProfileAgentDir("default"), "AGENTS.md"), "utf8")).toBe(
+			"custom Profile instructions\n",
+		);
 		expect(
 			JSON.parse(readFileSync(join(getProfileAgentDir("default"), "plugin-configs", "kept.json"), "utf8")),
 		).toEqual({ value: "kept" });

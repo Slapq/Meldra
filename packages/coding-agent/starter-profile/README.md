@@ -18,4 +18,4 @@ Provider Manager, Scout, Workflows, Questionnaire, Setup, packaging, validation,
 
 The Bundle contains source and portable defaults only. It does not contain credentials, OAuth tokens, environment-variable values, Sessions, model selections, plugin configuration, directory bindings, or machine-local paths.
 
-Setup copies this directory to the reserved default Profile's local package store and adds one relative package entry. Existing Profile packages and configuration are preserved.
+Setup copies this directory to the reserved default Profile's local package store, adds one relative package entry, and provisions `AGENTS.md` into the Profile agent directory when that file is missing. Existing Profile instructions, packages, and configuration are preserved.

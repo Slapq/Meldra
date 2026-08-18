@@ -99,6 +99,13 @@ export async function setupStarterProfile(
 	}
 
 	const agentDir = getProfileAgentDir(DEFAULT_PROFILE_NAME);
+	const profileInstructions = join(agentDir, "AGENTS.md");
+	const bundledInstructions = join(source, "AGENTS.md");
+	if (!existsSync(profileInstructions) && existsSync(bundledInstructions)) {
+		mkdirSync(agentDir, { recursive: true });
+		cpSync(bundledInstructions, profileInstructions);
+	}
+
 	const settingsManager = SettingsManager.fromStorage(new MetaPiSettingsStorage(cwd, agentDir), {
 		projectTrusted: false,
 	});

@@ -43,9 +43,11 @@ plans/
 .pi/hf-sessions-backup/
 collect.sh
 
-# Local Agent workflow state (never publish)
+# Local Agent workflow state (never publish unless explicitly sourced below)
 .pi/
 AGENTS.md
+!/AGENTS.md
+!/packages/coding-agent/starter-profile/AGENTS.md
 CONTEXT.md
 [Tt]odo.md
 
