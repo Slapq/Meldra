@@ -2,7 +2,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
   <rect width="800" height="800" rx="120" fill="#09090b"/>
   <path fill="#fff" fill-rule="evenodd" d="
-    M150 150 H400 V275 H275 V650 H150 Z
-    M525 150 H650 V650 H525 V400 H400 V275 H525 Z
+    M175 175 H400 V287.5 H287.5 V625 H175 Z
+    M512.5 175 H625 V625 H512.5 V400 H400 V287.5 H512.5 Z
   "/>
 </svg>

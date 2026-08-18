@@ -74,12 +74,14 @@ test("desktop shortcut always launches the bundled portable Windows Terminal", (
 	assert.match(script, /\{userdesktop\}\\MetaPi/);
 });
 
-test("MetaPi icon uses the supplied white glyph with transparent rounded corners", () => {
+test("MetaPi icon uses a centered 450x450 white glyph with transparent rounded corners", () => {
 	const script = readRepo("scripts/windows-installer/metapi.iss");
 	const source = readRepo("scripts/windows-installer/pi-favicon.svg");
 	const icon = readFileSync(new URL("scripts/windows-installer/pi-app.ico", repoRoot));
 	assert.match(source, /<rect[^>]+rx="120"[^>]+fill="#09090b"/);
 	assert.match(source, /<path fill="#fff"/);
+	assert.match(source, /M175 175 H400 V287\.5 H287\.5 V625 H175 Z/);
+	assert.match(source, /M512\.5 175 H625 V625 H512\.5 V400 H400 V287\.5 H512\.5 Z/);
 	assert.match(script, /SetupIconFile=\{#PayloadDir\}\\pi-app\.ico/);
 	assert.match(script, /UninstallDisplayIcon=\{app\}\\pi-app\.ico/);
 	assert.match(script, /IconFilename: "\{app\}\\pi-app\.ico"/);
@@ -87,6 +89,15 @@ test("MetaPi icon uses the supplied white glyph with transparent rounded corners
 	for (const corner of readIcoFrameCorners(icon)) {
 		assert.ok(corner.alpha < 128);
 		assert.ok(corner.red <= 16 && corner.green <= 16 && corner.blue <= 16);
+	}
+});
+
+test("root READMEs lead with the MetaPi brand logo", () => {
+	for (const readme of ["README.md", "README.en.md"]) {
+		assert.match(
+			readRepo(readme),
+			/^<div align="center">\n\n<img src="scripts\/windows-installer\/pi-favicon\.svg" alt="MetaPi Logo" width="160" height="160">/,
+		);
 	}
 });
 

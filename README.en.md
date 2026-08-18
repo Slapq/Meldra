@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="scripts/windows-installer/pi-favicon.svg" alt="MetaPi Logo" width="160" height="160">
+
 # MetaPi
 
 ### A Pi-based Agent framework and launcher
