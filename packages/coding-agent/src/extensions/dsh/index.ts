@@ -21,7 +21,7 @@ import {
 	SessionBrowserComponent,
 	type SessionBrowserItem,
 } from "../../modes/interactive/components/session-selector.ts";
-import { getMarkdownTheme } from "../../modes/interactive/theme/theme.ts";
+import { getMarkdownTheme, theme as interactiveTheme } from "../../modes/interactive/theme/theme.ts";
 import { resolvePath } from "../../utils/paths.ts";
 import { type DshRewindChoice, runDshRewind } from "./rewind-controller.ts";
 
@@ -953,12 +953,14 @@ export default function dshExtension(pi: ExtensionAPI): void {
 			visible.length ? ctx.ui.theme.fg("warning", `队列 ${visible.length}`) : undefined,
 		);
 		const lines = visible.slice(0, 4).map((item) => {
-			const icon = item.placement === "steering" ? "→" : "·";
+			const steering = item.placement === "steering";
+			const icon = steering ? "→" : "·";
+			const state = steering ? "引导" : "后续";
 			const preview = queuePreview(item);
-			if (item.placement === "steering") {
-				return `${ctx.ui.theme.fg("accent", icon)} ${preview}`;
+			if (steering) {
+				return `${ctx.ui.theme.fg("accent", icon)} ${ctx.ui.theme.fg("accent", state)} ${preview}`;
 			}
-			return `${ctx.ui.theme.fg("dim", icon)} ${ctx.ui.theme.fg("dim", preview)}`;
+			return `${ctx.ui.theme.fg("dim", icon)} ${ctx.ui.theme.fg("dim", state)} ${ctx.ui.theme.fg("dim", preview)}`;
 		});
 		if (visible.length > lines.length)
 			lines.push(ctx.ui.theme.fg("muted", `  … 还有 ${visible.length - lines.length} 项`));
@@ -1069,7 +1071,6 @@ export default function dshExtension(pi: ExtensionAPI): void {
 	pi.registerEntryRenderer<DshEntryData>(DSH_MESSAGE_ENTRY, (entry, _options, theme) => {
 		const data = entry.data;
 		if (!data || typeof data.text !== "string") return undefined;
-		const box = new Box(1, 0);
 		const label =
 			data.kind === "user"
 				? theme.fg("accent", "You")
@@ -1080,16 +1081,32 @@ export default function dshExtension(pi: ExtensionAPI): void {
 						: data.kind === "tool"
 							? theme.fg("warning", "🔧 工具")
 							: theme.fg("dim", "DSH");
-		// Assistant text is Markdown in the Harness contract; reuse Pi's renderer and theme tokens.
+
+		if (data.kind === "user") {
+			const box = new Box(1, 1, (content: string) => interactiveTheme.bg("userMessageBg", content));
+			box.addChild(new Text(label, 0, 0));
+			box.addChild(new Spacer(1));
+			box.addChild(
+				new Markdown(data.text, 0, 0, getMarkdownTheme(), {
+					color: (content: string) => theme.fg("userMessageText", content),
+				}),
+			);
+			return box;
+		}
+
 		if (data.kind === "assistant") {
+			const box = new Box(1, 0);
+			box.addChild(new Spacer(1));
 			box.addChild(new Text(label, 0, 0));
 			box.addChild(new Markdown(data.text, 0, 0, getMarkdownTheme()));
-		} else if (data.kind === "error") {
-			box.addChild(new Text(`${label}\n${theme.fg("error", data.text)}`, 0, 0));
-		} else {
-			const formattedText = data.kind === "info" ? theme.fg("dim", data.text) : data.text;
-			box.addChild(new Text(`${label}\n${formattedText}`, 0, 0));
+			return box;
 		}
+
+		const box = new Box(1, 0);
+		const formattedText = data.kind === "info" ? theme.fg("dim", data.text) : data.text;
+		box.addChild(
+			new Text(`${label}\n${data.kind === "error" ? theme.fg("error", formattedText) : formattedText}`, 0, 0),
+		);
 		return box;
 	});
 
@@ -2740,6 +2757,16 @@ export default function dshExtension(pi: ExtensionAPI): void {
 			handler: (args, ctx) => dshCommand.handler(`${action}${args.trim() ? ` ${args.trim()}` : ""}`, ctx),
 		});
 	}
+	pi.registerCommand("permission", {
+		description: "查看或切换 Harness 权限预设",
+		getArgumentCompletions: (prefix) => {
+			if (prefix.includes(" ")) return null;
+			return ["read-only", "workspace-write", "danger-full-access"]
+				.filter((preset) => preset.startsWith(prefix.toLowerCase()))
+				.map((preset) => ({ value: preset, label: preset }));
+		},
+		handler: (args, ctx) => dshCommand.handler(`run /permission${args.trim() ? ` ${args.trim()}` : ""}`, ctx),
+	});
 	pi.registerCommand("plugin", {
 		description: "直接管理当前 Profile 的 Harness 插件：/plugin list|add|remove|update",
 		getArgumentCompletions: (prefix) => {

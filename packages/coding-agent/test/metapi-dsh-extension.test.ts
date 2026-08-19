@@ -888,6 +888,7 @@ describe("DSH Profile TUI renderer", () => {
 				"plan",
 				"goal",
 				"queue",
+				"permission",
 				"cancel",
 			]),
 		);
@@ -896,13 +897,28 @@ describe("DSH Profile TUI renderer", () => {
 		await state.commands.get("name")?.handler("Example", state.ctx);
 		await state.commands.get("compact")?.handler("", state.ctx);
 		await state.commands.get("session")?.handler("", state.ctx);
+		await state.commands.get("permission")?.handler("danger-full-access", state.ctx);
 
 		expect(fake.runtime.newSession).toHaveBeenCalledTimes(1);
 		expect(fake.runtime.fork).toHaveBeenCalledTimes(1);
 		expect(fake.runtime.rename).toHaveBeenCalledWith("Example");
 		expect(fake.runtime.executeCommand).toHaveBeenCalledWith("/compact");
+		expect(fake.runtime.executeCommand).toHaveBeenCalledWith("/permission danger-full-access");
 		expect(state.ctx.ui.notify).toHaveBeenCalledWith("已创建 DSH Session：workspace-session", "info");
 		vi.unstubAllEnvs();
+	});
+
+	it("queries and completes native permission presets through the direct command", async () => {
+		const fake = fakeRuntime();
+		const state = setup("dsh", fake.runtime);
+		const command = state.commands.get("permission");
+
+		expect(await command?.getArgumentCompletions?.("danger")).toEqual([
+			{ value: "danger-full-access", label: "danger-full-access" },
+		]);
+		await command?.handler("", state.ctx);
+
+		expect(fake.runtime.executeCommand).toHaveBeenCalledWith("/permission");
 	});
 
 	it("returns from a capability page to the management groups", async () => {
@@ -1207,8 +1223,8 @@ describe("DSH Profile TUI renderer", () => {
 
 		await vi.waitFor(() =>
 			expect(state.ctx.ui.setWidget).toHaveBeenCalledWith("metapi-dsh-2-queue", [
-				"· after this turn",
-				"→ adjust now",
+				"· 后续 after this turn",
+				"→ 引导 adjust now",
 			]),
 		);
 		expect(state.ctx.ui.setStatus).toHaveBeenCalledWith("metapi-dsh-2-queue", "队列 2");
@@ -1248,7 +1264,9 @@ describe("DSH Profile TUI renderer", () => {
 				],
 			},
 		});
-		await vi.waitFor(() => expect(state.ctx.ui.setWidget).toHaveBeenCalledWith("metapi-dsh-2-queue", ["· original"]));
+		await vi.waitFor(() =>
+			expect(state.ctx.ui.setWidget).toHaveBeenCalledWith("metapi-dsh-2-queue", ["· 后续 original"]),
+		);
 		const label = "#1 · 后续消息 · original · queued-123456";
 
 		state.ctx.ui.select.mockResolvedValueOnce(label).mockResolvedValueOnce("编辑");
@@ -1284,7 +1302,9 @@ describe("DSH Profile TUI renderer", () => {
 				],
 			},
 		});
-		await vi.waitFor(() => expect(state.ctx.ui.setWidget).toHaveBeenCalledWith("metapi-dsh-2-queue", ["→ original"]));
+		await vi.waitFor(() =>
+			expect(state.ctx.ui.setWidget).toHaveBeenCalledWith("metapi-dsh-2-queue", ["→ 引导 original"]),
+		);
 
 		const steerLabel = "#1 · 立即引导 · original · queued-123456";
 		state.ctx.ui.select.mockResolvedValueOnce(steerLabel).mockResolvedValueOnce("取回到输入框");

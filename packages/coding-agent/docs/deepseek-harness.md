@@ -131,6 +131,7 @@ The most common Harness operations are also available directly in any Profile se
 /plan
 /goal
 /queue
+/permission [read-only|workspace-write|danger-full-access]
 /cancel
 /plugins
 /plugin list
@@ -316,8 +317,8 @@ through Harness's native `job_output` tool. The Goal menu reads the native `goal
 baseline and live projection frames, then sends create/edit/pause/resume/complete/clear through native `goal.*` methods
 with the exact projected CAS revision.
 
-The Plan menu reads the native `plan` projection and executes Harness's `/plan` or `/plan off` through the ordinary
-command slot of `session.prompt`; it does not reproduce plan policy. The Todo menu is read-only because rc.7 exposes
+The Plan menu reads the native `plan` projection and executes Harness's `/plan` or `/plan off` through native
+`CommandRuntime.execute`; it does not reproduce plan policy. The Todo menu is read-only because rc.7 exposes
 Todo writes only to the Harness tool/event path; it displays the whole `todos` projection, which Harness retires at the
 next turn start.
 
@@ -393,11 +394,13 @@ Context view and compact metrics consume Harness's whole-log `sessionStats`, `to
 Context occupancy uses `projectedTokens` with the provider sample fallback and is a reference value, not billing or
 admission input; the system/tools/messages breakdown is explicitly heuristic. The Commands menu resolves the active
 Agent's native scoped command registry, including each command's description and optional input hint, then executes the
-selected line through Harness `session.prompt`; it does not hard-code the installed command roster.
+selected line through a small stdio bridge to Harness's native `CommandRuntime.execute`; command lines and detached
+results do not enter model context. It does not hard-code the installed command roster.
 
 `/dsh run /<native-command>` provides a directly editable namespaced form with asynchronous argument completion from the
 same catalog. Arbitrary native command names remain under the DSH namespace to avoid accidental collisions with Pi
-commands.
+commands. The common `/permission [preset]` shortcut queries or switches the current Session's Harness permission preset
+through that same native command bridge; omitting the preset reports the current value.
 
 Dedicated top-level DSH handlers own the explicitly documented same-name commands through the generic Profile Runtime
 command-surface declaration, while every `/dsh <action>` form remains compatible. `commands/change` and the current

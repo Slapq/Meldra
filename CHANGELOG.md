@@ -1,5 +1,28 @@
 # Meldra 更新日志
 
+## v0.1.2
+
+本版本改善 DeepSeek Harness 对话辨识与权限控制，并修复原生命令被错误发送给模型的问题。
+
+### 改进
+
+- DSH 用户消息使用独立背景消息块，Agent 消息增加明确标题和间距，连续对话更容易区分。
+- DSH 待处理输入明确标注为“后续”或“引导”，保留 Harness 原生 queue/steer 语义。
+- 新增 DSH 顶层 `/permission [read-only|workspace-write|danger-full-access]` 命令，可直接查询或切换当前 Session 权限预设。
+
+### 修复
+
+- DSH 原生命令改由 Harness `CommandRuntime.execute()` 执行，不再作为普通用户消息进入模型上下文。
+- 未知命令和原生命令错误现在明确失败，不再退化为模型提示词。
+- 补充原生命令桥接、权限切换、错误传播和 DSH 显示回归测试。
+
+### 发布边界
+
+- Windows x64 安装器提供内置 Node.js 和使用系统 Node.js 两个版本。
+- 安装器当前未签名，Windows 可能显示 Unknown publisher 或 SmartScreen 提示。
+- scoped npm Bootstrap 尚未发布。
+- DeepSeek Harness 仍固定使用 `0.1.0-rc.7`。
+
 ## v0.1.1-fix
 
 本修复版本完成 MetaPi 到 Meldra 的品牌迁移，同时保留现有用户数据、Profile、Session、Pi compatibility 和外部 Runtime 兼容路径。

@@ -22,37 +22,42 @@ function createRuntime() {
 		modelRuntime: {} as ModelRuntime,
 	});
 	const internals = runtime as unknown as GoalRuntimeInternals;
+	const request = vi.fn(async (method: string, params?: Record<string, unknown>) => {
+		if (method === "metapi/commands.list")
+			return [
+				{
+					name: "compact",
+					description: "Compact history",
+				},
+			];
+		if (method === "metapi/commands.execute")
+			return {
+				accepted: true,
+				commandId: "command-1",
+				command: { kind: "success", text: "Plan mode off." },
+			};
+		if (method === "metapi/plugin-inventory.list")
+			return {
+				entries: [
+					{
+						entryId: "session-stats",
+						moduleName: "@deepseek-ai/dsh-session-stats",
+						enabled: true,
+						fiberPhase: "active",
+					},
+				],
+			};
+		if (method === "metapi/message-feedback.call")
+			return params?.method === "list"
+				? { ok: true, value: { items: [] } }
+				: {
+						ok: true,
+						value: { messageId: "message-1", version: "version-1" },
+					};
+	});
 	internals.runtime = {
 		harness: {
-			client: {
-				request: vi.fn(async (method: string, params?: Record<string, unknown>) => {
-					if (method === "metapi/commands.list")
-						return [
-							{
-								name: "compact",
-								description: "Compact history",
-							},
-						];
-					if (method === "metapi/plugin-inventory.list")
-						return {
-							entries: [
-								{
-									entryId: "session-stats",
-									moduleName: "@deepseek-ai/dsh-session-stats",
-									enabled: true,
-									fiberPhase: "active",
-								},
-							],
-						};
-					if (method === "metapi/message-feedback.call")
-						return params?.method === "list"
-							? { ok: true, value: { items: [] } }
-							: {
-									ok: true,
-									value: { messageId: "message-1", version: "version-1" },
-								};
-				}),
-			},
+			client: { request },
 			close: vi.fn(async () => undefined),
 		},
 		sessionId: "goal-session",
@@ -116,25 +121,17 @@ function createRuntime() {
 														},
 													],
 												}
-											: method === "session.prompt"
-												? {
-														accepted: true,
-														command: {
-															kind: "success",
-															text: "Plan mode off.",
-														},
-													}
-												: method === "goal.clear"
-													? { cleared: true }
-													: { ref: { id: "goal-1", revision: 3 } },
+											: method === "goal.clear"
+												? { cleared: true }
+												: { ref: { id: "goal-1", revision: 3 } },
 		},
 	}));
-	return { runtime, call: internals.call };
+	return { runtime, call: internals.call, request };
 }
 
 describe("DSH Goal and projection ApiProxy wiring", () => {
 	it("reads the tail projection baseline and preserves Goal CAS payloads", async () => {
-		const { runtime, call } = createRuntime();
+		const { runtime, call, request } = createRuntime();
 		const ref = { id: "goal-1", revision: 2 };
 
 		expect(await runtime.projections()).toEqual({
@@ -178,7 +175,12 @@ describe("DSH Goal and projection ApiProxy wiring", () => {
 		expect(await runtime.providers()).toEqual([{ provider: "deepseek-official", settingsNs: "llm-deepseek" }]);
 		expect(await runtime.executeCommand("/plan off")).toEqual({
 			accepted: true,
+			commandId: "command-1",
 			command: { kind: "success", text: "Plan mode off." },
+		});
+		expect(request).toHaveBeenCalledWith("metapi/commands.execute", {
+			sessionId: "goal-session",
+			line: "/plan off",
 		});
 		await runtime.createGoal("Ship", 12);
 		await runtime.createGoal("Use default");
@@ -208,14 +210,6 @@ describe("DSH Goal and projection ApiProxy wiring", () => {
 			["credentials.set", { ref: "DEEPSEEK_API_KEY", value: "secret" }],
 			["credentials.unset", { ref: "DEEPSEEK_API_KEY" }],
 			["llm.providers", {}],
-			[
-				"session.prompt",
-				{
-					sessionId: "goal-session",
-					mode: "queue",
-					content: [{ type: "text", text: "/plan off" }],
-				},
-			],
 			["goal.create", { sessionId: "goal-session", objective: "Ship", maxGoalRounds: 12 }],
 			["goal.create", { sessionId: "goal-session", objective: "Use default" }],
 			[
@@ -232,5 +226,21 @@ describe("DSH Goal and projection ApiProxy wiring", () => {
 			["goal.complete", { sessionId: "goal-session", ref }],
 			["goal.clear", { sessionId: "goal-session", ref }],
 		]);
+	});
+
+	it("rejects native command errors without falling back to a model prompt", async () => {
+		const { runtime, call, request } = createRuntime();
+		request.mockResolvedValueOnce({
+			accepted: true,
+			commandId: "command-2",
+			command: { kind: "error", text: "unknown preset" },
+		});
+
+		await expect(runtime.executeCommand("/permission invalid")).rejects.toThrow("unknown preset");
+		expect(request).toHaveBeenCalledWith("metapi/commands.execute", {
+			sessionId: "goal-session",
+			line: "/permission invalid",
+		});
+		expect(call).not.toHaveBeenCalled();
 	});
 });

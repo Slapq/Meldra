@@ -13,7 +13,7 @@
 | Linux x64 standalone Bun archive | `PARTIAL` | Default/ordinary Profiles work; DeepSeek Harness is explicitly `UNSUPPORTED`, so use the Node.js source distribution |
 | Portable Profile import/export | `SUPPORTED` | `meldra profile import` / `export` |
 | Redacted Profile export audit | `SUPPORTED` | Each export writes `METAPI_PROFILE_EXPORT_AUDIT.md` |
-| Dual Windows x64 installers | `SUPPORTED` | [`v0.1.1-fix`](https://github.com/Slapq/Meldra/releases/tag/v0.1.1-fix) provides bundled-Node and system-Node variants |
+| Dual Windows x64 installers | `SUPPORTED` | [`v0.1.2`](https://github.com/Slapq/Meldra/releases/tag/v0.1.2) provides bundled-Node and system-Node variants |
 | Scoped npm Bootstrap | `PLANNED` | The organization and package name are unconfirmed; no placeholder command is published |
 | Starter Profile Bundle Setup | `SUPPORTED` | A clean first Meldra initialization provisions it automatically; existing users run `meldra setup` to install or restore it |
 | Provider, model, and Scout onboarding | `SUPPORTED` | Run `/setup` in `default`; it points to `/login`, `/model`, `/scout`, or `/config` |

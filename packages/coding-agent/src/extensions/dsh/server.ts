@@ -126,6 +126,19 @@ export function apply(ctx: Context, config: BridgeConfig): void {
 		return commands.list(agent);
 	};
 
+	const commandExecute = async (params: Record<string, unknown> | undefined): Promise<unknown> => {
+		const sessionId = params?.sessionId;
+		const line = params?.line;
+		if (typeof sessionId !== "string" || typeof line !== "string")
+			throw new TypeError("metapi/commands.execute requires sessionId and line");
+		const agent = ctx.agents.get(sessionId as Parameters<typeof ctx.agents.get>[0]);
+		if (!agent) throw new Error(`unknown DSH Session Agent: ${sessionId}`);
+		const commands: CommandRuntime = ctx.commands;
+		const result = await commands.execute(agent, line, new AbortController().signal);
+		if (!result) throw new Error(`unknown DSH command: ${line}`);
+		return { accepted: true, commandId: result.commandId, command: result.result };
+	};
+
 	const messageFeedbackCall = async (params: Record<string, unknown> | undefined): Promise<unknown> => {
 		const method = params?.method;
 		const payload = params?.payload;
@@ -162,6 +175,8 @@ export function apply(ctx: Context, config: BridgeConfig): void {
 				return api.respond(params?.response as ClientResponse);
 			case "metapi/commands.list":
 				return commandList(params);
+			case "metapi/commands.execute":
+				return commandExecute(params);
 			case "metapi/message-feedback.call":
 				return messageFeedbackCall(params);
 			case "metapi/plugin-inventory.list": {

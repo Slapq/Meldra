@@ -13,7 +13,7 @@
 | Linux x64 standalone Bun 归档 | `PARTIAL` | default/普通 Profile 可用；DeepSeek Harness 明确 `UNSUPPORTED`，应使用 Node.js 源码发行 |
 | Portable Profile 导入/导出 | `SUPPORTED` | `meldra profile import` / `export` |
 | Profile export 脱敏审计 | `SUPPORTED` | 导出时自动生成 `METAPI_PROFILE_EXPORT_AUDIT.md` |
-| Windows x64 双安装器 | `SUPPORTED` | [`v0.1.1-fix`](https://github.com/Slapq/Meldra/releases/tag/v0.1.1-fix) 提供内置 Node 和使用系统 Node 两版 |
+| Windows x64 双安装器 | `SUPPORTED` | [`v0.1.2`](https://github.com/Slapq/Meldra/releases/tag/v0.1.2) 提供内置 Node 和使用系统 Node 两版 |
 | scoped npm Bootstrap | `PLANNED` | organization 和包名尚未确认，不提供假命令 |
 | Starter Profile Bundle Setup | `SUPPORTED` | 干净的首次 Meldra 初始化自动 provision；已有用户运行 `meldra setup` 安装或恢复 |
 | Provider、模型和 Scout 引导 | `SUPPORTED` | default Profile 中运行 `/setup`；分别转到 `/login`、`/model`、`/scout` 或 `/config` |

@@ -837,13 +837,14 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 
 	async executeCommand(line: string): Promise<unknown> {
 		const active = await this.start();
-		return apiValue(
-			await this.call("session.prompt", {
-				sessionId: active.sessionId,
-				mode: "queue",
-				content: [{ type: "text", text: line }],
-			}),
-		);
+		const value = await active.harness.client.request("metapi/commands.execute", {
+			sessionId: active.sessionId,
+			line,
+		});
+		if (!isRecord(value) || !isRecord(value.command)) throw new Error("Harness 未返回命令执行结果。");
+		if (value.command.kind === "error")
+			throw new Error(typeof value.command.text === "string" ? value.command.text : "Harness 命令执行失败。");
+		return value;
 	}
 
 	attach(host: ProfileAgentRuntimeHost): void {
