@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ExtensionAPI, ExtensionContext, RegisteredCommand } from "../src/core/extensions/types.ts";
-import { METAPI_SESSION_WORKSPACE_ENTRY } from "../src/metapi/session-profile.ts";
-import workspaceExtension from "../src/metapi/workspace-extension.ts";
+import { MELDRA_SESSION_WORKSPACE_ENTRY } from "../src/meldra/session-profile.ts";
+import workspaceExtension from "../src/meldra/workspace-extension.ts";
 
 function setup(withWorkspace = true) {
 	let command: Omit<RegisteredCommand, "name" | "sourceInfo"> | undefined;
@@ -16,15 +16,15 @@ function setup(withWorkspace = true) {
 	} as unknown as ExtensionAPI;
 	workspaceExtension(api);
 	const ctx = {
-		cwd: "C:\\Users\\test\\.metapi\\workspaces\\session-id",
+		cwd: "C:\\Users\\test\\.meldra\\workspaces\\session-id",
 		sessionManager: {
 			getEntries: () =>
 				withWorkspace
 					? [
 							{
 								type: "custom",
-								customType: METAPI_SESSION_WORKSPACE_ENTRY,
-								data: { root: "C:\\Users\\test\\.metapi\\workspaces" },
+								customType: MELDRA_SESSION_WORKSPACE_ENTRY,
+								data: { root: "C:\\Users\\test\\.meldra\\workspaces" },
 							},
 						]
 					: [],
@@ -45,6 +45,12 @@ describe("Meldra WorkSpace extension", () => {
 		await command.handler("", ctx as any);
 		expect(ctx.ui.notify).toHaveBeenCalledWith(expect.stringContaining("当前 WorkSpace"), "info");
 		expect(ctx.ui.notify).toHaveBeenCalledWith(expect.stringContaining("Profile 资源默认不会写入 WorkSpace"), "info");
+	});
+
+	it("uses the canonical WorkSpace status slot", () => {
+		const { handlers, ctx } = setup();
+		handlers.get("session_start")?.({}, ctx);
+		expect(ctx.ui.setStatus).toHaveBeenCalledWith("meldra-workspace", "WorkSpace · /workspace");
 	});
 
 	it("injects scope-selection guidance only for WorkSpace sessions", () => {

@@ -167,7 +167,7 @@ Meldra native Pi Profile and Starter documentation (important when developing Me
 External Agent Profile documentation (important when a Profile uses an external Agent Runtime such as DeepSeek Harness):
 - Profile Runtime boundary: ${meldraRootPath}/packages/coding-agent/docs/profile-runtimes.md
 - DeepSeek Harness Runtime: ${meldraRootPath}/packages/coding-agent/docs/deepseek-harness.md
-- Runtime adapter source: ${meldraRootPath}/packages/coding-agent/src/metapi/
+- Runtime adapter source: ${meldraRootPath}/packages/coding-agent/src/meldra/
 - For Runtime-owned behavior, read the active Runtime documentation before changing Agent loop, Session, Skill, plugin, model, queue, persistence, or lifecycle behavior
 - The external Runtime's current source, protocol, and native behavior remain authoritative for Runtime-owned features
 - Do not reimplement external Agent behavior in generic Pi core`;

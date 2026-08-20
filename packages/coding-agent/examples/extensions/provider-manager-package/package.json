@@ -1,5 +1,5 @@
 {
-  "name": "@slapq/metapi-provider-manager-example",
+  "name": "@slapq/meldra-provider-manager-example",
   "version": "0.1.0",
   "private": true,
   "description": "Interactive TUI provider & model manager for Pi Agent. Configure OpenAI-compatible, Anthropic, Google and other LLM providers with a visual form. Supports multi-language (EN/ZH).",

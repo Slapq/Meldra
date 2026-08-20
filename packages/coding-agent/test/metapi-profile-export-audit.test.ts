@@ -27,7 +27,7 @@ describe("Meldra Profile export audit", () => {
 		writeFileSync(join(root, "plugin.yml"), "endpoint: https://user:hardcoded-password@example.test/api\n");
 		writeFileSync(join(root, "binary.bin"), Buffer.from([0, 1, 2, 3]));
 
-		const { writeProfileExportAudit } = await import("../src/metapi/profile-bundle.ts");
+		const { writeProfileExportAudit } = await import("../src/meldra/profile-bundle.ts");
 		const audit = writeProfileExportAudit(root);
 		const report = readFileSync(audit.reportPath, "utf8");
 
@@ -39,11 +39,32 @@ describe("Meldra Profile export audit", () => {
 			]),
 		);
 		expect(audit.findings.some((finding) => finding.line === 3 && finding.path === "settings.json")).toBe(false);
-		expect(audit.includedFiles).toContain("METAPI_PROFILE_EXPORT_AUDIT.md");
+		expect(audit.includedFiles).toContain("MELDRA_PROFILE_EXPORT_AUDIT.md");
 		expect(report).toContain("settings.json`:");
 		expect(report).toContain("managed credentials and authentication stores");
 		expect(report).not.toContain("sk-test-1234567890abcdef");
 		expect(report).not.toContain("hardcoded-password");
+	});
+
+	it("accepts current and legacy Meldra model credential references as placeholders", async () => {
+		const root = mkdtempSync(join(tmpdir(), "meldra-profile-export-model-refs-"));
+		cleanup.push(root);
+		writeFileSync(
+			join(root, "settings.json"),
+			JSON.stringify(
+				{
+					apiKey: "MELDRA_MODEL_0123456789ABCDEF",
+					token: "METAPI_MODEL_FEDCBA9876543210",
+				},
+				null,
+				2,
+			),
+		);
+
+		const { writeProfileExportAudit } = await import("../src/meldra/profile-bundle.ts");
+		const audit = writeProfileExportAudit(root);
+		expect(audit.findings).toEqual([]);
+		expect(existsSync(join(root, "MELDRA_PROFILE_EXPORT_AUDIT.md"))).toBe(true);
 	});
 
 	it("preserves the string export contract while writing an audit beside the portable manifest", async () => {
@@ -57,7 +78,7 @@ describe("Meldra Profile export audit", () => {
 		process.env.USERPROFILE = home;
 		vi.resetModules();
 
-		const profileBundle = await import("../src/metapi/profile-bundle.ts");
+		const profileBundle = await import("../src/meldra/profile-bundle.ts");
 		writeFileSync(
 			join(installed, "package.json"),
 			`${JSON.stringify({ name: "shared-profile", version: "1.0.0", metapi: { profileVersion: 1 } }, null, 2)}\n`,
@@ -91,9 +112,9 @@ describe("Meldra Profile export audit", () => {
 		const exported = await profileBundle.exportProfile("shared", output, root);
 
 		expect(exported).toBe(output);
-		expect(existsSync(join(output, "METAPI_PROFILE_EXPORT_AUDIT.md"))).toBe(true);
+		expect(existsSync(join(output, "MELDRA_PROFILE_EXPORT_AUDIT.md"))).toBe(true);
 		expect(JSON.parse(readFileSync(join(output, "package.json"), "utf8"))).toMatchObject({
-			metapi: { profileVersion: 1, displayName: "Shared Profile" },
+			meldra: { profileVersion: 1, displayName: "Shared Profile" },
 		});
 	});
 });

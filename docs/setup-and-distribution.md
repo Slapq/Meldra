@@ -12,8 +12,8 @@
 | 从源码构建并运行 | `SUPPORTED` | `npm install --ignore-scripts`、`npm run prepare:native-runtime`、`npm run build`、源码启动脚本 |
 | Linux x64 standalone Bun 归档 | `PARTIAL` | default/普通 Profile 可用；DeepSeek Harness 明确 `UNSUPPORTED`，应使用 Node.js 源码发行 |
 | Portable Profile 导入/导出 | `SUPPORTED` | `meldra profile import` / `export` |
-| Profile export 脱敏审计 | `SUPPORTED` | 导出时自动生成 `METAPI_PROFILE_EXPORT_AUDIT.md` |
-| Windows x64 双安装器 | `SUPPORTED` | [`v0.1.2`](https://github.com/Slapq/Meldra/releases/tag/v0.1.2) 提供内置 Node 和使用系统 Node 两版 |
+| Profile export 脱敏审计 | `SUPPORTED` | 导出时自动生成 `MELDRA_PROFILE_EXPORT_AUDIT.md` |
+| Windows x64 双安装器 | `SUPPORTED` | [`v0.2.1`](https://github.com/Slapq/Meldra/releases/tag/v0.2.1) 提供内置 Node 和使用系统 Node 两版 |
 | scoped npm Bootstrap | `PLANNED` | organization 和包名尚未确认，不提供假命令 |
 | Starter Profile Bundle Setup | `SUPPORTED` | 干净的首次 Meldra 初始化自动 provision；已有用户运行 `meldra setup` 安装或恢复 |
 | Provider、模型和 Scout 引导 | `SUPPORTED` | default Profile 中运行 `/setup`；分别转到 `/login`、`/model`、`/scout` 或 `/config` |
@@ -40,9 +40,9 @@ Release 提供两个 Windows 10 build 19041+ / Windows 11 x64 安装器：
 - `Meldra-Setup.exe`：面向未预装 Node.js 的机器，内置官方 Node.js 24.19.0；
 - `Meldra-Setup-NodeJS.exe`：使用机器已有 Node.js。缺少 Node/npm 或版本低于 22.19.0 时显示真实提示，但不阻止用户完成安装。
 
-两版都内置官方 Windows Terminal 1.24.11911.0 x64 unpackaged distribution，并使用 `.portable` 模式。安装器把 `metapi` 加入当前用户 PATH，所以 CLI 可以在 PowerShell、cmd、Git Bash、Windows Terminal、VS Code terminal 等任意新开的终端中运行。桌面 `Meldra` 快捷方式默认使用内置 Windows Terminal，但不把 Meldra 绑定到该终端，也不修改 Windows 的系统默认终端设置。
+两版都内置官方 Windows Terminal 1.24.11911.0 x64 unpackaged distribution，并使用 `.portable` 模式。安装器把 `meldra` 加入当前用户 PATH，`metapi` 作为兼容别名，所以 CLI 可以在 PowerShell、cmd、Git Bash、Windows Terminal、VS Code terminal 等任意新开的终端中运行。桌面 `Meldra` 快捷方式默认使用内置 Windows Terminal，但不把 Meldra 绑定到该终端，也不修改 Windows 的系统默认终端设置。
 
-安装器使用同一个 `AppId`，两版可以原位互相升级。安装位置默认为 `%LOCALAPPDATA%\Programs\Meldra`，不要求管理员权限。升级保留 `~/.metapi`；卸载删除程序、快捷方式和 Meldra 自己的 PATH 项，但保留 Profile、凭据、模型和 Session。
+安装器使用同一个 `AppId`，两版可以原位互相升级。安装位置默认为 `%LOCALAPPDATA%\Programs\Meldra`，不要求管理员权限。升级保留 `~/.meldra`；卸载删除程序、快捷方式和 Meldra 自己的 PATH 项，但保留 Profile、凭据、模型和 Session。
 
 ### npm Bootstrap
 
@@ -80,7 +80,7 @@ Meldra 默认 Profile 定位为由项目组持续调校的极简 Starter Profile
 
 ## 桌面快捷方式
 
-Windows Setup 只在当前用户桌面创建一个快捷方式，不写入开始菜单，也不要求管理员权限。重复运行会更新同一个快捷方式，不创建重复项。快捷方式使用内置 portable Windows Terminal；`metapi` 命令仍通过当前用户 PATH 在其他终端可用。
+Windows Setup 只在当前用户桌面创建一个快捷方式，不写入开始菜单，也不要求管理员权限。重复运行会更新同一个快捷方式，不创建重复项。快捷方式使用内置 portable Windows Terminal；`meldra` 命令通过当前用户 PATH 在其他终端可用，`metapi` 继续作为兼容别名。
 
 快捷方式的产品启动语义是：
 

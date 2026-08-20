@@ -63,16 +63,17 @@ test("writes standard Meldra release checksums", () => {
 });
 
 test("system Node installer warns without blocking installation", () => {
-	const script = readRepo("scripts/windows-installer/metapi.iss");
+	const script = readRepo("scripts/windows-installer/meldra.iss");
 	assert.match(script, /Installation is still allowed/);
 	assert.doesNotMatch(script, /function\s+NextButtonClick/i);
 	assert.doesNotMatch(script, /function\s+InitializeSetup/i);
 });
 
 test("desktop shortcut always launches the bundled portable Windows Terminal", () => {
-	const script = readRepo("scripts/windows-installer/metapi.iss");
+	const script = readRepo("scripts/windows-installer/meldra.iss");
 	assert.match(script, /\{app\}\\terminal\\WindowsTerminal\.exe/);
 	assert.match(script, /meldra-shell\.cmd/);
+	assert.match(script, /DefaultDirName=\{localappdata\}\\Programs\\Meldra/);
 	assert.match(script, /Source: "\{#PayloadDir\}\\metapi\.cmd"/);
 	assert.match(script, /MinVersion=10\.0\.19041/);
 	assert.match(script, /PrivilegesRequired=lowest/);
@@ -83,7 +84,7 @@ test("desktop shortcut always launches the bundled portable Windows Terminal", (
 });
 
 test("Meldra icon uses a centered 450x450 white glyph with transparent rounded corners", () => {
-	const script = readRepo("scripts/windows-installer/metapi.iss");
+	const script = readRepo("scripts/windows-installer/meldra.iss");
 	const source = readRepo("scripts/windows-installer/pi-favicon.svg");
 	const icon = readFileSync(new URL("scripts/windows-installer/pi-app.ico", repoRoot));
 	assert.match(source, /<rect[^>]+rx="120"[^>]+fill="#09090b"/);
@@ -110,12 +111,17 @@ test("root READMEs lead with the Meldra brand logo", () => {
 });
 
 test("first-use onboarding quotes the Windows Terminal title as one argument", () => {
-	const script = readRepo("scripts/windows-installer/metapi.iss");
+	const script = readRepo("scripts/windows-installer/meldra.iss");
 	assert.match(script, /--title ""Meldra Setup"" -- cmd\.exe \/d \/c/);
 	assert.match(script, /meldra-onboarding\.cmd/);
-	assert.match(readRepo("scripts/windows-installer/metapi-onboarding.cmd"), /--startup-command \/setup/);
+	assert.match(readRepo("scripts/windows-installer/meldra-onboarding.cmd"), /--startup-command \/setup/);
 });
 
+test("legacy Windows launcher forwards to the canonical Meldra launcher", () => {
+	const launcher = readRepo("scripts/windows-installer/metapi.cmd");
+	assert.match(launcher, /call "%~dp0meldra\.cmd" %\*/);
+	assert.doesNotMatch(launcher, /METAPI_(ROOT|APP|CLI|NODE)/);
+});
 test("local release staging is reproducible and keeps DSH rc peer resolution", () => {
 	const script = readRepo("scripts/local-release.mjs");
 	assert.match(script, /--offline-model-data/);
@@ -124,9 +130,9 @@ test("local release staging is reproducible and keeps DSH rc peer resolution", (
 });
 
 test("Meldra runtime launcher prefers bundled Node but permits the selected system runtime", () => {
-	const launcher = readRepo("scripts/windows-installer/metapi.cmd");
+	const launcher = readRepo("scripts/windows-installer/meldra.cmd");
 	assert.match(launcher, /runtime\\node\.exe/);
 	assert.match(launcher, /where node\.exe/);
 	assert.match(launcher, /The installed Node\.js will still be used as requested/);
-	assert.match(launcher, /%METAPI_NODE%.*%METAPI_CLI%/);
+	assert.match(launcher, /%MELDRA_NODE%.*%MELDRA_CLI%/);
 });

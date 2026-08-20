@@ -20,7 +20,7 @@ Use `/session` in interactive mode to see the current session file, session ID, 
 Meldra can start a conversation in a dedicated WorkSpace:
 
 ```bash
-meldra --workspace                 # ~/.metapi/workspaces/<session-id>/
+meldra --workspace                 # ~/.meldra/workspaces/<session-id>/
 meldra --workspace D:/WorkSpaces  # explicit root override
 ```
 
@@ -47,7 +47,7 @@ For the JSONL file format and SessionManager API, see [Session Format](session-f
 
 `/resume` opens an interactive session picker for the current project. `pi -r` opens the same picker at startup.
 
-For a native Pi Agent Profile, `/resume` searches session files across the physical directories of ordinary Profiles but lists only sessions whose latest `metapi-session-profile` metadata belongs to the current Pi Agent Profile. A legacy session without that metadata falls back to its physical Profile directory. This preserves resume after an in-session Profile switch without mixing default Pi Agent and external-Runtime conversations. A Profile Runtime may transparently claim `/resume` and reuse the same Pi browser with its own structured Session adapter; DSH does this for Harness Sessions. Sessions from the separate Pi installation are never included. The explicit `meldra --profile pi` compatibility launch discovers only original Pi sessions.
+For a native Pi Agent Profile, `/resume` searches session files across the physical directories of ordinary Profiles but lists only sessions whose latest `meldra-session-profile` metadata belongs to the current Pi Agent Profile. Historical `metapi-session-profile` entries remain readable. A legacy session without either metadata entry falls back to its physical Profile directory. This preserves resume after an in-session Profile switch without mixing default Pi Agent and external-Runtime conversations. A Profile Runtime may transparently claim `/resume` and reuse the same Pi browser with its own structured Session adapter; DSH does this for Harness Sessions. Sessions from the separate Pi installation are never included. The explicit `meldra --profile pi` compatibility launch discovers only original Pi sessions.
 
 In the picker you can:
 

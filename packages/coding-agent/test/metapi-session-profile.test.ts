@@ -2,17 +2,20 @@ import { mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import type { SessionEntry } from "../src/core/session-manager.ts";
 import { SessionManager } from "../src/core/session-manager.ts";
 import {
 	getSessionDiscoveryProfiles,
 	getSessionProfile,
 	getSessionWorkspaceRoot,
 	isOrphanedTempSession,
-	METAPI_SESSION_PROFILE_ENTRY,
+	LEGACY_METAPI_SESSION_PROFILE_ENTRY,
+	MELDRA_SESSION_PROFILE_ENTRY,
+	MELDRA_SESSION_WORKSPACE_ENTRY,
 	replaceSessionProfile,
 	setSessionProfile,
 	setSessionWorkspaceRoot,
-} from "../src/metapi/session-profile.ts";
+} from "../src/meldra/session-profile.ts";
 
 const cleanup: string[] = [];
 
@@ -55,12 +58,31 @@ describe("Meldra session Profile metadata", () => {
 		expect(manager.getEntries()).toEqual([
 			expect.objectContaining({
 				type: "custom",
-				customType: METAPI_SESSION_PROFILE_ENTRY,
+				customType: MELDRA_SESSION_PROFILE_ENTRY,
 				data: { profile: "pi" },
 			}),
 		]);
 	});
 
+	it("reads legacy metadata while writing new Meldra entry types", () => {
+		const legacy = {
+			getEntries: () =>
+				[
+					{ type: "custom", customType: LEGACY_METAPI_SESSION_PROFILE_ENTRY, data: { profile: "legacy" } },
+					{ type: "custom", customType: "metapi-session-workspace", data: { root: "C:/legacy-workspace" } },
+				] as unknown as SessionEntry[],
+		};
+		expect(getSessionProfile(legacy)).toBe("legacy");
+		expect(getSessionWorkspaceRoot(legacy)).toContain("legacy-workspace");
+
+		const manager = SessionManager.inMemory(process.cwd());
+		setSessionProfile(manager, "default");
+		setSessionWorkspaceRoot(manager, "C:/meldra-workspace");
+		expect(manager.getEntries().map((entry) => entry.type === "custom" && entry.customType)).toEqual([
+			MELDRA_SESSION_PROFILE_ENTRY,
+			MELDRA_SESSION_WORKSPACE_ENTRY,
+		]);
+	});
 	it("persists the WorkSpace root with the session", () => {
 		const manager = SessionManager.inMemory(process.cwd());
 		setSessionWorkspaceRoot(manager, "C:/workspaces");

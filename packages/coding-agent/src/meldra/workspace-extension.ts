@@ -17,10 +17,10 @@ export default function workspaceExtension(pi: ExtensionAPI): void {
 
 	pi.on("session_start", (_event, ctx) => {
 		if (!getSessionWorkspaceRoot(ctx.sessionManager)) {
-			ctx.ui.setStatus("metapi-workspace", undefined);
+			ctx.ui.setStatus("meldra-workspace", undefined);
 			return;
 		}
-		ctx.ui.setStatus("metapi-workspace", ctx.ui.theme.fg("accent", "WorkSpace · /workspace"));
+		ctx.ui.setStatus("meldra-workspace", ctx.ui.theme.fg("accent", "WorkSpace · /workspace"));
 	});
 
 	pi.on("before_agent_start", (event, ctx) => {

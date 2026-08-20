@@ -2,13 +2,13 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { METAPI_WORKSPACES_DIR } from "../src/metapi/profile-service.ts";
+import { MELDRA_WORKSPACES_DIR } from "../src/meldra/profile-service.ts";
 import {
 	copyWorkspace,
 	createEmptyWorkspace,
 	getWorkspacePath,
 	resolveWorkspaceRoot,
-} from "../src/metapi/workspace-service.ts";
+} from "../src/meldra/workspace-service.ts";
 
 const cleanup: string[] = [];
 
@@ -23,9 +23,9 @@ afterEach(() => {
 });
 
 describe("Meldra WorkSpace", () => {
-	it("uses ~/.metapi/workspaces when no root is supplied", () => {
-		expect(resolveWorkspaceRoot()).toBe(METAPI_WORKSPACES_DIR);
-		expect(resolveWorkspaceRoot("", temp("metapi-workspace-default-launch"))).toBe(METAPI_WORKSPACES_DIR);
+	it("uses ~/.meldra/workspaces when no root is supplied", () => {
+		expect(resolveWorkspaceRoot()).toBe(MELDRA_WORKSPACES_DIR);
+		expect(resolveWorkspaceRoot("", temp("metapi-workspace-default-launch"))).toBe(MELDRA_WORKSPACES_DIR);
 	});
 
 	it("resolves relative roots from the launch cwd", () => {

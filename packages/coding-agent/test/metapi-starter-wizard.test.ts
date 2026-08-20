@@ -57,12 +57,12 @@ function loadExtension() {
 
 beforeEach(() => {
 	process.env.LANG = "en";
-	process.env.METAPI_CODING_AGENT_DIR = agentDir;
+	process.env.MELDRA_CODING_AGENT_DIR = agentDir;
 });
 
 afterEach(() => {
-	rmSync(dirname(agentDir), { recursive: true, force: true });
-	delete process.env.METAPI_CODING_AGENT_DIR;
+	rmSync(dirname(agentDir), { recursive: true, force: true, maxRetries: 3, retryDelay: 20 });
+	delete process.env.MELDRA_CODING_AGENT_DIR;
 	if (originalLang === undefined) delete process.env.LANG;
 	else process.env.LANG = originalLang;
 });
@@ -75,7 +75,7 @@ describe("Meldra Starter setup wizard", () => {
 		expect(commands.has("setup")).toBe(true);
 		await events.get("session_start")?.({}, ctx);
 
-		expect(ctx.ui.setStatus).toHaveBeenCalledWith("metapi-starter-setup", "Setup 0/3 · /setup");
+		expect(ctx.ui.setStatus).toHaveBeenCalledWith("meldra-starter-setup", "Setup 0/3 · /setup");
 		expect(ctx.ui.notify).toHaveBeenCalledWith(expect.stringMatching(/\/setup/), "info");
 	});
 
@@ -216,6 +216,6 @@ describe("Meldra Starter setup wizard", () => {
 		await commands.get("setup")?.handler("", ctx);
 
 		expect(ctx.executeCommand).not.toHaveBeenCalled();
-		expect(ctx.ui.setStatus).toHaveBeenLastCalledWith("metapi-starter-setup", "Setup 0/3 · /setup");
+		expect(ctx.ui.setStatus).toHaveBeenLastCalledWith("meldra-starter-setup", "Setup 0/3 · /setup");
 	});
 });

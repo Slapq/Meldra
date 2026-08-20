@@ -5,7 +5,7 @@ import type { Component } from "@earendil-works/pi-tui";
 import { describe, expect, it, vi } from "vitest";
 import type { ExtensionAPI, ExtensionContext } from "../src/core/extensions/types.ts";
 import dshExtension from "../src/extensions/dsh/index.ts";
-import { DSH_MESSAGE_ENTRY, type DshProfileEvent, DshProfileRuntime } from "../src/metapi/dsh-profile-runtime.ts";
+import { DSH_MESSAGE_ENTRY, type DshProfileEvent, DshProfileRuntime } from "../src/meldra/dsh-profile-runtime.ts";
 import { initTheme } from "../src/modes/interactive/theme/theme.ts";
 import { stripAnsi } from "../src/utils/ansi.ts";
 
@@ -319,8 +319,8 @@ function fakeRuntime() {
 }
 
 function setup(profile: string, profileRuntime?: DshProfileRuntime, runtimeProvider?: string) {
-	vi.stubEnv("METAPI_PROFILE_NAME", profile);
-	if (runtimeProvider) vi.stubEnv("METAPI_PROFILE_RUNTIME_PROVIDER", runtimeProvider);
+	vi.stubEnv("MELDRA_PROFILE_NAME", profile);
+	if (runtimeProvider) vi.stubEnv("MELDRA_PROFILE_RUNTIME_PROVIDER", runtimeProvider);
 	const handlers = new Map<string, (...args: unknown[]) => unknown>();
 	const renderers = new Map<string, (...args: unknown[]) => unknown>();
 	const commands = new Map<
@@ -496,7 +496,7 @@ describe("DSH Profile TUI renderer", () => {
 	it("shows Profile Runtime status only for the DSH Profile", () => {
 		const state = setup("dsh");
 		state.handlers.get("session_start")?.({ type: "session_start", reason: "startup" }, state.ctx);
-		expect(state.ctx.ui.setStatus).toHaveBeenCalledWith("metapi-dsh-0-runtime", expect.stringContaining("DSH"));
+		expect(state.ctx.ui.setStatus).toHaveBeenCalledWith("meldra-dsh-0-runtime", expect.stringContaining("DSH"));
 		vi.unstubAllEnvs();
 	});
 
@@ -508,7 +508,7 @@ describe("DSH Profile TUI renderer", () => {
 
 		await vi.waitFor(() =>
 			expect(state.ctx.ui.setStatus).toHaveBeenCalledWith(
-				"metapi-dsh-0-model",
+				"meldra-dsh-0-model",
 				"Harness native deepseek-official/deepseek-v4-flash",
 			),
 		);
@@ -527,7 +527,7 @@ describe("DSH Profile TUI renderer", () => {
 
 		await vi.waitFor(() =>
 			expect(state.ctx.ui.setStatus).toHaveBeenCalledWith(
-				"metapi-dsh-0-model",
+				"meldra-dsh-0-model",
 				"Harness native deepseek-official/deepseek-v4-flash · Pi active matched",
 			),
 		);
@@ -556,7 +556,7 @@ describe("DSH Profile TUI renderer", () => {
 		);
 
 		expect(state.ctx.ui.setStatus).toHaveBeenLastCalledWith(
-			"metapi-dsh-0-model",
+			"meldra-dsh-0-model",
 			"Harness native CloseAI/gpt-5.6-sol · Pi active matched",
 		);
 		vi.unstubAllEnvs();
@@ -574,7 +574,7 @@ describe("DSH Profile TUI renderer", () => {
 
 		await vi.waitFor(() =>
 			expect(state.ctx.ui.setStatus).toHaveBeenCalledWith(
-				"metapi-dsh-0-model",
+				"meldra-dsh-0-model",
 				"Harness native deepseek-official/deepseek-v4-flash · Pi active deepseek-official/deepseek-v4 · native differs",
 			),
 		);
@@ -587,7 +587,7 @@ describe("DSH Profile TUI renderer", () => {
 		state.handlers.get("session_start")?.({ type: "session_start", reason: "startup" }, state.ctx);
 		await vi.waitFor(() =>
 			expect(state.ctx.ui.setStatus).toHaveBeenCalledWith(
-				"metapi-dsh-0-model",
+				"meldra-dsh-0-model",
 				"Harness native deepseek-official/deepseek-v4-flash · Pi active missing-provider/missing-model · not in Harness catalog",
 			),
 		);
@@ -1163,17 +1163,17 @@ describe("DSH Profile TUI renderer", () => {
 		});
 
 		await vi.waitFor(() =>
-			expect(state.ctx.ui.setStatus).toHaveBeenCalledWith("metapi-dsh-1-status", expect.stringContaining("运行中")),
+			expect(state.ctx.ui.setStatus).toHaveBeenCalledWith("meldra-dsh-1-status", expect.stringContaining("运行中")),
 		);
 		await vi.waitFor(() =>
 			expect(state.ctx.ui.setWidget).toHaveBeenCalledWith(
-				"metapi-dsh-metrics",
+				"meldra-dsh-metrics",
 				expect.arrayContaining([expect.stringContaining("deepseek-v4-flash")]),
 				expect.objectContaining({ placement: "aboveEditor" }),
 			),
 		);
 		state.handlers.get("session_shutdown")?.({ type: "session_shutdown" }, state.ctx);
-		expect(state.ctx.ui.setWidget).toHaveBeenCalledWith("metapi-dsh-metrics", undefined);
+		expect(state.ctx.ui.setWidget).toHaveBeenCalledWith("meldra-dsh-metrics", undefined);
 		vi.unstubAllEnvs();
 	});
 
@@ -1222,19 +1222,19 @@ describe("DSH Profile TUI renderer", () => {
 		});
 
 		await vi.waitFor(() =>
-			expect(state.ctx.ui.setWidget).toHaveBeenCalledWith("metapi-dsh-2-queue", [
+			expect(state.ctx.ui.setWidget).toHaveBeenCalledWith("meldra-dsh-2-queue", [
 				"· 后续 after this turn",
 				"→ 引导 adjust now",
 			]),
 		);
-		expect(state.ctx.ui.setStatus).toHaveBeenCalledWith("metapi-dsh-2-queue", "队列 2");
+		expect(state.ctx.ui.setStatus).toHaveBeenCalledWith("meldra-dsh-2-queue", "队列 2");
 		expect(state.ctx.ui.setWidget).not.toHaveBeenCalledWith(
-			"metapi-dsh-2-queue",
+			"meldra-dsh-2-queue",
 			expect.arrayContaining([expect.stringContaining("hidden context")]),
 		);
 		state.handlers.get("session_shutdown")?.({ type: "session_shutdown" }, state.ctx);
-		expect(state.ctx.ui.setWidget).toHaveBeenCalledWith("metapi-dsh-2-queue", undefined);
-		expect(state.ctx.ui.setWidget).toHaveBeenLastCalledWith("metapi-dsh-metrics", undefined);
+		expect(state.ctx.ui.setWidget).toHaveBeenCalledWith("meldra-dsh-2-queue", undefined);
+		expect(state.ctx.ui.setWidget).toHaveBeenLastCalledWith("meldra-dsh-metrics", undefined);
 		vi.unstubAllEnvs();
 	});
 
@@ -1265,7 +1265,7 @@ describe("DSH Profile TUI renderer", () => {
 			},
 		});
 		await vi.waitFor(() =>
-			expect(state.ctx.ui.setWidget).toHaveBeenCalledWith("metapi-dsh-2-queue", ["· 后续 original"]),
+			expect(state.ctx.ui.setWidget).toHaveBeenCalledWith("meldra-dsh-2-queue", ["· 后续 original"]),
 		);
 		const label = "#1 · 后续消息 · original · queued-123456";
 
@@ -1303,7 +1303,7 @@ describe("DSH Profile TUI renderer", () => {
 			},
 		});
 		await vi.waitFor(() =>
-			expect(state.ctx.ui.setWidget).toHaveBeenCalledWith("metapi-dsh-2-queue", ["→ 引导 original"]),
+			expect(state.ctx.ui.setWidget).toHaveBeenCalledWith("meldra-dsh-2-queue", ["→ 引导 original"]),
 		);
 
 		const steerLabel = "#1 · 立即引导 · original · queued-123456";
@@ -1403,7 +1403,7 @@ describe("DSH Profile TUI renderer", () => {
 				],
 			},
 		});
-		await vi.waitFor(() => expect(state.ctx.ui.setStatus).toHaveBeenCalledWith("metapi-dsh-3-jobs", "⚡ 1"));
+		await vi.waitFor(() => expect(state.ctx.ui.setStatus).toHaveBeenCalledWith("meldra-dsh-3-jobs", "⚡ 1"));
 		state.ctx.ui.select.mockImplementationOnce(async (_title: string, options: string[]) =>
 			options.find((option) => option.includes("pwsh-2")),
 		);
@@ -1412,7 +1412,7 @@ describe("DSH Profile TUI renderer", () => {
 
 		expect(state.ctx.ui.notify).toHaveBeenCalledWith(expect.stringContaining('"detail": "exit code: 0"'), "info");
 		state.handlers.get("session_shutdown")?.({ type: "session_shutdown" }, state.ctx);
-		expect(state.ctx.ui.setStatus).toHaveBeenCalledWith("metapi-dsh-3-jobs", undefined);
+		expect(state.ctx.ui.setStatus).toHaveBeenCalledWith("meldra-dsh-3-jobs", undefined);
 		vi.unstubAllEnvs();
 	});
 
@@ -1520,10 +1520,10 @@ describe("DSH Profile TUI renderer", () => {
 
 		expect(fake.runtime.executeCommand).toHaveBeenCalledWith("/plan off");
 		expect(state.ctx.ui.notify).toHaveBeenCalledWith("/plan off applied", "info");
-		expect(state.ctx.ui.setStatus).toHaveBeenCalledWith("metapi-dsh-4-plan", "📝 计划");
-		expect(state.ctx.ui.setStatus).toHaveBeenCalledWith("metapi-dsh-5-todos", "✓ 1/2");
+		expect(state.ctx.ui.setStatus).toHaveBeenCalledWith("meldra-dsh-4-plan", "📝 计划");
+		expect(state.ctx.ui.setStatus).toHaveBeenCalledWith("meldra-dsh-5-todos", "✓ 1/2");
 		expect(state.ctx.ui.setWidget).toHaveBeenCalledWith(
-			"metapi-dsh-metrics",
+			"meldra-dsh-metrics",
 			["2 turns · 3 steps  |  LLM 1.2s · tools 0.8s · 0.2s TTFT · 10.0 tok/s  |  ▲ 500  ▼ 40  ⚡ 60%  |  📊 40%"],
 			{ placement: "aboveEditor" },
 		);
@@ -2078,7 +2078,7 @@ describe("DSH Profile TUI renderer", () => {
 		expect(fake.runtime.selectModel).toHaveBeenCalledWith("deepseek-official", "deepseek-v4", "high");
 		expect(state.ctx.setModelPreference).toHaveBeenCalledWith("deepseek-official", "deepseek-v4");
 		expect(state.ctx.ui.setStatus).toHaveBeenCalledWith(
-			"metapi-dsh-0-model",
+			"meldra-dsh-0-model",
 			"Harness native deepseek-official/deepseek-v4-flash · Profile preference deepseek-official/deepseek-v4",
 		);
 		vi.unstubAllEnvs();
@@ -2131,11 +2131,11 @@ describe("DSH Profile TUI renderer", () => {
 		}
 		await vi.waitFor(() =>
 			expect(state.ctx.ui.setStatus).toHaveBeenCalledWith(
-				"metapi-dsh-6-compaction",
+				"meldra-dsh-6-compaction",
 				expect.stringContaining("已压缩"),
 			),
 		);
-		expect(state.ctx.ui.setStatus).toHaveBeenCalledWith("metapi-dsh-6-compaction", undefined);
+		expect(state.ctx.ui.setStatus).toHaveBeenCalledWith("meldra-dsh-6-compaction", undefined);
 
 		state.ctx.ui.select.mockResolvedValueOnce("/goal · Manage the active goal");
 		state.ctx.ui.input.mockResolvedValueOnce("ship command directory");

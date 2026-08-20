@@ -27,7 +27,7 @@ describe("Meldra Profile import", () => {
 		process.env.USERPROFILE = home;
 		vi.resetModules();
 
-		const { getProfileRecordPath, importProfile } = await import("../src/metapi/profile-bundle.ts");
+		const { getProfileRecordPath, importProfile } = await import("../src/meldra/profile-bundle.ts");
 		const manifestPath = join(bundle, "package.json");
 		writeFileSync(
 			manifestPath,
@@ -35,7 +35,7 @@ describe("Meldra Profile import", () => {
 		);
 
 		await expect(importProfile(bundle, { cwd: root, id: "retryable" })).rejects.toThrow(
-			"requires metapi.profileVersion = 1",
+			"requires meldra.profileVersion = 1",
 		);
 		const profileRoot = dirname(getProfileRecordPath("retryable"));
 		expect(existsSync(profileRoot)).toBe(false);

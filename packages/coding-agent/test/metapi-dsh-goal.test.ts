@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ModelRuntime } from "../src/core/model-runtime.ts";
-import { DshProfileRuntime } from "../src/metapi/dsh-profile-runtime.ts";
+import { DshProfileRuntime } from "../src/meldra/dsh-profile-runtime.ts";
 
 interface GoalRuntimeInternals {
 	runtime: {
@@ -23,20 +23,20 @@ function createRuntime() {
 	});
 	const internals = runtime as unknown as GoalRuntimeInternals;
 	const request = vi.fn(async (method: string, params?: Record<string, unknown>) => {
-		if (method === "metapi/commands.list")
+		if (method === "meldra/commands.list")
 			return [
 				{
 					name: "compact",
 					description: "Compact history",
 				},
 			];
-		if (method === "metapi/commands.execute")
+		if (method === "meldra/commands.execute")
 			return {
 				accepted: true,
 				commandId: "command-1",
 				command: { kind: "success", text: "Plan mode off." },
 			};
-		if (method === "metapi/plugin-inventory.list")
+		if (method === "meldra/plugin-inventory.list")
 			return {
 				entries: [
 					{
@@ -47,7 +47,7 @@ function createRuntime() {
 					},
 				],
 			};
-		if (method === "metapi/message-feedback.call")
+		if (method === "meldra/message-feedback.call")
 			return params?.method === "list"
 				? { ok: true, value: { items: [] } }
 				: {
@@ -178,7 +178,7 @@ describe("DSH Goal and projection ApiProxy wiring", () => {
 			commandId: "command-1",
 			command: { kind: "success", text: "Plan mode off." },
 		});
-		expect(request).toHaveBeenCalledWith("metapi/commands.execute", {
+		expect(request).toHaveBeenCalledWith("meldra/commands.execute", {
 			sessionId: "goal-session",
 			line: "/plan off",
 		});
@@ -237,7 +237,7 @@ describe("DSH Goal and projection ApiProxy wiring", () => {
 		});
 
 		await expect(runtime.executeCommand("/permission invalid")).rejects.toThrow("unknown preset");
-		expect(request).toHaveBeenCalledWith("metapi/commands.execute", {
+		expect(request).toHaveBeenCalledWith("meldra/commands.execute", {
 			sessionId: "goal-session",
 			line: "/permission invalid",
 		});

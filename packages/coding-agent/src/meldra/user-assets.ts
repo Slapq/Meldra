@@ -9,14 +9,15 @@ import {
 } from "../core/settings-manager.ts";
 import { stripJsonComments } from "../utils/json.ts";
 import type { ProfileSelection } from "./profile-service.ts";
-import { DEFAULT_PROFILE_NAME, getProfileAgentDir, METAPI_HOME } from "./profile-service.ts";
+import { DEFAULT_PROFILE_NAME, getProfileAgentDir } from "./profile-service.ts";
+import { MELDRA_HOME } from "./storage-migrations.ts";
 
-export const METAPI_USER_DIR = join(METAPI_HOME, "user");
-export const METAPI_USER_AUTH_PATH = join(METAPI_USER_DIR, "auth.json");
-export const METAPI_USER_MODELS_PATH = join(METAPI_USER_DIR, "models.json");
-export const METAPI_USER_MODELS_STORE_PATH = join(METAPI_USER_DIR, "models-store.json");
-export const METAPI_USER_PREFERENCES_PATH = join(METAPI_USER_DIR, "preferences.json");
-export const METAPI_USER_STATE_PATH = join(METAPI_USER_DIR, "state.json");
+export const MELDRA_USER_DIR = join(MELDRA_HOME, "user");
+export const MELDRA_USER_AUTH_PATH = join(MELDRA_USER_DIR, "auth.json");
+export const MELDRA_USER_MODELS_PATH = join(MELDRA_USER_DIR, "models.json");
+export const MELDRA_USER_MODELS_STORE_PATH = join(MELDRA_USER_DIR, "models-store.json");
+export const MELDRA_USER_PREFERENCES_PATH = join(MELDRA_USER_DIR, "preferences.json");
+export const MELDRA_USER_STATE_PATH = join(MELDRA_USER_DIR, "state.json");
 
 const USER_EXPERIENCE_FIELDS = [
 	"theme",
@@ -91,7 +92,7 @@ export class MeldraSettingsStorage implements SettingsStorage {
 
 	constructor(cwd: string, profileAgentDir: string) {
 		this.profileStorage = new FileSettingsStorage(cwd, profileAgentDir);
-		this.preferencesStorage = new FileSettingsStorage(cwd, METAPI_USER_DIR, METAPI_USER_PREFERENCES_PATH);
+		this.preferencesStorage = new FileSettingsStorage(cwd, MELDRA_USER_DIR, MELDRA_USER_PREFERENCES_PATH);
 	}
 
 	withLock(scope: SettingsScope, fn: (current: string | undefined) => string | undefined): void {
@@ -164,7 +165,7 @@ export function getOriginalPiAgentDir(): string {
 }
 
 export function getEffectiveModelsPath(profile: ProfileSelection): string {
-	return join(METAPI_HOME, "profiles", profile.name, "runtime", "models.json");
+	return join(MELDRA_HOME, "profiles", profile.name, "runtime", "models.json");
 }
 
 export function getMeldraModelPaths(profile: ProfileSelection): MeldraModelPaths {
@@ -177,16 +178,16 @@ export function getMeldraModelPaths(profile: ProfileSelection): MeldraModelPaths
 		};
 	}
 	return {
-		authPath: METAPI_USER_AUTH_PATH,
+		authPath: MELDRA_USER_AUTH_PATH,
 		modelsPath: getEffectiveModelsPath(profile),
-		modelsStorePath: METAPI_USER_MODELS_STORE_PATH,
+		modelsStorePath: MELDRA_USER_MODELS_STORE_PATH,
 	};
 }
 
 export function hasInitializedMeldraUser(): boolean {
-	if (!existsSync(METAPI_USER_STATE_PATH)) return false;
+	if (!existsSync(MELDRA_USER_STATE_PATH)) return false;
 	try {
-		const state = readJsonObject(METAPI_USER_STATE_PATH) as Partial<MeldraUserState>;
+		const state = readJsonObject(MELDRA_USER_STATE_PATH) as Partial<MeldraUserState>;
 		return state.schemaVersion === 1 && (state.piMigration === "migrate" || state.piMigration === "start-fresh");
 	} catch {
 		return false;
@@ -217,25 +218,25 @@ function mergeMissing(target: Record<string, unknown>, source: Record<string, un
 }
 
 function prepareUserDirectory(decision: MeldraMigrationDecision): void {
-	mkdirSync(METAPI_USER_DIR, { recursive: true });
+	mkdirSync(MELDRA_USER_DIR, { recursive: true });
 
 	if (decision === "migrate") {
 		const piAgentDir = getOriginalPiAgentDir();
 		for (const name of ["auth.json", "models.json", "models-store.json"] as const) {
 			const source = join(piAgentDir, name);
-			const destination = join(METAPI_USER_DIR, name);
+			const destination = join(MELDRA_USER_DIR, name);
 			if (existsSync(source) && !existsSync(destination)) {
 				writeFileSync(destination, readFileSync(source));
 			}
 		}
 		const piSettings = readOptionalJsonObject(join(piAgentDir, "settings.json"));
-		const preferences = readOptionalJsonObject(METAPI_USER_PREFERENCES_PATH);
+		const preferences = readOptionalJsonObject(MELDRA_USER_PREFERENCES_PATH);
 		writeJson(
-			METAPI_USER_PREFERENCES_PATH,
+			MELDRA_USER_PREFERENCES_PATH,
 			mergeMissing(preferences, pickFields(piSettings, USER_EXPERIENCE_FIELDS)),
 		);
-	} else if (!existsSync(METAPI_USER_PREFERENCES_PATH)) {
-		writeJson(METAPI_USER_PREFERENCES_PATH, {});
+	} else if (!existsSync(MELDRA_USER_PREFERENCES_PATH)) {
+		writeJson(MELDRA_USER_PREFERENCES_PATH, {});
 	}
 }
 
@@ -243,7 +244,7 @@ export function initializeMeldraUser(decision: MeldraMigrationDecision): void {
 	if (hasInitializedMeldraUser()) return;
 	prepareUserDirectory(decision);
 	if (decision === "migrate") migrateDefaultProfileModelPreferences();
-	writeJson(METAPI_USER_STATE_PATH, {
+	writeJson(MELDRA_USER_STATE_PATH, {
 		schemaVersion: 1,
 		piMigration: decision,
 		initializedAt: new Date().toISOString(),
@@ -314,7 +315,7 @@ function composeModels(
 
 export function materializeEffectiveModels(profile: ProfileSelection, profileBundlePath?: string): string {
 	if (profile.compatibility) return getMeldraModelPaths(profile).modelsPath;
-	const shared = readOptionalJsonObject(METAPI_USER_MODELS_PATH, true);
+	const shared = readOptionalJsonObject(MELDRA_USER_MODELS_PATH, true);
 	const profilePath = profileBundlePath ? join(profileBundlePath, "models.json") : undefined;
 	const profileModels = profilePath && existsSync(profilePath) ? readJsonObject(profilePath, true) : {};
 	const output = getEffectiveModelsPath(profile);
@@ -323,7 +324,7 @@ export function materializeEffectiveModels(profile: ProfileSelection, profileBun
 }
 
 export function readMeldraUserPreferences(): Settings {
-	return readOptionalJsonObject(METAPI_USER_PREFERENCES_PATH) as Settings;
+	return readOptionalJsonObject(MELDRA_USER_PREFERENCES_PATH) as Settings;
 }
 
 export function composeProfileSettings(sharedPreferences: Settings, profileSettings: Settings): Settings {

@@ -1,10 +1,3 @@
 @echo off
-call "%~dp0metapi.cmd" setup
-if errorlevel 1 (
-  echo.
-  echo Meldra setup did not complete. You can run setup again from the desktop shortcut.
-  pause
-  exit /b %errorlevel%
-)
-call "%~dp0metapi.cmd" --profile default --workspace --startup-command /setup
+call "%~dp0meldra-onboarding.cmd" %*
 exit /b %errorlevel%

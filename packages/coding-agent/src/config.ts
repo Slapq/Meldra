@@ -523,14 +523,19 @@ export const ENV_AUTH_PATH = `${APP_NAME.toUpperCase()}_AUTH_PATH`;
 export const ENV_MODELS_PATH = `${APP_NAME.toUpperCase()}_MODELS_PATH`;
 export const ENV_MODELS_STORE_PATH = `${APP_NAME.toUpperCase()}_MODELS_STORE_PATH`;
 
-// Meldra environment names remain supported for existing Profiles and launchers.
+// Meldra environment names are canonical; legacy MetaPi names remain supported as input fallbacks.
 const LEGACY_ENV_AGENT_DIR = "METAPI_CODING_AGENT_DIR";
+const LEGACY_ENV_SESSION_DIR = "METAPI_CODING_AGENT_SESSION_DIR";
 const LEGACY_ENV_AUTH_PATH = "METAPI_AUTH_PATH";
 const LEGACY_ENV_MODELS_PATH = "METAPI_MODELS_PATH";
 const LEGACY_ENV_MODELS_STORE_PATH = "METAPI_MODELS_STORE_PATH";
 
 function getEnvironmentOverride(name: string, legacyName?: string): string | undefined {
 	return process.env[name] ?? (legacyName ? process.env[legacyName] : undefined);
+}
+
+export function getSessionDirOverride(): string | undefined {
+	return getEnvironmentOverride(ENV_SESSION_DIR, LEGACY_ENV_SESSION_DIR);
 }
 
 export function expandTildePath(path: string): string {

@@ -1,14 +1,14 @@
 import { describe, expect, test } from "vitest";
 import { parseArgs } from "../src/cli/args.ts";
 import { SettingsManager } from "../src/core/settings-manager.ts";
-import { normalizePortableProfileManifest } from "../src/metapi/profile-bundle.ts";
+import { normalizePortableProfileManifest } from "../src/meldra/profile-bundle.ts";
 import {
 	assertProfileName,
 	extractProfileArgument,
 	getProfileAgentDir,
 	removeProfileArguments,
 	resolveProfile,
-} from "../src/metapi/profile-service.ts";
+} from "../src/meldra/profile-service.ts";
 
 describe("Meldra Profile selection", () => {
 	test("parses and removes the profile startup option", () => {
@@ -35,7 +35,7 @@ describe("Meldra Profile selection", () => {
 		const profile = resolveProfile("C:/project", "work");
 		expect(profile.name).toBe("work");
 		expect(profile.compatibility).toBe(false);
-		expect(profile.agentDir).toContain(".metapi");
+		expect(profile.agentDir).toContain(".meldra");
 		expect(
 			profile.agentDir.endsWith("profiles/work/agent") || profile.agentDir.endsWith("profiles\\work\\agent"),
 		).toBe(true);

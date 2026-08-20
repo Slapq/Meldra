@@ -12,13 +12,13 @@ const {
 	initializeMeldraUser,
 	materializeEffectiveModels,
 	MeldraSettingsStorage,
-	METAPI_USER_AUTH_PATH,
-	METAPI_USER_MODELS_PATH,
-	METAPI_USER_MODELS_STORE_PATH,
-	METAPI_USER_PREFERENCES_PATH,
-	METAPI_USER_STATE_PATH,
-} = await import("../src/metapi/user-assets.ts");
-const { resolveProfile, getProfileAgentDir } = await import("../src/metapi/profile-service.ts");
+	MELDRA_USER_AUTH_PATH,
+	MELDRA_USER_MODELS_PATH,
+	MELDRA_USER_MODELS_STORE_PATH,
+	MELDRA_USER_PREFERENCES_PATH,
+	MELDRA_USER_STATE_PATH,
+} = await import("../src/meldra/user-assets.ts");
+const { resolveProfile, getProfileAgentDir } = await import("../src/meldra/profile-service.ts");
 const { SettingsManager } = await import("../src/core/settings-manager.ts");
 const { mkdirSync, rmSync, writeFileSync, readFileSync } = await import("node:fs");
 const { dirname, join } = await import("node:path");
@@ -62,21 +62,21 @@ describe("Meldra user assets", () => {
 			theme: "pi-theme",
 			packages: ["do-not-migrate"],
 		});
-		const defaultSettings = join(temporaryHome, ".metapi", "profiles", "default", "agent", "settings.json");
+		const defaultSettings = join(temporaryHome, ".meldra", "profiles", "default", "agent", "settings.json");
 		writeJson(defaultSettings, { defaultModel: "metapi-model" });
 
 		initializeMeldraUser("migrate");
 
 		expect(hasInitializedMeldraUser()).toBe(true);
-		expect(JSON.parse(readFileSync(METAPI_USER_STATE_PATH, "utf8"))).toMatchObject({ piMigration: "migrate" });
-		expect(JSON.parse(readFileSync(METAPI_USER_PREFERENCES_PATH, "utf8"))).toEqual({ theme: "pi-theme" });
-		expect(JSON.parse(readFileSync(METAPI_USER_AUTH_PATH, "utf8"))).toEqual({
+		expect(JSON.parse(readFileSync(MELDRA_USER_STATE_PATH, "utf8"))).toMatchObject({ piMigration: "migrate" });
+		expect(JSON.parse(readFileSync(MELDRA_USER_PREFERENCES_PATH, "utf8"))).toEqual({ theme: "pi-theme" });
+		expect(JSON.parse(readFileSync(MELDRA_USER_AUTH_PATH, "utf8"))).toEqual({
 			provider: { type: "api_key", key: "fixture-key" },
 		});
-		expect(JSON.parse(readFileSync(METAPI_USER_MODELS_PATH, "utf8"))).toEqual({
+		expect(JSON.parse(readFileSync(MELDRA_USER_MODELS_PATH, "utf8"))).toEqual({
 			providers: { custom: { baseUrl: "http://local" } },
 		});
-		expect(JSON.parse(readFileSync(METAPI_USER_MODELS_STORE_PATH, "utf8"))).toEqual({
+		expect(JSON.parse(readFileSync(MELDRA_USER_MODELS_STORE_PATH, "utf8"))).toEqual({
 			providers: { custom: { models: [{ id: "catalog-model" }] } },
 		});
 		expect(JSON.parse(readFileSync(join(piAgent, "auth.json"), "utf8"))).toEqual({
@@ -93,9 +93,9 @@ describe("Meldra user assets", () => {
 		const piAgent = join(temporaryHome, ".pi", "agent");
 		writeJson(join(piAgent, "auth.json"), { pi: "source" });
 		writeJson(join(piAgent, "models.json"), { providers: { pi: {} } });
-		writeJson(METAPI_USER_AUTH_PATH, { metapi: "existing" });
-		writeJson(METAPI_USER_MODELS_PATH, { providers: { metapi: {} } });
-		writeJson(METAPI_USER_PREFERENCES_PATH, {
+		writeJson(MELDRA_USER_AUTH_PATH, { metapi: "existing" });
+		writeJson(MELDRA_USER_MODELS_PATH, { providers: { metapi: {} } });
+		writeJson(MELDRA_USER_PREFERENCES_PATH, {
 			tuiMode: "fullscreen",
 			terminal: { showImages: false },
 		});
@@ -106,13 +106,13 @@ describe("Meldra user assets", () => {
 
 		initializeMeldraUser("migrate");
 
-		expect(JSON.parse(readFileSync(METAPI_USER_AUTH_PATH, "utf8"))).toEqual({
+		expect(JSON.parse(readFileSync(MELDRA_USER_AUTH_PATH, "utf8"))).toEqual({
 			metapi: "existing",
 		});
-		expect(JSON.parse(readFileSync(METAPI_USER_MODELS_PATH, "utf8"))).toEqual({
+		expect(JSON.parse(readFileSync(MELDRA_USER_MODELS_PATH, "utf8"))).toEqual({
 			providers: { metapi: {} },
 		});
-		expect(JSON.parse(readFileSync(METAPI_USER_PREFERENCES_PATH, "utf8"))).toEqual({
+		expect(JSON.parse(readFileSync(MELDRA_USER_PREFERENCES_PATH, "utf8"))).toEqual({
 			tuiMode: "fullscreen",
 			terminal: { showImages: false, imageWidthCells: 72 },
 		});
@@ -124,10 +124,10 @@ describe("Meldra user assets", () => {
 		});
 		initializeMeldraUser("start-fresh");
 		expect(hasInitializedMeldraUser()).toBe(true);
-		expect(JSON.parse(readFileSync(METAPI_USER_PREFERENCES_PATH, "utf8"))).toEqual({});
-		expect(() => readFileSync(METAPI_USER_AUTH_PATH, "utf8")).toThrow();
-		expect(() => readFileSync(METAPI_USER_MODELS_PATH, "utf8")).toThrow();
-		expect(() => readFileSync(METAPI_USER_MODELS_STORE_PATH, "utf8")).toThrow();
+		expect(JSON.parse(readFileSync(MELDRA_USER_PREFERENCES_PATH, "utf8"))).toEqual({});
+		expect(() => readFileSync(MELDRA_USER_AUTH_PATH, "utf8")).toThrow();
+		expect(() => readFileSync(MELDRA_USER_MODELS_PATH, "utf8")).toThrow();
+		expect(() => readFileSync(MELDRA_USER_MODELS_STORE_PATH, "utf8")).toThrow();
 	});
 
 	test("keeps the first migration decision on later initialization attempts", () => {
@@ -138,12 +138,12 @@ describe("Meldra user assets", () => {
 
 		initializeMeldraUser("migrate");
 
-		expect(JSON.parse(readFileSync(METAPI_USER_STATE_PATH, "utf8"))).toMatchObject({ piMigration: "start-fresh" });
-		expect(() => readFileSync(METAPI_USER_MODELS_PATH, "utf8")).toThrow();
+		expect(JSON.parse(readFileSync(MELDRA_USER_STATE_PATH, "utf8"))).toMatchObject({ piMigration: "start-fresh" });
+		expect(() => readFileSync(MELDRA_USER_MODELS_PATH, "utf8")).toThrow();
 	});
 
 	test("composes Profile model definitions above shared definitions", () => {
-		writeJson(METAPI_USER_MODELS_PATH, {
+		writeJson(MELDRA_USER_MODELS_PATH, {
 			providers: {
 				shared: {
 					baseUrl: "https://shared",
@@ -174,7 +174,7 @@ describe("Meldra user assets", () => {
 	});
 
 	test("replaces an entire shared model when the Profile defines the same id", () => {
-		writeJson(METAPI_USER_MODELS_PATH, {
+		writeJson(MELDRA_USER_MODELS_PATH, {
 			providers: {
 				shared: {
 					models: [{ id: "same", reasoning: true, contextWindow: 200000 }],
@@ -199,7 +199,7 @@ describe("Meldra user assets", () => {
 		manager.setTheme("global-theme");
 		await manager.flush();
 
-		expect(JSON.parse(readFileSync(METAPI_USER_PREFERENCES_PATH, "utf8"))).toEqual({
+		expect(JSON.parse(readFileSync(MELDRA_USER_PREFERENCES_PATH, "utf8"))).toEqual({
 			tuiMode: "fullscreen",
 			theme: "global-theme",
 		});
@@ -218,7 +218,7 @@ describe("Meldra user assets", () => {
 	test("keeps Pi project Theme overrides above the shared global Theme", () => {
 		const cwd = join(temporaryHome, "work");
 		const profile = resolveProfile(cwd, "project-theme");
-		writeJson(METAPI_USER_PREFERENCES_PATH, { theme: "light" });
+		writeJson(MELDRA_USER_PREFERENCES_PATH, { theme: "light" });
 		writeJson(join(cwd, ".pi", "settings.json"), { theme: "dark" });
 		const manager = SettingsManager.fromStorage(new MeldraSettingsStorage(cwd, profile.agentDir));
 		expect(manager.getThemeSetting()).toBe("dark");

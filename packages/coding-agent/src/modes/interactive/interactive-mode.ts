@@ -105,7 +105,7 @@ import {
 	getSessionProfile,
 	listSessionsAcrossProfiles,
 	listSessionsForCwdAcrossProfiles,
-} from "../../metapi/session-profile.ts";
+} from "../../meldra/session-profile.ts";
 import { getChangelogPath, getNewEntries, normalizeChangelogLinks, parseChangelog } from "../../utils/changelog.ts";
 import { copyToClipboard, readClipboardText } from "../../utils/clipboard.ts";
 import { extensionForImageMimeType, readClipboardImage } from "../../utils/clipboard-image.ts";
@@ -549,7 +549,12 @@ export class InteractiveMode {
 		return this.session.sessionManager;
 	}
 	private get activeProfileName(): string {
-		return getSessionProfile(this.sessionManager) ?? process.env.METAPI_PROFILE_NAME ?? "default";
+		return (
+			getSessionProfile(this.sessionManager) ??
+			process.env.MELDRA_PROFILE_NAME ??
+			process.env.METAPI_PROFILE_NAME ??
+			"default"
+		);
 	}
 	private get settingsManager() {
 		return this.session.settingsManager;
@@ -1119,8 +1124,14 @@ export class InteractiveMode {
 		});
 
 		// Show startup warnings
-		const { migratedProviders, modelFallbackMessage, initialMessage, initialImages, initialMessages, startupCommand } =
-			this.options;
+		const {
+			migratedProviders,
+			modelFallbackMessage,
+			initialMessage,
+			initialImages,
+			initialMessages,
+			startupCommand,
+		} = this.options;
 
 		if (migratedProviders && migratedProviders.length > 0) {
 			this.showWarning(`Migrated credentials to auth.json: ${migratedProviders.join(", ")}`);

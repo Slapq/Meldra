@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assertDshProfileRuntimeSupported } from "../src/metapi/dsh-profile-runtime-provider.ts";
+import { assertDshProfileRuntimeSupported } from "../src/meldra/dsh-profile-runtime-provider.ts";
 
 describe("DSH standalone runtime compatibility", () => {
 	it("rejects the Linux Bun archive with an actionable error", () => {

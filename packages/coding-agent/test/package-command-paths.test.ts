@@ -396,9 +396,9 @@ describe("package commands", () => {
 
 		expect(create).toHaveBeenCalledWith(
 			expect.objectContaining({
-				authPath: expect.stringContaining(`${process.env.USERPROFILE ?? ""}\\.metapi\\user\\auth.json`),
-				modelsPath: expect.stringContaining(".metapi\\profiles\\default\\runtime\\models.json"),
-				modelsStorePath: expect.stringContaining(".metapi\\user\\models-store.json"),
+				authPath: expect.stringContaining(`${process.env.USERPROFILE ?? ""}\\.meldra\\user\\auth.json`),
+				modelsPath: expect.stringContaining(".meldra\\profiles\\default\\runtime\\models.json"),
+				modelsStorePath: expect.stringContaining(".meldra\\user\\models-store.json"),
 				allowModelNetwork: false,
 				signal: expect.any(AbortSignal),
 			}),

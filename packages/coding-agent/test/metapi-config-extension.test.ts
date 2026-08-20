@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ExtensionAPI, RegisteredCommand } from "../src/core/extensions/types.ts";
 import { builtInExtensions } from "../src/extensions/index.ts";
-import meldraConfig from "../src/extensions/metapi-config/index.ts";
+import meldraConfig from "../src/extensions/meldra-config/index.ts";
 import scoutExtension from "../starter-profile/extensions/scout.ts";
 
 interface ConfigHost {
@@ -16,12 +16,12 @@ interface ConfigHost {
 }
 
 const tempDirs: string[] = [];
-const originalProfile = process.env.METAPI_PROFILE_NAME;
-const originalAgentDir = process.env.METAPI_CODING_AGENT_DIR;
+const originalProfile = process.env.MELDRA_PROFILE_NAME;
+const originalAgentDir = process.env.MELDRA_CODING_AGENT_DIR;
 
 function createHost(profile: string, agentDir: string, loadConfig = true): ConfigHost {
-	process.env.METAPI_PROFILE_NAME = profile;
-	process.env.METAPI_CODING_AGENT_DIR = agentDir;
+	process.env.MELDRA_PROFILE_NAME = profile;
+	process.env.MELDRA_CODING_AGENT_DIR = agentDir;
 	const listeners = new Map<string, Array<(data: unknown) => void>>();
 	const commands = new Map<string, Omit<RegisteredCommand, "name" | "sourceInfo">>();
 	const registrations = new Map<string, any>();
@@ -67,16 +67,28 @@ function tempAgentDir(): string {
 }
 
 afterEach(() => {
-	if (originalProfile === undefined) delete process.env.METAPI_PROFILE_NAME;
-	else process.env.METAPI_PROFILE_NAME = originalProfile;
-	if (originalAgentDir === undefined) delete process.env.METAPI_CODING_AGENT_DIR;
-	else process.env.METAPI_CODING_AGENT_DIR = originalAgentDir;
+	if (originalProfile === undefined) delete process.env.MELDRA_PROFILE_NAME;
+	else process.env.MELDRA_PROFILE_NAME = originalProfile;
+	if (originalAgentDir === undefined) delete process.env.MELDRA_CODING_AGENT_DIR;
+	else process.env.MELDRA_CODING_AGENT_DIR = originalAgentDir;
 	for (const directory of tempDirs.splice(0)) rmSync(directory, { recursive: true, force: true });
 });
 
 describe("Meldra Profile config extension", () => {
-	it("is injected before other built-in Profile extensions", () => {
-		expect(builtInExtensions[0]).toMatchObject({ name: "metapi-config", hidden: true });
+	it("injects the canonical built-in Profile extensions", () => {
+		expect(
+			builtInExtensions.map((extension) =>
+				typeof extension === "function"
+					? { name: undefined, hidden: undefined }
+					: { name: extension.name, hidden: extension.hidden },
+			),
+		).toEqual([
+			{ name: "meldra-config", hidden: true },
+			{ name: "llama.cpp", hidden: true },
+			{ name: "meldra-dsh", hidden: true },
+			{ name: "meldra-profile", hidden: true },
+			{ name: "meldra-workspace", hidden: true },
+		]);
 	});
 
 	it.each(["default", "dsh", "research"])("registers /config for the %s Profile", (profile) => {

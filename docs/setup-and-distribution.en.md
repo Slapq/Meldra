@@ -12,8 +12,8 @@
 | Build and run from source | `SUPPORTED` | `npm install --ignore-scripts`, `npm run prepare:native-runtime`, `npm run build`, source launchers |
 | Linux x64 standalone Bun archive | `PARTIAL` | Default/ordinary Profiles work; DeepSeek Harness is explicitly `UNSUPPORTED`, so use the Node.js source distribution |
 | Portable Profile import/export | `SUPPORTED` | `meldra profile import` / `export` |
-| Redacted Profile export audit | `SUPPORTED` | Each export writes `METAPI_PROFILE_EXPORT_AUDIT.md` |
-| Dual Windows x64 installers | `SUPPORTED` | [`v0.1.2`](https://github.com/Slapq/Meldra/releases/tag/v0.1.2) provides bundled-Node and system-Node variants |
+| Redacted Profile export audit | `SUPPORTED` | Each export writes `MELDRA_PROFILE_EXPORT_AUDIT.md` |
+| Dual Windows x64 installers | `SUPPORTED` | [`v0.2.1`](https://github.com/Slapq/Meldra/releases/tag/v0.2.1) provides bundled-Node and system-Node variants |
 | Scoped npm Bootstrap | `PLANNED` | The organization and package name are unconfirmed; no placeholder command is published |
 | Starter Profile Bundle Setup | `SUPPORTED` | A clean first Meldra initialization provisions it automatically; existing users run `meldra setup` to install or restore it |
 | Provider, model, and Scout onboarding | `SUPPORTED` | Run `/setup` in `default`; it points to `/login`, `/model`, `/scout`, or `/config` |
@@ -40,9 +40,9 @@ The Release provides two installers for Windows 10 build 19041+ / Windows 11 x64
 - `Meldra-Setup.exe` targets machines without a preinstalled Node.js and bundles official Node.js 24.19.0;
 - `Meldra-Setup-NodeJS.exe` uses the machine's existing Node.js. Missing Node/npm or a version below 22.19.0 produces truthful guidance but does not block installation.
 
-Both variants bundle the official Windows Terminal 1.24.11911.0 x64 unpackaged distribution in `.portable` mode. The installer adds `metapi` to the current-user PATH, so the CLI works in any newly opened PowerShell, cmd, Git Bash, Windows Terminal, or VS Code terminal. The desktop `Meldra` shortcut defaults to the bundled Windows Terminal without binding Meldra to it or changing the system default terminal.
+Both variants bundle the official Windows Terminal 1.24.11911.0 x64 unpackaged distribution in `.portable` mode. The installer adds `meldra` to the current-user PATH and keeps `metapi` as a compatibility alias, so the CLI works in any newly opened PowerShell, cmd, Git Bash, Windows Terminal, or VS Code terminal. The desktop `Meldra` shortcut defaults to the bundled Windows Terminal without binding Meldra to it or changing the system default terminal.
 
-Both variants share one `AppId` and can upgrade each other in place. The default location is `%LOCALAPPDATA%\Programs\Meldra`, with no administrator requirement. Upgrades preserve `~/.metapi`; uninstall removes the application, shortcut, and Meldra's own PATH entry while preserving Profiles, credentials, models, and Sessions.
+Both variants share one `AppId` and can upgrade each other in place. The default location is `%LOCALAPPDATA%\Programs\Meldra`, with no administrator requirement. Upgrades preserve `~/.meldra`; uninstall removes the application, shortcut, and Meldra's own PATH entry while preserving Profiles, credentials, models, and Sessions.
 
 ### npm Bootstrap
 
@@ -80,7 +80,7 @@ The current Starter Bundle declares the project-maintained Provider Manager, Sco
 
 ## Desktop Shortcut
 
-The Windows Setup creates one shortcut on the current user's desktop only. It does not write to the Start menu or require administrator privileges. Re-running Setup updates the same shortcut instead of creating duplicates. The shortcut uses the bundled portable Windows Terminal; the `metapi` command remains available in other terminals through the current-user PATH.
+The Windows Setup creates one shortcut on the current user's desktop only. It does not write to the Start menu or require administrator privileges. Re-running Setup updates the same shortcut instead of creating duplicates. The shortcut uses the bundled portable Windows Terminal; the `meldra` command remains available in other terminals through the current-user PATH, with `metapi` retained as a compatibility alias.
 
 Its product launch semantics are:
 

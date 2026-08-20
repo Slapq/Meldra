@@ -8,8 +8,10 @@ process.env.PI_PACKAGE_DIR = distributionRoot;
 
 const { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } = await import("node:fs");
 const { dirname, join } = await import("node:path");
-const { setupStarterProfile, STARTER_PROFILE_PACKAGE_ENTRY } = await import("../src/metapi/starter-setup.ts");
-const { getProfileAgentDir } = await import("../src/metapi/profile-service.ts");
+const { setupStarterProfile, LEGACY_STARTER_PROFILE_PACKAGE_ENTRY, STARTER_PROFILE_PACKAGE_ENTRY } = await import(
+	"../src/meldra/starter-setup.ts"
+);
+const { getProfileAgentDir } = await import("../src/meldra/profile-service.ts");
 
 function write(path: string, content: string): void {
 	mkdirSync(dirname(path), { recursive: true });
@@ -23,7 +25,7 @@ function writeJson(path: string, value: unknown): void {
 beforeEach(() => {
 	rmSync(temporaryHome, { recursive: true, force: true });
 	writeJson(join(distributionRoot, "starter-profile", "package.json"), {
-		name: "@slapq/metapi-starter-profile",
+		name: "@slapq/meldra-starter-profile",
 		version: "1.0.0",
 		pi: { extensions: ["./extensions/setup.ts"] },
 	});
@@ -40,12 +42,13 @@ describe("Meldra Starter Profile setup", () => {
 		const agentDir = getProfileAgentDir("default");
 		const settingsPath = join(agentDir, "settings.json");
 		writeJson(settingsPath, { defaultModel: "existing-model", packages: ["packages/existing"] });
-		writeJson(join(temporaryHome, ".metapi", "user", "preferences.json"), { tuiMode: "fullscreen" });
+		writeJson(join(temporaryHome, ".meldra", "user", "preferences.json"), { tuiMode: "fullscreen" });
 
 		const result = await setupStarterProfile(join(temporaryHome, "work"));
 		const settings = JSON.parse(readFileSync(settingsPath, "utf8"));
 
 		expect(result).toMatchObject({ bundleAction: "installed", packageAdded: true });
+		expect(result.enabledExtensions).toContain("extensions/meldra-workflows.ts");
 		expect(settings).toEqual({
 			defaultModel: "existing-model",
 			packages: ["packages/existing", STARTER_PROFILE_PACKAGE_ENTRY],
@@ -75,6 +78,33 @@ describe("Meldra Starter Profile setup", () => {
 		expect(
 			JSON.parse(readFileSync(join(getProfileAgentDir("default"), "plugin-configs", "kept.json"), "utf8")),
 		).toEqual({ value: "kept" });
+	});
+
+	test("migrates the legacy managed directory and deduplicates legacy package entries", async () => {
+		const agentDir = getProfileAgentDir("default");
+		const settingsPath = join(agentDir, "settings.json");
+		const legacyTarget = join(agentDir, ...LEGACY_STARTER_PROFILE_PACKAGE_ENTRY.split("/"));
+		writeJson(join(legacyTarget, "package.json"), {
+			name: "@slapq/metapi-starter-profile",
+			version: "1.0.0",
+		});
+		write(join(legacyTarget, "extensions", "setup.ts"), "legacy managed copy\n");
+		writeJson(settingsPath, {
+			packages: [
+				"packages/existing",
+				LEGACY_STARTER_PROFILE_PACKAGE_ENTRY,
+				{ source: STARTER_PROFILE_PACKAGE_ENTRY, autoload: false, extensions: ["extensions/setup.ts"] },
+			],
+		});
+
+		const result = await setupStarterProfile(join(temporaryHome, "work"));
+		const settings = JSON.parse(readFileSync(settingsPath, "utf8"));
+
+		expect(result).toMatchObject({ bundleAction: "unchanged", packageAdded: false, packageUpdated: true });
+		expect(result.target).toBe(join(agentDir, ...STARTER_PROFILE_PACKAGE_ENTRY.split("/")));
+		expect(existsSync(legacyTarget)).toBe(false);
+		expect(readFileSync(join(result.target, "extensions", "setup.ts"), "utf8")).toBe("legacy managed copy\n");
+		expect(settings.packages).toEqual(["packages/existing", STARTER_PROFILE_PACKAGE_ENTRY]);
 	});
 
 	test("filters Starter extensions that are already supplied by legacy default resources", async () => {

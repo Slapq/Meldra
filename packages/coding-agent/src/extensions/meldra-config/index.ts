@@ -362,7 +362,8 @@ function toggleStr(value: boolean, th: Theme): string {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export default function meldraConfig(pi: ExtensionAPI) {
-	if (process.env.METAPI_PROFILE_NAME === "pi") return;
+	const profileName = process.env.MELDRA_PROFILE_NAME ?? process.env.METAPI_PROFILE_NAME;
+	if (profileName === "pi") return;
 
 	const savedPrefs = loadOwnPrefs();
 	let lang: Lang = savedPrefs.lang === "zh" || savedPrefs.lang === "en" ? savedPrefs.lang : detectLang();

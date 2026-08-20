@@ -27,11 +27,11 @@ A provider and its runtime own all product-specific behavior, including upstream
 
 The `runtime.provider` string is a stable provider identity, not a Profile name. `runtime.config` is opaque to Meldra/Pi core and interpreted only by the matching provider. A Profile without a runtime declaration follows the native Pi path unless a provider supplies a documented legacy compatibility match. This allows differently named Profiles to select the same external runtime while retaining separate `agentDir`, settings, sessions, packages, and provider-owned state.
 
-A Profile Bundle declares the selection under its existing `metapi` manifest:
+A Profile Bundle declares the selection under its canonical `meldra` manifest. Import also accepts the historical `metapi` field, with `meldra` taking precedence when both are present:
 
 ```json
 {
-  "metapi": {
+  "meldra": {
     "profileVersion": 1,
     "displayName": "Research Harness",
     "runtime": {

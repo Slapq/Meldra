@@ -1,11 +1,12 @@
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { cpSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { getPackageDir } from "../config.ts";
 import { type PackageSource, SettingsManager } from "../core/settings-manager.ts";
 import { DEFAULT_PROFILE_NAME, getProfileAgentDir } from "./profile-service.ts";
 import { MeldraSettingsStorage } from "./user-assets.ts";
 
-export const STARTER_PROFILE_PACKAGE_ENTRY = "packages/metapi-starter";
+export const STARTER_PROFILE_PACKAGE_ENTRY = "packages/meldra-starter";
+export const LEGACY_STARTER_PROFILE_PACKAGE_ENTRY = "packages/metapi-starter";
 
 export interface StarterProfileSetupResult {
 	source: string;
@@ -24,6 +25,10 @@ function starterTargetPath(): string {
 	return join(getProfileAgentDir(DEFAULT_PROFILE_NAME), ...STARTER_PROFILE_PACKAGE_ENTRY.split("/"));
 }
 
+function legacyStarterTargetPath(): string {
+	return join(getProfileAgentDir(DEFAULT_PROFILE_NAME), ...LEGACY_STARTER_PROFILE_PACKAGE_ENTRY.split("/"));
+}
+
 function readBundleVersion(root: string): string | undefined {
 	try {
 		const value = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as { version?: unknown };
@@ -39,6 +44,11 @@ function packageSource(entry: PackageSource): string {
 
 function normalizedSource(entry: PackageSource): string {
 	return packageSource(entry).replaceAll("\\", "/").replace(/\/$/, "");
+}
+
+function isStarterPackageEntry(entry: PackageSource): boolean {
+	const source = normalizedSource(entry);
+	return source === STARTER_PROFILE_PACKAGE_ENTRY || source === LEGACY_STARTER_PROFILE_PACKAGE_ENTRY;
 }
 
 function hasPackage(agentDir: string, packages: PackageSource[], name: string): boolean {
@@ -61,12 +71,14 @@ function desiredStarterPackage(
 		existsSync(join(agentDir, "extensions", "provider-manager.ts"));
 	const scoutPresent = existsSync(join(agentDir, "extensions", "scout.ts"));
 	const workflowsPresent =
+		hasPackage(agentDir, packages, "meldra-workflows") ||
 		hasPackage(agentDir, packages, "metapi-workflows") ||
+		existsSync(join(agentDir, "extensions", "meldra-workflows.ts")) ||
 		existsSync(join(agentDir, "extensions", "metapi-workflows.ts"));
 	const enabledExtensions = [
 		...(providerPresent ? [] : ["extensions/provider-manager.ts"]),
 		...(scoutPresent ? [] : ["extensions/scout.ts"]),
-		...(workflowsPresent ? [] : ["extensions/metapi-workflows.ts"]),
+		...(workflowsPresent ? [] : ["extensions/meldra-workflows.ts"]),
 		"extensions/setup.ts",
 	];
 	return {
@@ -84,10 +96,19 @@ export async function setupStarterProfile(
 ): Promise<StarterProfileSetupResult> {
 	const source = starterSourcePath();
 	const target = starterTargetPath();
+	const legacyTarget = legacyStarterTargetPath();
 	if (!existsSync(join(source, "package.json"))) {
 		throw new Error(`Meldra Starter Bundle is missing from this distribution: ${source}`);
 	}
 
+	if (!existsSync(target) && existsSync(legacyTarget)) {
+		mkdirSync(dirname(target), { recursive: true });
+		try {
+			renameSync(legacyTarget, target);
+		} catch {
+			// Preserve the legacy copy if the filesystem cannot rename it; install the canonical copy below.
+		}
+	}
 	const targetExists = existsSync(target);
 	const versionChanged = readBundleVersion(source) !== readBundleVersion(target);
 	let bundleAction: StarterProfileSetupResult["bundleAction"] = "unchanged";
@@ -111,14 +132,16 @@ export async function setupStarterProfile(
 	});
 	const packages = settingsManager.getPackages();
 	const desired = desiredStarterPackage(agentDir, packages);
-	const existingIndex = packages.findIndex((entry) => normalizedSource(entry) === STARTER_PROFILE_PACKAGE_ENTRY);
-	const packageAdded = existingIndex < 0;
+	const starterIndices = packages.flatMap((entry, index) => (isStarterPackageEntry(entry) ? [index] : []));
+	const packageAdded = starterIndices.length === 0;
 	const packageUpdated =
-		existingIndex >= 0 && JSON.stringify(packages[existingIndex]) !== JSON.stringify(desired.entry);
+		starterIndices.length !== 1 ||
+		(starterIndices[0] !== undefined &&
+			JSON.stringify(packages[starterIndices[0]]) !== JSON.stringify(desired.entry));
 	if (packageAdded || packageUpdated) {
-		const nextPackages = [...packages];
-		if (packageAdded) nextPackages.push(desired.entry);
-		else nextPackages[existingIndex] = desired.entry;
+		const insertionIndex = starterIndices[0] ?? packages.length;
+		const nextPackages = packages.filter((entry) => !isStarterPackageEntry(entry));
+		nextPackages.splice(Math.min(insertionIndex, nextPackages.length), 0, desired.entry);
 		settingsManager.setPackages(nextPackages);
 		await settingsManager.flush();
 	}

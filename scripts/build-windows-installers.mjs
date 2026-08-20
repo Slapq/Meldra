@@ -205,7 +205,7 @@ async function main() {
 	}
 
 	const iscc = findIscc();
-	const issFile = join(repoRoot, "scripts", "windows-installer", "metapi.iss");
+	const issFile = join(repoRoot, "scripts", "windows-installer", "meldra.iss");
 	compileInstaller(iscc, issFile, payload, outputDir, options.version, "Meldra-Setup.exe", true);
 	compileInstaller(iscc, issFile, payload, outputDir, options.version, "Meldra-Setup-NodeJS.exe", false);
 	const installers = [join(outputDir, "Meldra-Setup.exe"), join(outputDir, "Meldra-Setup-NodeJS.exe")];

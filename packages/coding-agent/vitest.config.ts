@@ -12,7 +12,7 @@ export default mergeConfig(
 			environment: "node",
 			testTimeout: 30000,
 			// Tests run offline by default; opt in with allowNetwork() from test/test-network-env.ts.
-			env: { PI_OFFLINE: "1", METAPI_CODING_AGENT_DIR: join(tmpdir(), `metapi-vitest-agent-${process.pid}`) },
+			env: { PI_OFFLINE: "1", MELDRA_CODING_AGENT_DIR: join(tmpdir(), `meldra-vitest-agent-${process.pid}`) },
 			unstubEnvs: true,
 			reporters: process.env.GITHUB_ACTIONS ? ["dot", "github-actions"] : ["dot"],
 			silent: "passed-only",

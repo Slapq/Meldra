@@ -1,3 +1,3 @@
 @echo off
-call "%~dp0metapi.cmd" --profile default --workspace
+call "%~dp0meldra-shell.cmd" %*
 exit /b %errorlevel%

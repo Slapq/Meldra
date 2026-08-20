@@ -59,10 +59,10 @@ Meldra 是建立在 [Pi](https://github.com/earendil-works/pi) 完整源码上�
 
 | 环境 | 默认状态位置 | 用途 |
 |---|---|---|
-| `default` | `~/.metapi/profiles/default/` | Meldra 默认隔离环境 |
-| 普通 Profile | `~/.metapi/profiles/<name>/` | 独立工作流、模型、插件与可选 Runtime |
+| `default` | `~/.meldra/profiles/default/` | Meldra 默认隔离环境 |
+| 普通 Profile | `~/.meldra/profiles/<name>/` | 独立工作流、模型、插件与可选 Runtime |
 | `pi` | `~/.pi/agent/` | 原始 Pi compatibility，不接受 Meldra 专属注入 |
-| WorkSpace | `~/.metapi/workspaces/` 或显式目录 | 当前 Session 的工作目录 |
+| WorkSpace | `~/.meldra/workspaces/` 或显式目录 | 当前 Session 的工作目录 |
 
 > [!NOTE]
 > Profile 的解析顺序固定为：显式 `--profile` → 最近的目录绑定 → `default`。
@@ -138,7 +138,7 @@ npm run build
 | 配置 Starter Profile | `/setup` | `meldra setup` |
 | 配置插件字段 | `/config` | — |
 | 管理 Pi Package | — | `meldra install` / `list` / `config` |
-| 恢复 Session | `/resume` | `metapi -c` / `metapi -r` |
+| 恢复 Session | `/resume` | `meldra -c` / `meldra -r` |
 | 分享并审计 Profile | `/profile export` | `meldra profile export <name>` |
 | 导出 Session | `/export` | `meldra --export <file>` |
 | 重新加载资源 | `/reload` | — |

@@ -5,7 +5,7 @@
 > guide](../../../docs/user-guide.en.md#12-run-a-deepseek-harness-profile).
 
 Meldra can run DeepSeek Harness (DSH) as the agent backend of an independent Profile while retaining the Pi terminal
-interface. A portable Profile selects it with `metapi.runtime.provider: "deepseek-harness"`; Profile names are
+interface. A portable Profile selects it with `meldra.runtime.provider: "deepseek-harness"`; Profile names are
 user-owned and do not determine the Runtime.
 
 The legacy `dsh` and `deepseek-harness` names remain compatibility matches for existing installations without that
@@ -62,7 +62,7 @@ another Meldra turn tracker or replace the foreground task awaited by cancel, Se
 
 Harness's `session/queue` snapshot remains authoritative for pending work.
 
-Meldra initializes and loads Harness's native `$DSH_HOME/profiles/metapi` profile tree. Its default
+Meldra initializes and loads Harness's native `$DSH_HOME/profiles/meldra` profile tree. Its default
 `dsh.profile.bundles` roster is the published `@deepseek-ai/dsh-base` plus `@deepseek-ai/dsh-web-app` rc.7 layers,
 preserving the previous zero-configuration composition.
 
@@ -70,7 +70,7 @@ The profile manifest, profile-local dependencies, installed bundle layers, and `
 `dsh-app-boot`; the profile's user patch is applied after bundles, then Meldra's small surface overlay disables
 HTTP/browser transport, selects Harness's browse directory provider, injects the published `@deepseek-ai/dsh` preset
 root, and adds the absolute stdio bridge module. This makes bundles installed through Harness's native `dsh plugin
---profile metapi ...` contract part of the next Runtime boot without introducing a Meldra Loader state.
+--profile meldra ...` contract part of the next Runtime boot without introducing a Meldra Loader state.
 
 The `/dsh plugins` package manager delegates list/add/remove/update to that CLI, requires `pnpm` on `PATH`, confirms
 source/install lifecycle effects before writes, preserves native failure output, and can gracefully reload the same
@@ -140,6 +140,14 @@ The most common Harness operations are also available directly in any Profile se
 /plugin update
 ```
 
+`/permission` changes the Harness-native standing sandbox and approval policy for the current DSH Session. The Meldra
+surface also installs a removable DSH compatibility plugin for redundant model-generated escalation metadata: for
+`bash`, `pwsh`, `write`, and `edit`, a known `sandbox_permissions` target already covered by the standing mode is removed
+together with its paired `justification` before the native tool validates the call. The command then runs under the
+unchanged standing policy. A genuinely wider request, an unknown target, a malformed pair, or a policy-resolution error
+is passed through unchanged to Harness's approval and fail-closed validation. The plugin neither grants nor persists a
+permission and does not alter ordinary Pi tools.
+
 From a normal terminal, the same Profile-owned package adapter is available without starting the TUI:
 
 ```bash
@@ -165,7 +173,7 @@ reads the native Loader Inventory and reports the entry delta. Terminal mutation
 request; after DSH reconciliation they start a short-lived isolated Harness Runtime, read Loader Inventory, print the
 active entry count, and tear it down.
 
-Portable Profile export snapshots the current native DSH profile dependencies as `metapi.runtime.config.plugins` source
+Portable Profile export snapshots the current native DSH profile dependencies as `meldra.runtime.config.plugins` source
 declarations. Import and Profile update restore those declarations through the same DSH CLI adapter, then validate
 activation through a fresh Harness Loader Inventory before writing a successful Profile record.
 
@@ -177,7 +185,7 @@ machine; use a registry, git, tarball, or alias source for cross-machine bundles
 
 ### Plugin workflow
 
-Meldra passes every source unchanged to `dsh plugin --profile metapi add`, so the current DSH/pnpm grammar is
+Meldra passes every source unchanged to `dsh plugin --profile meldra add`, so the current DSH/pnpm grammar is
 authoritative. Typical forms are a registry package (`@scope/plugin@1.2.3`), a git shorthand
 (`github:owner/repository`), a local directory (`C:\\plugins\\my-dsh-plugin`), a tarball URL, or a pnpm alias.
 
@@ -202,7 +210,7 @@ Mutations stream DSH/pnpm output, then boot a temporary Harness instance for Loa
 If pnpm is absent, only an explicit mutation may fetch pinned pnpm through Corepack; the Profile-local shim is reused
 afterward.
 
-For migration, run `meldra profile export <profile> <directory>` and inspect `package.json` under `metapi.runtime`.
+For migration, run `meldra profile export <profile> <directory>` and inspect `package.json` under `meldra.runtime`.
 Import with `meldra profile import <directory> --name <new-profile> --no-bind` (or choose binding interactively).
 
 The destination gets its own `agent/dsh-runtime`, package manifest, shim, Harness Settings, Sessions, and later Runtime
@@ -265,7 +273,7 @@ Pi Profiles retain their original behavior.
 `/copy` reads the latest finalized text supplied by the active DSH Runtime and falls back to Pi agent state only for
 runtimes that do not implement that query.
 
-Active DSH `/export` HTML uses the registered `metapi-dsh-message` entry renderer, so user, assistant, tool,
+Active DSH `/export` HTML uses the registered `meldra-dsh-message` entry renderer, so user, assistant, tool,
 informational, and error snapshots are included without embedding their private custom-entry payload. It also works
 before Pi creates its deferred containing Session JSONL, because a complete DSH transcript consists of renderable custom
 entries rather than Pi assistant messages.
@@ -456,11 +464,16 @@ corrects an incomplete transient projection after reconnect or dropped chunks.
 - Meldra passes an already configured DeepSeek credential and endpoint when available; otherwise Harness's native
   settings and credential sources remain authoritative. Meldra does not require a DeepSeek credential merely to start
   the Runtime or use another Harness provider.
-- Harness state stays under `~/.metapi/profiles/<profile>/agent/dsh-runtime/` through the standard `DSH_HOME` contract.
+- Harness state stays under `~/.meldra/profiles/<profile>/agent/dsh-runtime/` through the standard `DSH_HOME` contract.
   This includes native JSONL Sessions, settings, credentials, user presets, and other Harness-owned state.
 - DSH state is not added to Pi's Session format. Pi and DSH Session discovery remain separate. Pi stores only
   provider-owned display snapshots for transcript restoration; live projected events are transient and never enter Pi
   model context.
+- Meldra's injected DSH JSON-RPC bridge uses `meldra/*` for all new client requests. The nine bridge methods are
+  `api.call`, `api.respond`, `commands.list`, `commands.execute`, `message-feedback.call`, `plugin-inventory.list`,
+  `api.events.open`, `api.events.next`, and `api.events.close`; the server accepts the historical `metapi/*` aliases
+  and routes them to the same handlers. Harness-native `initialize`, `session/prompt`, and `shutdown` methods remain
+  unchanged.
 - Windows exposes DSH's PowerShell executor and `pwsh` tool. POSIX systems expose DSH's Bash executor and `bash` tool.
 - Filesystem and shell tools use the permissions of the Meldra process, matching the existing unsandboxed Pi default.
 

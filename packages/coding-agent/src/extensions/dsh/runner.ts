@@ -6,12 +6,15 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { boot, installFailLoud } from "@deepseek-ai/dsh-app-boot";
 import { prepareDshComposition } from "./composition.ts";
 
-const NAME = "metapi-dsh-tui";
+const NAME = "meldra-dsh-tui";
 const require = createRequire(import.meta.url);
 const surfacePath = fileURLToPath(new URL("./surface.patch.yml", import.meta.url));
 const installAnchor = require.resolve("@deepseek-ai/dsh/package.json");
 const dshHome = process.env.DSH_HOME;
 const serverPath = pathToFileURL(fileURLToPath(new URL("./server.js", import.meta.url))).href;
+const sandboxEscalationCompatPath = pathToFileURL(
+	fileURLToPath(new URL("./sandbox-escalation-compat.js", import.meta.url)),
+).href;
 
 if (!existsSync(surfacePath)) {
 	throw new Error(`${NAME}: packaged composition assets are missing`);
@@ -25,6 +28,7 @@ const composition = prepareDshComposition({
 	installAnchor,
 	surfacePath,
 	serverPath,
+	sandboxEscalationCompatPath,
 });
 const ctx = await boot(NAME, composition.rootPath, composition.patches);
 

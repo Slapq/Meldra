@@ -17,8 +17,8 @@
 </div>
 
 > [!IMPORTANT]
-> 当前仓库尚未配置正式 Meldra npm 发行源或自更新服务。本 package manifest 提供 `metapi` 命令，
-> 但开发阶段应以可信源码 checkout 和构建结果为准。
+> 当前仓库尚未配置正式 Meldra npm 发行源或自更新服务。本 package manifest 提供 `meldra` 命令，
+> 并保留 `metapi` 兼容别名；开发阶段应以可信源码 checkout 和构建结果为准。
 
 <p align="center">
   <img src="docs/images/metapi-profile-tui.png" alt="Meldra Profile 选择界面" width="100%">
@@ -71,8 +71,8 @@ meldra setup
 meldra profile status
 meldra profile list
 meldra --workspace
-metapi -c
-metapi -r
+meldra -c
+meldra -r
 ```
 
 TUI 常用入口：
@@ -93,8 +93,8 @@ TUI 常用入口：
 
 | Profile | 状态位置 | 行为 |
 |---|---|---|
-| `default` | `~/.metapi/profiles/default/` | Meldra 默认隔离环境 |
-| 普通 Profile | `~/.metapi/profiles/<name>/` | 独立 Pi 资源与可选 Runtime |
+| `default` | `~/.meldra/profiles/default/` | Meldra 默认隔离环境 |
+| 普通 Profile | `~/.meldra/profiles/<name>/` | 独立 Pi 资源与可选 Runtime |
 | `pi` | `~/.pi/agent/` | 原始 Pi compatibility，不接受 Meldra 专属注入 |
 
 Profile 选择顺序为显式 `--profile`、最近目录绑定、最后 `default`。

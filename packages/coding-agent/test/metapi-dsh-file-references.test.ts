@@ -6,7 +6,7 @@ import {
 	dshFileReferenceFromCompletion,
 	expandSelectedDshFileReferences,
 	extractDshFileReferences,
-} from "../src/metapi/dsh-file-references.ts";
+} from "../src/meldra/dsh-file-references.ts";
 
 const temporaryDirectories: string[] = [];
 

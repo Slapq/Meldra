@@ -1,7 +1,7 @@
 import { cpSync, existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 import { resolvePath } from "../utils/paths.ts";
-import { METAPI_WORKSPACES_DIR } from "./profile-service.ts";
+import { MELDRA_WORKSPACES_DIR } from "./profile-service.ts";
 
 export interface WorkspaceTarget {
 	root: string;
@@ -9,9 +9,9 @@ export interface WorkspaceTarget {
 }
 
 export function resolveWorkspaceRoot(value?: string, launchCwd: string = process.cwd()): string {
-	if (value === undefined) return resolvePath(METAPI_WORKSPACES_DIR);
+	if (value === undefined) return resolvePath(MELDRA_WORKSPACES_DIR);
 	const trimmed = value.trim();
-	if (!trimmed) return resolvePath(METAPI_WORKSPACES_DIR);
+	if (!trimmed) return resolvePath(MELDRA_WORKSPACES_DIR);
 	return resolvePath(isAbsolute(trimmed) ? trimmed : resolve(launchCwd, trimmed));
 }
 

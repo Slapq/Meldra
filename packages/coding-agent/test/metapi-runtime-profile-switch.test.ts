@@ -12,7 +12,7 @@ import {
 import { AuthStorage } from "../src/core/auth-storage.ts";
 import { ModelRuntime } from "../src/core/model-runtime.ts";
 import { SessionManager } from "../src/core/session-manager.ts";
-import { getSessionProfile, replaceSessionProfile, setSessionProfile } from "../src/metapi/session-profile.ts";
+import { getSessionProfile, replaceSessionProfile, setSessionProfile } from "../src/meldra/session-profile.ts";
 
 const cleanup: Array<() => Promise<void> | void> = [];
 

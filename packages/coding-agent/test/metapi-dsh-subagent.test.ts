@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ModelRuntime } from "../src/core/model-runtime.ts";
-import { DshProfileRuntime } from "../src/metapi/dsh-profile-runtime.ts";
+import { DshProfileRuntime } from "../src/meldra/dsh-profile-runtime.ts";
 
 interface SubagentRuntimeInternals {
 	runtime: {

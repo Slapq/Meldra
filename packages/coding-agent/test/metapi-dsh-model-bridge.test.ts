@@ -1,7 +1,7 @@
 import type { Model } from "@earendil-works/pi-ai";
 import { describe, expect, it, vi } from "vitest";
 import type { ModelRuntime } from "../src/core/model-runtime.ts";
-import { DshProfileRuntime } from "../src/metapi/dsh-profile-runtime.ts";
+import { DshProfileRuntime } from "../src/meldra/dsh-profile-runtime.ts";
 
 interface RuntimeInternals {
 	runtime?: {
@@ -58,7 +58,7 @@ describe("DSH Meldra model bridge", () => {
 	it("registers only the selected model, stores the credential by reference, and selects the route", async () => {
 		const calls: Array<{ method: string; payload: Record<string, unknown> }> = [];
 		const request = vi.fn(async (method: string, params?: Record<string, unknown>) => {
-			expect(method).toBe("metapi/api.call");
+			expect(method).toBe("meldra/api.call");
 			const callMethod = String(params?.method);
 			const payload = (params?.payload ?? {}) as Record<string, unknown>;
 			calls.push({ method: callMethod, payload });
@@ -117,7 +117,7 @@ describe("DSH Meldra model bridge", () => {
 						displayName: "Local Gateway",
 						api: "openai-completions",
 						baseURL: "http://127.0.0.1:2244/v1",
-						apiKeyEnv: expect.stringMatching(/^METAPI_MODEL_[A-F0-9]{16}$/),
+						apiKeyEnv: expect.stringMatching(/^MELDRA_MODEL_[A-F0-9]{16}$/),
 						headers: {
 							"X-Model-Header": "configured",
 							"X-Auth-Header": "resolved",
@@ -145,7 +145,7 @@ describe("DSH Meldra model bridge", () => {
 		});
 		expect(JSON.stringify(settingsPayload)).not.toContain("test-secret-key");
 		expect(calls[2].payload).toEqual({
-			ref: expect.stringMatching(/^METAPI_MODEL_[A-F0-9]{16}$/),
+			ref: expect.stringMatching(/^MELDRA_MODEL_[A-F0-9]{16}$/),
 			value: "test-secret-key",
 		});
 		expect(calls[3].payload).toEqual({

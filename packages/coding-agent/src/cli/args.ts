@@ -280,7 +280,7 @@ ${chalk.bold("Usage:")}
 ${chalk.bold("Commands:")}
   ${APP_NAME} setup [options]             Install or restore the Meldra Starter Profile
   ${APP_NAME} profile <command>          Manage Meldra Profiles
-  ${APP_NAME} init                       Create .pi/metapi.json explicitly
+  ${APP_NAME} init                       Create .pi/meldra.json explicitly
   ${APP_NAME} install <source> [-l]     Install extension source and add to settings
   ${APP_NAME} remove <source> [-l]      Remove extension source from settings
   ${APP_NAME} uninstall <source> [-l]   Alias for remove
@@ -292,7 +292,7 @@ ${chalk.bold("Commands:")}
 
 ${chalk.bold("Options:")}
   --profile <name>               Meldra Profile (default: session, directory binding, then default)
-  --workspace [dir]              Create a session-bound WorkSpace (default: ~/.metapi/workspaces)
+  --workspace [dir]              Create a session-bound WorkSpace (default: ~/.meldra/workspaces)
   --provider <name>              Provider name (default: google)
   --model <pattern>              Model pattern or ID (supports "provider/id" and optional ":<thinking>")
   --api-key <key>                API key (defaults to env vars)

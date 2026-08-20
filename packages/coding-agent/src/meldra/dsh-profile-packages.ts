@@ -10,10 +10,12 @@ import type {
 	ProfileRuntimePackageRequest,
 	ProfileRuntimePackageResult,
 } from "../core/profile-agent-runtime.ts";
-import { prepareDshComposition } from "../extensions/dsh/composition.ts";
+import { MELDRA_DSH_PROFILE, prepareDshComposition } from "../extensions/dsh/composition.ts";
 
 const COREPACK_PNPM_VERSION = "10.34.4";
 const MAX_OUTPUT_CHARS = 200_000;
+const COREPACK_PNPM_SHIM_DIRECTORY = ".meldra-bin";
+const LEGACY_COREPACK_PNPM_SHIM_DIRECTORY = ".metapi-bin";
 
 function commandAvailable(command: string, args: string[]): Promise<boolean> {
 	return new Promise((resolve) => {
@@ -59,11 +61,19 @@ function prependPath(env: NodeJS.ProcessEnv, directory: string): NodeJS.ProcessE
 }
 
 function corepackPnpmShimDirectory(agentDir: string): string {
-	return join(agentDir, "dsh-runtime", ".metapi-bin");
+	return join(agentDir, "dsh-runtime", COREPACK_PNPM_SHIM_DIRECTORY);
 }
 
-function hasCorepackPnpmShim(agentDir: string): boolean {
-	return existsSync(join(corepackPnpmShimDirectory(agentDir), process.platform === "win32" ? "pnpm.cmd" : "pnpm"));
+function legacyCorepackPnpmShimDirectory(agentDir: string): string {
+	return join(agentDir, "dsh-runtime", LEGACY_COREPACK_PNPM_SHIM_DIRECTORY);
+}
+
+export function resolveCorepackPnpmShimDirectory(agentDir: string): string | undefined {
+	const executable = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+	for (const directory of [corepackPnpmShimDirectory(agentDir), legacyCorepackPnpmShimDirectory(agentDir)]) {
+		if (existsSync(join(directory, executable))) return directory;
+	}
+	return undefined;
 }
 
 interface CorepackLauncher {
@@ -105,9 +115,8 @@ async function resolvePnpmEnvironment(
 ): Promise<{ env?: NodeJS.ProcessEnv; failure?: ProfileRuntimePackageResult }> {
 	const pnpmProbe = process.platform === "win32" ? ["where.exe", ["pnpm"]] : ["pnpm", ["--version"]];
 	if (await commandAvailable(pnpmProbe[0] as string, pnpmProbe[1] as string[])) return { env: process.env };
-	if (hasCorepackPnpmShim(profile.agentDir)) {
-		return { env: prependPath(process.env, corepackPnpmShimDirectory(profile.agentDir)) };
-	}
+	const shimDirectory = resolveCorepackPnpmShimDirectory(profile.agentDir);
+	if (shimDirectory) return { env: prependPath(process.env, shimDirectory) };
 
 	const corepack = corepackLauncher();
 	const corepackAvailable =
@@ -157,7 +166,7 @@ function requestArgs(request: ProfileRuntimePackageRequest): string[] {
 }
 
 function profilePackageManifestPath(profile: ProfileEnvironmentDescriptor): string {
-	return join(profile.agentDir, "dsh-runtime", "profiles", "metapi", "package.json");
+	return join(profile.agentDir, "dsh-runtime", "profiles", MELDRA_DSH_PROFILE, "package.json");
 }
 
 function packageSourcesFromConfig(config: unknown): string[] | undefined {
@@ -190,15 +199,18 @@ export const dshProfilePackageManager: ProfileRuntimePackageManager = {
 		const dshHome = join(profile.agentDir, "dsh-runtime");
 		mkdirSync(dshHome, { recursive: true });
 		prepareDshComposition({
-			binName: "metapi",
+			binName: "meldra",
 			home: dshHome,
 			installAnchor: manifestPath,
 			surfacePath: fileURLToPath(new URL("../extensions/dsh/surface.patch.yml", import.meta.url)),
 			serverPath: pathToFileURL(fileURLToPath(new URL("../extensions/dsh/server.js", import.meta.url))).href,
+			sandboxEscalationCompatPath: pathToFileURL(
+				fileURLToPath(new URL("../extensions/dsh/sandbox-escalation-compat.js", import.meta.url)),
+			).href,
 		});
 		const result = await collectProcess(
 			process.execPath,
-			[join(manifestPath, "..", relativeBin), "plugin", "--profile", "metapi", ...requestArgs(request)],
+			[join(manifestPath, "..", relativeBin), "plugin", "--profile", MELDRA_DSH_PROFILE, ...requestArgs(request)],
 			{
 				cwd: profile.cwd,
 				env: { ...pnpm.env, DSH_HOME: dshHome },

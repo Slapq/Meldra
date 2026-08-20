@@ -15,7 +15,7 @@ Requirements:
 - A supported terminal
 - Bash on Windows; Git for Windows is recommended
 
-Windows x64 users can download the dual installers from [`v0.1.0-preview.7`](https://github.com/Slapq/Meldra/releases/tag/v0.1.0-preview.7): `Meldra-Setup.exe` bundles Node.js, while `Meldra-Setup-NodeJS.exe` uses the system Node.js. Both include portable Windows Terminal for the desktop shortcut. The installer also adds `metapi` to the current-user PATH, so any newly opened PowerShell, cmd, Git Bash, Windows Terminal, or VS Code terminal can run Meldra. The installers are currently unsigned, so Windows may show Unknown publisher or SmartScreen warnings.
+Windows x64 users can download the dual installers from [`v0.2.1`](https://github.com/Slapq/Meldra/releases/tag/v0.2.1): `Meldra-Setup.exe` bundles Node.js, while `Meldra-Setup-NodeJS.exe` uses the system Node.js. Both include portable Windows Terminal for the desktop shortcut. The installer adds `meldra` to the current-user PATH and retains `metapi` as a compatibility alias, so any newly opened PowerShell, cmd, Git Bash, Windows Terminal, or VS Code terminal can run Meldra. The installers are currently unsigned, so Windows may show Unknown publisher or SmartScreen warnings.
 
 The scoped npm Bootstrap remains unpublished; do not substitute the official Pi package for Meldra. `meldra update --self` remains disabled. Starter Bundle Setup and Provider/model/Scout onboarding are supported. See the [Setup and Distribution Contract](setup-and-distribution.en.md) for the full boundary.
 
@@ -41,22 +41,22 @@ Windows PowerShell:
 .\pi-test.ps1
 ```
 
-The source launchers preserve the directory from which they are called. The examples below use `metapi`; replace it with
+The source launchers preserve the directory from which they are called. The examples below use `meldra`; replace it with
 the appropriate source launcher when working from checkout.
 
 ## 2. Understand the State Boundaries
 
 | State | Default location | Owner |
 |---|---|---|
-| Meldra Profile | `~/.metapi/profiles/<name>/` | The Profile |
-| Meldra user preferences | `~/.metapi/user/preferences.json` | The current Meldra user |
+| Meldra Profile | `~/.meldra/profiles/<name>/` | The Profile |
+| Meldra user preferences | `~/.meldra/user/preferences.json` | The current Meldra user |
 | Pi compatibility | `~/.pi/agent/` | Original Pi |
-| WorkSpace | `~/.metapi/workspaces/` or an explicit directory | The Meldra Session |
+| WorkSpace | `~/.meldra/workspaces/` or an explicit directory | The Meldra Session |
 | DSH Runtime | `<profile>/agent/dsh-runtime/` | Harness in that Profile |
 
 Ordinary Profiles do not share Profile workflow settings, plugin configuration, Sessions, or Runtime state. Interface and
 control choices such as Theme, terminal presentation, editor behavior, and navigation are User Experience Preferences;
-ordinary Profiles share them through `~/.metapi/user/preferences.json`. The reserved `pi` Profile continues to use original
+ordinary Profiles share them through `~/.meldra/user/preferences.json`. The reserved `pi` Profile continues to use original
 Pi state, does not read these Meldra user preferences, and does not receive Meldra-owned injection.
 
 A WorkSpace is a Session working directory. It does not automatically own Profile models, packages, settings, or Harness
@@ -101,7 +101,7 @@ sandbox. See [Containerization](../packages/coding-agent/docs/containerization.m
 - `/reload` reloads disk Extensions, Skills, Prompt Templates, Themes, keybindings, and context files.
 - `/hotkeys` shows the active shortcuts.
 
-`metapi-config` is an inline built-in exception. `/reload` recreates its registrations but is not a source-code
+`meldra-config` is an inline built-in exception. `/reload` recreates its registrations but is not a source-code
 hot-reload boundary for that built-in.
 
 See [Using Pi](../packages/coding-agent/docs/usage.md) and [Keybindings](../packages/coding-agent/docs/keybindings.md).
@@ -140,7 +140,7 @@ meldra --workspace
 meldra --workspace D:/WorkSpaces/release-audit
 ```
 
-Use `/workspace` to show the binding. `metapi-workspace` is a built-in package for every ordinary Meldra Profile. Windows Setup creates one current-user desktop shortcut that launches `meldra --profile default --workspace`. The shortcut uses the bundled Windows Terminal, but the CLI is not bound to that terminal.
+Use `/workspace` to show the binding. `meldra-workspace` is a built-in package for every ordinary Meldra Profile. Windows Setup creates one current-user desktop shortcut that launches `meldra --profile default --workspace`. The shortcut uses the bundled Windows Terminal, but the CLI is not bound to that terminal.
 
 Profile and WorkSpace are orthogonal:
 
@@ -155,7 +155,7 @@ Profile and WorkSpace are orthogonal:
 meldra init
 ```
 
-This creates `.pi/metapi.json`. A project may recommend a Profile Bundle source:
+This creates `.pi/meldra.json`. A project may recommend a Profile Bundle source:
 
 ```json
 {
@@ -216,8 +216,8 @@ plugins must follow the [Profile Config Registration Protocol](extensions/profil
 ## 10. Sessions, Resume, and Branches
 
 ```bash
-metapi -c
-metapi -r
+meldra -c
+meldra -r
 meldra --session <path-or-id>
 meldra --fork <path-or-id>
 meldra --no-session
@@ -252,7 +252,7 @@ Session export preserves a conversation; Profile export moves an environment dec
 
 Profile export first warns that Bundle source files are copied as-is. Meldra-managed credentials, Sessions, Runtime Settings, caches, Loader state, project `.pi` configuration, directory bindings, and one-run CLI overrides are not added automatically. A key or token already hardcoded in a Bundle source file can still be exported with that file.
 
-Every export writes `METAPI_PROFILE_EXPORT_AUDIT.md` with:
+Every export writes `MELDRA_PROFILE_EXPORT_AUDIT.md` with:
 
 - the included configuration categories and complete file manifest;
 - the managed state that was not added automatically;
@@ -322,7 +322,7 @@ pnpm is not on PATH.
 ## 14. Non-interactive Use
 
 ```bash
-metapi -p "Summarize this repository"
+meldra -p "Summarize this repository"
 meldra --mode json -p "Run the static checks"
 meldra --mode rpc
 ```
@@ -389,7 +389,7 @@ Exit with `/quit`; DSH also supports `/dsh exit`, both through graceful Meldra t
 Back up after related processes exit:
 
 ```text
-~/.metapi/
+~/.meldra/
 ~/.pi/agent/            # original Pi compatibility Profile only
 ```
 

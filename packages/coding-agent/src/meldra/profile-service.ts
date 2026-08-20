@@ -2,10 +2,11 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { homedir } from "node:os";
 import { dirname, join, normalize, resolve } from "node:path";
 
-export const METAPI_HOME = join(homedir(), ".metapi");
-export const METAPI_PROFILES_DIR = join(METAPI_HOME, "profiles");
-export const METAPI_WORKSPACES_DIR = join(METAPI_HOME, "workspaces");
-export const METAPI_BINDINGS_PATH = join(METAPI_HOME, "project-bindings.json");
+import { MELDRA_HOME } from "./storage-migrations.ts";
+
+export const MELDRA_PROFILES_DIR = join(MELDRA_HOME, "profiles");
+export const MELDRA_WORKSPACES_DIR = join(MELDRA_HOME, "workspaces");
+export const MELDRA_BINDINGS_PATH = join(MELDRA_HOME, "project-bindings.json");
 export const DEFAULT_PROFILE_NAME = "default";
 export const PI_COMPATIBILITY_PROFILE_NAME = "pi";
 
@@ -36,7 +37,7 @@ export function getProfileAgentDir(name: string): string {
 	if (normalized === PI_COMPATIBILITY_PROFILE_NAME) {
 		return join(homedir(), ".pi", "agent");
 	}
-	return join(METAPI_PROFILES_DIR, normalized, "agent");
+	return join(MELDRA_PROFILES_DIR, normalized, "agent");
 }
 
 function canonicalDirectory(directory: string): string {
@@ -44,9 +45,9 @@ function canonicalDirectory(directory: string): string {
 }
 
 function readBindings(): DirectoryBindings {
-	if (!existsSync(METAPI_BINDINGS_PATH)) return {};
+	if (!existsSync(MELDRA_BINDINGS_PATH)) return {};
 	try {
-		const value = JSON.parse(readFileSync(METAPI_BINDINGS_PATH, "utf8")) as unknown;
+		const value = JSON.parse(readFileSync(MELDRA_BINDINGS_PATH, "utf8")) as unknown;
 		if (!value || typeof value !== "object" || Array.isArray(value)) return {};
 		return Object.fromEntries(
 			Object.entries(value).filter(
@@ -86,8 +87,8 @@ export function bindDirectory(directory: string, profileName: string): string {
 	const path = canonicalDirectory(directory);
 	const bindings = readBindings();
 	bindings[path] = name;
-	mkdirSync(METAPI_HOME, { recursive: true });
-	writeFileSync(METAPI_BINDINGS_PATH, `${JSON.stringify(bindings, null, 2)}\n`, "utf8");
+	mkdirSync(MELDRA_HOME, { recursive: true });
+	writeFileSync(MELDRA_BINDINGS_PATH, `${JSON.stringify(bindings, null, 2)}\n`, "utf8");
 	return path;
 }
 
@@ -96,8 +97,8 @@ export function unbindDirectory(directory: string): boolean {
 	const bindings = readBindings();
 	if (!(path in bindings)) return false;
 	delete bindings[path];
-	mkdirSync(METAPI_HOME, { recursive: true });
-	writeFileSync(METAPI_BINDINGS_PATH, `${JSON.stringify(bindings, null, 2)}\n`, "utf8");
+	mkdirSync(MELDRA_HOME, { recursive: true });
+	writeFileSync(MELDRA_BINDINGS_PATH, `${JSON.stringify(bindings, null, 2)}\n`, "utf8");
 	return true;
 }
 
@@ -136,7 +137,7 @@ export function removeProfileArguments(args: string[]): string[] {
 }
 
 function readProfileDisplayName(name: string): string | undefined {
-	const path = join(METAPI_PROFILES_DIR, name, "profile.json");
+	const path = join(MELDRA_PROFILES_DIR, name, "profile.json");
 	if (!existsSync(path)) return undefined;
 	try {
 		const value = JSON.parse(readFileSync(path, "utf8")) as {
@@ -173,7 +174,7 @@ export interface ProjectProfileRecommendation {
 }
 
 export function readProjectProfileRecommendation(cwd: string): ProjectProfileRecommendation | undefined {
-	const path = join(canonicalDirectory(cwd), ".pi", "metapi.json");
+	const path = join(canonicalDirectory(cwd), ".pi", "meldra.json");
 	if (!existsSync(path)) return undefined;
 	try {
 		const value = JSON.parse(readFileSync(path, "utf8")) as {
@@ -204,8 +205,8 @@ export function formatProfileStatus(profile: ProfileSelection, cwd: string): str
 
 export function listInstalledProfiles(): string[] {
 	const names = new Set<string>([DEFAULT_PROFILE_NAME, PI_COMPATIBILITY_PROFILE_NAME]);
-	if (existsSync(METAPI_PROFILES_DIR)) {
-		for (const entry of readdirSafe(METAPI_PROFILES_DIR)) {
+	if (existsSync(MELDRA_PROFILES_DIR)) {
+		for (const entry of readdirSafe(MELDRA_PROFILES_DIR)) {
 			if (PROFILE_NAME_PATTERN.test(entry)) names.add(entry);
 		}
 	}

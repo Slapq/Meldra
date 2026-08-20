@@ -15,7 +15,7 @@
 - 可用的终端
 - Windows 上可用的 Bash，推荐 Git for Windows
 
-Windows x64 用户可以从 [`v0.1.0-preview.7`](https://github.com/Slapq/Meldra/releases/tag/v0.1.0-preview.7) 下载双安装器：`Meldra-Setup.exe` 内置 Node.js，`Meldra-Setup-NodeJS.exe` 使用系统 Node.js。两版都内置 portable Windows Terminal，桌面快捷方式默认使用它；安装器同时把 `metapi` 加入当前用户 PATH，因此任意新开的 PowerShell、cmd、Git Bash、Windows Terminal 或 VS Code terminal 都能运行 Meldra。安装器当前未签名，Windows 可能显示 Unknown publisher 或 SmartScreen 提示。
+Windows x64 用户可以从 [`v0.2.1`](https://github.com/Slapq/Meldra/releases/tag/v0.2.1) 下载双安装器：`Meldra-Setup.exe` 内置 Node.js，`Meldra-Setup-NodeJS.exe` 使用系统 Node.js。两版都内置 portable Windows Terminal，桌面快捷方式默认使用它；安装器把 `meldra` 加入当前用户 PATH，`metapi` 继续作为兼容别名，因此任意新开的 PowerShell、cmd、Git Bash、Windows Terminal 或 VS Code terminal 都能运行 Meldra。安装器当前未签名，Windows 可能显示 Unknown publisher 或 SmartScreen 提示。
 
 scoped npm Bootstrap 尚未发布；不要使用官方 Pi 包代替 Meldra。`meldra update --self` 仍禁用。Starter Bundle Setup 与 Provider/模型/Scout 配置向导已经支持。完整产品边界见 [Setup 与发行合同](setup-and-distribution.md)。
 
@@ -41,7 +41,7 @@ Windows PowerShell：
 .\pi-test.ps1
 ```
 
-脚本可以从其他目录调用，并以调用目录作为工作目录。后文统一写作 `metapi`；源码运行时替换为对应脚本即可。
+脚本可以从其他目录调用，并以调用目录作为工作目录。后文统一写作 `meldra`；源码运行时替换为对应脚本即可。
 
 Windows 的 shell 和终端要求见 [Windows](../packages/coding-agent/docs/windows.md) 与 [Terminal
 setup](../packages/coding-agent/docs/terminal-setup.md)。
@@ -52,13 +52,13 @@ setup](../packages/coding-agent/docs/terminal-setup.md)。
 
 | 状态 | 默认位置 | 谁拥有 |
 |---|---|---|
-| Meldra Profile | `~/.metapi/profiles/<name>/` | 对应 Profile |
-| Meldra 用户偏好 | `~/.metapi/user/preferences.json` | 当前 Meldra 用户 |
+| Meldra Profile | `~/.meldra/profiles/<name>/` | 对应 Profile |
+| Meldra 用户偏好 | `~/.meldra/user/preferences.json` | 当前 Meldra 用户 |
 | Pi compatibility | `~/.pi/agent/` | 原始 Pi |
-| WorkSpace | `~/.metapi/workspaces/` 或显式目录 | 当前 Meldra Session |
+| WorkSpace | `~/.meldra/workspaces/` 或显式目录 | 当前 Meldra Session |
 | DSH Runtime | `<profile>/agent/dsh-runtime/` | 对应 Profile 的 Harness |
 
-普通 Profile 不共享 Profile 工作流设置、插件配置、Session 或 Runtime 状态。主题、终端显示、编辑器和导航等界面与控制偏好属于 User Experience Preferences，由普通 Profile 共享，并写入 `~/.metapi/user/preferences.json`。`pi` Profile 是保留的兼容入口，继续使用原始 Pi 状态，不读取这份 Meldra 用户偏好，也不接受 Meldra 专属配置宿主或 DSH surface。
+普通 Profile 不共享 Profile 工作流设置、插件配置、Session 或 Runtime 状态。主题、终端显示、编辑器和导航等界面与控制偏好属于 User Experience Preferences，由普通 Profile 共享，并写入 `~/.meldra/user/preferences.json`。`pi` Profile 是保留的兼容入口，继续使用原始 Pi 状态，不读取这份 Meldra 用户偏好，也不接受 Meldra 专属配置宿主或 DSH surface。
 
 WorkSpace 只是会话的工作目录。它不会自动获得 Profile 的模型、插件、设置或 Harness 状态。
 
@@ -115,7 +115,7 @@ Meldra 继承 Pi 的文件与 shell 工具。工具使用启动进程的权限�
 - 使用 `/hotkeys` 查看当前快捷键。
 - 使用 `/reload` 重新加载磁盘 Extension、Skill、Prompt、Theme、keybinding 和 context files。
 
-`metapi-config` 是 inline built-in 特例。`/reload` 会重建其运行时注册，但不是重新导入该内建源码的开发热重载入口。
+`meldra-config` 是 inline built-in 特例。`/reload` 会重建其运行时注册，但不是重新导入该内建源码的开发热重载入口。
 
 完整编辑器与快捷键说明见 [Using Pi](../packages/coding-agent/docs/usage.md) 和
 [Keybindings](../packages/coding-agent/docs/keybindings.md)。
@@ -202,7 +202,7 @@ meldra --workspace D:/WorkSpaces/release-audit
 /workspace
 ```
 
-`metapi-workspace` 是普通 Meldra Profile 自动获得的内建插件。Windows Setup 会在当前用户桌面创建一个快捷方式，以 `meldra --profile default --workspace` 进入干净的 Starter Profile + WorkSpace。快捷方式使用内置 Windows Terminal，但 CLI 不绑定该终端。
+`meldra-workspace` 是普通 Meldra Profile 自动获得的内建插件。Windows Setup 会在当前用户桌面创建一个快捷方式，以 `meldra --profile default --workspace` 进入干净的 Starter Profile + WorkSpace。快捷方式使用内置 Windows Terminal，但 CLI 不绑定该终端。
 
 WorkSpace 与 Profile 是正交的：
 
@@ -219,7 +219,7 @@ WorkSpace 与 Profile 是正交的：
 meldra init
 ```
 
-生成 `.pi/metapi.json`。项目可以在其中声明 Profile Bundle 推荐：
+生成 `.pi/meldra.json`。项目可以在其中声明 Profile Bundle 推荐：
 
 ```json
 {
@@ -288,8 +288,8 @@ effort、Settings、Provider 与 credential service。
 Meldra Session 自动保存。常用启动方式：
 
 ```bash
-metapi -c
-metapi -r
+meldra -c
+meldra -r
 meldra --session <path-or-id>
 meldra --fork <path-or-id>
 meldra --no-session
@@ -333,7 +333,7 @@ meldra profile export research ./research-profile
 
 Profile export 会先提醒：Bundle 源文件按原样复制。Meldra 管理的凭据、Session、Runtime Settings、cache、Loader 状态、项目 `.pi`、目录绑定和单次 CLI 覆盖不会被自动加入；但已经硬编码在 Bundle 源文件中的 Key 或 token 仍可能随文件导出。
 
-每次导出都会生成 `METAPI_PROFILE_EXPORT_AUDIT.md`，其中列出：
+每次导出都会生成 `MELDRA_PROFILE_EXPORT_AUDIT.md`，其中列出：
 
 - 本次包含的配置类别和完整文件清单；
 - 明确未自动导出的托管状态；
@@ -418,7 +418,7 @@ Runtime/Loader Inventory 验证。
 普通 Pi Runtime 支持：
 
 ```bash
-metapi -p "总结这个仓库"
+meldra -p "总结这个仓库"
 meldra --mode json -p "运行静态检查"
 meldra --mode rpc
 ```
@@ -478,7 +478,7 @@ Profile 名称本身不是 Runtime provider 声明。
 备份前先退出相关进程。主要目录：
 
 ```text
-~/.metapi/
+~/.meldra/
 ~/.pi/agent/            # only for the pi compatibility Profile
 ```
 

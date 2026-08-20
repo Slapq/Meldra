@@ -98,15 +98,16 @@ Key Meldra locations in `packages/coding-agent/src/`:
 | Path | Role |
 |---|---|
 | `main.ts` | composition root; connects generic capabilities |
-| `metapi/profile-service.ts` | Profile selection, bindings, and paths |
-| `metapi/profile-bundle.ts` | Portable Profile import/export/update |
+| `meldra/profile-service.ts` | Profile selection, bindings, and paths |
+| `meldra/profile-bundle.ts` | Portable Profile import/export/update |
+| `core/agent-session-runtime.ts` | Session replacement and Meldra lifecycle connection point |
 | `core/profile-agent-runtime.ts` | product-neutral Runtime contract |
-| `metapi/profile-runtime-providers.ts` | bundled provider registry |
-| `metapi/dsh-profile-runtime*.ts` | DSH provider and Runtime adapter |
+| `meldra/profile-runtime-providers.ts` | bundled provider registry |
+| `meldra/dsh-profile-runtime*.ts` | DSH provider and Runtime adapter |
 | `extensions/dsh/` | DSH Pi TUI surface and bridge |
-| `extensions/metapi-config/` | inline built-in Profile Config Host |
-| `metapi/profile-extension.ts` | `/profile` TUI |
-| `metapi/workspace-extension.ts` | `/workspace` TUI |
+| `extensions/meldra-config/` | inline built-in Profile Config Host |
+| `meldra/profile-extension.ts` | `/profile` TUI |
+| `meldra/workspace-extension.ts` | `/workspace` TUI |
 
 ## 5. Standard Workflow
 
@@ -154,7 +155,7 @@ Use a Pi Extension for commands, tools, events, renderers, shortcuts, and TUI. F
 Guide](../packages/coding-agent/docs/extensions.md) and [TUI reference](../packages/coding-agent/docs/tui.md).
 
 Only composition capabilities that every ordinary Meldra Profile must have belong in the bundled built-in registry.
-`metapi-config` is an explicit inline built-in exception; do not give it a provision, package-copy, or source hot-reload
+`meldra-config` is an explicit inline built-in exception; do not give it a provision, package-copy, or source hot-reload
 lifecycle.
 
 ### Plugin field configuration

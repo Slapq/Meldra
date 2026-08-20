@@ -6,8 +6,8 @@ const { bindDirectoryMock, unbindDirectoryMock } = vi.hoisted(() => ({
 	unbindDirectoryMock: vi.fn(() => true),
 }));
 
-vi.mock("../src/metapi/profile-service.ts", async (importOriginal) => {
-	const actual = await importOriginal<typeof import("../src/metapi/profile-service.ts")>();
+vi.mock("../src/meldra/profile-service.ts", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("../src/meldra/profile-service.ts")>();
 	return {
 		...actual,
 		bindDirectory: bindDirectoryMock,
@@ -26,15 +26,15 @@ vi.mock("../src/metapi/profile-service.ts", async (importOriginal) => {
 			return {
 				name,
 				displayName: name === "work" ? "工作配置" : "Meldra Starter",
-				agentDir: `C:\\Users\\test\\.metapi\\profiles\\${name}\\agent`,
+				agentDir: `C:\\Users\\test\\.meldra\\profiles\\${name}\\agent`,
 				compatibility: false,
 			};
 		},
 	};
 });
 
-import { createMeldraProfileExtension } from "../src/metapi/profile-extension.ts";
-import { METAPI_SESSION_PROFILE_ENTRY } from "../src/metapi/session-profile.ts";
+import { createMeldraProfileExtension } from "../src/meldra/profile-extension.ts";
+import { METAPI_SESSION_PROFILE_ENTRY } from "../src/meldra/session-profile.ts";
 
 interface SetupOptions {
 	selectResults?: Array<string | undefined>;

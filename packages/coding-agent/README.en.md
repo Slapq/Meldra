@@ -18,7 +18,7 @@
 
 > [!IMPORTANT]
 > The repository does not yet define an official Meldra npm release or self-update source. The package manifest provides
-> the `metapi` command, but development work should use a trusted source checkout and build.
+> the `meldra` command and retains `metapi` as a compatibility alias; development work should use a trusted source checkout and build.
 
 <p align="center">
   <img src="docs/images/metapi-profile-tui.png" alt="Meldra Profile selector" width="100%">
@@ -71,8 +71,8 @@ meldra setup
 meldra profile status
 meldra profile list
 meldra --workspace
-metapi -c
-metapi -r
+meldra -c
+meldra -r
 ```
 
 Common TUI entries are `/setup`, `/model`, `/profile`, `/workspace`, `/config`, `/settings`, `/resume`, `/export`, and `/reload`.
@@ -81,8 +81,8 @@ Common TUI entries are `/setup`, `/model`, `/profile`, `/workspace`, `/config`, 
 
 | Profile | State location | Behavior |
 |---|---|---|
-| `default` | `~/.metapi/profiles/default/` | Meldra's default isolated environment |
-| Ordinary Profile | `~/.metapi/profiles/<name>/` | Independent Pi resources and optional Runtime |
+| `default` | `~/.meldra/profiles/default/` | Meldra's default isolated environment |
+| Ordinary Profile | `~/.meldra/profiles/<name>/` | Independent Pi resources and optional Runtime |
 | `pi` | `~/.pi/agent/` | Original Pi compatibility; no Meldra-only injection |
 
 Profile selection is explicit `--profile`, then the nearest directory binding, then `default`.

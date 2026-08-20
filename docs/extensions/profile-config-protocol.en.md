@@ -2,7 +2,7 @@
 
 Status: normative Meldra Extension contract.
 
-`metapi-config` is the one built-in exception that hosts Profile plugin configuration. It is an inline hidden Extension,
+`meldra-config` is the one built-in exception that hosts Profile plugin configuration. It is an inline hidden Extension,
 not a user-editable Profile Package. Its source is refreshed with the Meldra build and process lifecycle; `/reload`
 re-registers the same loaded factory and is not a source-code hot-reload boundary for this built-in.
 
@@ -11,7 +11,7 @@ field vocabulary, persistence layout, and update notification path. A plugin MUS
 configuration form or a second configuration store for values representable by this contract. Product-specific
 management workflows that are not ordinary scalar configuration remain outside this protocol.
 
-The reserved `pi` Compatibility Profile does not receive `metapi-config`; original Pi resources and behavior remain
+The reserved `pi` Compatibility Profile does not receive `meldra-config`; original Pi resources and behavior remain
 authoritative there.
 
 ## Registration

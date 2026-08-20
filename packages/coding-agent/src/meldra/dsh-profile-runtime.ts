@@ -43,7 +43,10 @@ async function settleBounded(operation: Promise<unknown>, timeoutMs = EVENT_DRAI
 	if (timer) clearTimeout(timer);
 }
 
-export const DSH_MESSAGE_ENTRY = "metapi-dsh-message";
+export const MELDRA_DSH_MESSAGE_ENTRY = "meldra-dsh-message";
+export const LEGACY_METAPI_DSH_MESSAGE_ENTRY = "metapi-dsh-message";
+/** @deprecated Use MELDRA_DSH_MESSAGE_ENTRY. Retained for source compatibility. */
+export const DSH_MESSAGE_ENTRY = MELDRA_DSH_MESSAGE_ENTRY;
 
 interface HarnessClient {
 	request(method: string, params?: object): Promise<unknown>;
@@ -96,7 +99,7 @@ const DSH_PI_AI_SUPPORTED_APIS = new Set(["openai-completions", "openai-response
 
 function modelCredentialReference(provider: string): string {
 	const identity = createHash("sha256").update(provider).digest("hex").slice(0, 16).toUpperCase();
-	return `METAPI_MODEL_${identity}`;
+	return `MELDRA_MODEL_${identity}`;
 }
 
 function dshModelCompat(model: Model<any>): Record<string, unknown> | undefined {
@@ -515,7 +518,7 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 
 	async commands(): Promise<Record<string, unknown>[]> {
 		const active = await this.start();
-		const value = await active.harness.client.request("metapi/commands.list", {
+		const value = await active.harness.client.request("meldra/commands.list", {
 			sessionId: active.sessionId,
 		});
 		return Array.isArray(value) ? value.filter(isRecord) : [];
@@ -526,7 +529,7 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 		payload: Record<string, unknown>,
 	): Promise<Record<string, unknown>> {
 		const active = await this.start();
-		const value = await active.harness.client.request("metapi/message-feedback.call", {
+		const value = await active.harness.client.request("meldra/message-feedback.call", {
 			method,
 			payload: { sessionId: active.sessionId, ...payload },
 		});
@@ -558,7 +561,7 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 
 	async plugins(): Promise<Record<string, unknown>[]> {
 		const active = await this.start();
-		const value = await active.harness.client.request("metapi/plugin-inventory.list", {});
+		const value = await active.harness.client.request("meldra/plugin-inventory.list", {});
 		return isRecord(value) && Array.isArray(value.entries) ? value.entries.filter(isRecord) : [];
 	}
 
@@ -569,7 +572,7 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 		code: number;
 		output: string;
 	}> {
-		const name = process.env.METAPI_PROFILE_NAME ?? "dsh";
+		const name = process.env.MELDRA_PROFILE_NAME ?? process.env.METAPI_PROFILE_NAME ?? "dsh";
 		const profile: ProfileEnvironmentDescriptor = {
 			name,
 			displayName: name,
@@ -837,7 +840,7 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 
 	async executeCommand(line: string): Promise<unknown> {
 		const active = await this.start();
-		const value = await active.harness.client.request("metapi/commands.execute", {
+		const value = await active.harness.client.request("meldra/commands.execute", {
 			sessionId: active.sessionId,
 			line,
 		});
@@ -862,7 +865,7 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 
 	async respond(response: Record<string, unknown>): Promise<unknown> {
 		const active = await this.start();
-		return active.harness.client.request("metapi/api.respond", { response });
+		return active.harness.client.request("meldra/api.respond", { response });
 	}
 
 	private createAssistantProjection(): AssistantProjection {
@@ -1091,14 +1094,14 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 	}
 
 	private async startEventPump(active: RuntimeState, stream: "mux" | "host"): Promise<void> {
-		const opened = await active.harness.client.request("metapi/api.events.open", { stream });
+		const opened = await active.harness.client.request("meldra/api.events.open", { stream });
 		if (!isRecord(opened) || typeof opened.cursorId !== "string") throw new Error("DSH 未返回事件 cursor。");
 		active.eventCursors.set(stream, opened.cursorId);
 		const task = (async () => {
 			while ((this.runtime === undefined || this.runtime === active) && active.eventCursors.has(stream)) {
 				const cursorId = active.eventCursors.get(stream);
 				if (!cursorId) break;
-				const next = await active.harness.client.request("metapi/api.events.next", { cursorId });
+				const next = await active.harness.client.request("meldra/api.events.next", { cursorId });
 				if (!isRecord(next) || next.done === true) break;
 				this.emitProfileEvent(active, next.value);
 			}
@@ -1109,7 +1112,7 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 	}
 
 	private append(kind: "user" | "assistant" | "tool" | "error" | "info", text: string, notify = true): void {
-		this.host?.appendEntry(DSH_MESSAGE_ENTRY, { kind, text }, { notify });
+		this.host?.appendEntry(MELDRA_DSH_MESSAGE_ENTRY, { kind, text }, { notify });
 	}
 
 	private async start(): Promise<RuntimeState> {
@@ -1145,7 +1148,7 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 			}) as Harness;
 			const active: RuntimeState = {
 				harness,
-				sessionId: `metapi-${this.host?.sessionId ?? randomUUID()}`,
+				sessionId: `meldra-${this.host?.sessionId ?? randomUUID()}`,
 				eventCursors: new Map(),
 				eventTasks: [],
 			};
@@ -1155,7 +1158,7 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 				if (lifecycleVersion !== this.lifecycleVersion) throw new Error("DSH Runtime 已关闭。");
 				await Promise.all([this.startEventPump(active, "mux"), this.startEventPump(active, "host")]);
 				apiValue(
-					await harness.client.request("metapi/api.call", {
+					await harness.client.request("meldra/api.call", {
 						method: "session.create",
 						payload: { sessionId: active.sessionId, cwd: this.options.cwd },
 					}),
@@ -1259,7 +1262,7 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 		await settleBounded(
 			Promise.allSettled(
 				[...current.eventCursors.values()].map((cursorId) =>
-					current.harness.client.request("metapi/api.events.close", {
+					current.harness.client.request("meldra/api.events.close", {
 						cursorId,
 					}),
 				),
@@ -1301,7 +1304,7 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 
 	async call(method: string, payload: Record<string, unknown>): Promise<unknown> {
 		const active = await this.start();
-		return active.harness.client.request("metapi/api.call", {
+		return active.harness.client.request("meldra/api.call", {
 			method,
 			payload,
 		});

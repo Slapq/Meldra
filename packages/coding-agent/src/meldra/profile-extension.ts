@@ -47,7 +47,10 @@ function getFriendlyProfileLabel(name: string, cwd = process.cwd()): string {
 function currentProfile(ctx: ExtensionContext): ProfileSelection {
 	return resolveProfile(
 		ctx.cwd,
-		getSessionProfile(ctx.sessionManager) ?? process.env.METAPI_PROFILE_NAME ?? "default",
+		getSessionProfile(ctx.sessionManager) ??
+			process.env.MELDRA_PROFILE_NAME ??
+			process.env.METAPI_PROFILE_NAME ??
+			"default",
 	);
 }
 
@@ -281,7 +284,7 @@ export function createMeldraProfileExtension(): (pi: ExtensionAPI) => void {
 		pi.on("session_start", async (_event, ctx) => {
 			const profile = currentProfile(ctx);
 			ctx.ui.setStatus(
-				"metapi-profile",
+				"meldra-profile",
 				ctx.ui.theme.fg("accent", `配置:${getFriendlyProfileLabel(profile.name, ctx.cwd)} · /profile`),
 			);
 			if (!profile.compatibility) {

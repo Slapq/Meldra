@@ -1,6 +1,6 @@
 import type { ImageContent } from "@earendil-works/pi-ai";
 import type { ExtensionCommandContext } from "../../core/extensions/types.ts";
-import type { DshProfileRuntime } from "../../metapi/dsh-profile-runtime.ts";
+import type { DshProfileRuntime } from "../../meldra/dsh-profile-runtime.ts";
 import { UserMessageSelectorComponent } from "../../modes/interactive/components/user-message-selector.ts";
 
 export interface DshRewindChoice {

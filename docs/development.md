@@ -105,16 +105,16 @@ scripts/               Build, lock, release, and validation tools
 | 路径 | 作用 |
 |---|---|
 | `main.ts` | composition root；只接通通用能力 |
-| `metapi/profile-service.ts` | Profile 选择、目录绑定和路径 |
-| `metapi/profile-bundle.ts` | Portable Profile import/export/update |
-| `metapi/profile-agent-runtime.ts` | 通用 Runtime contract 的实现连接点 |
+| `meldra/profile-service.ts` | Profile 选择、目录绑定和路径 |
+| `meldra/profile-bundle.ts` | Portable Profile import/export/update |
+| `core/agent-session-runtime.ts` | Session replacement 与 Meldra lifecycle 连接点 |
 | `core/profile-agent-runtime.ts` | 产品无关 Runtime provider/host 类型 |
-| `metapi/profile-runtime-providers.ts` | bundled provider registry |
-| `metapi/dsh-profile-runtime*.ts` | DSH provider 与 Runtime adapter |
+| `meldra/profile-runtime-providers.ts` | bundled provider registry |
+| `meldra/dsh-profile-runtime*.ts` | DSH provider 与 Runtime adapter |
 | `extensions/dsh/` | DSH 的 Pi TUI surface 与 bridge |
-| `extensions/metapi-config/` | inline built-in Profile Config Host |
-| `metapi/profile-extension.ts` | `/profile` TUI |
-| `metapi/workspace-extension.ts` | `/workspace` TUI |
+| `extensions/meldra-config/` | inline built-in Profile Config Host |
+| `meldra/profile-extension.ts` | `/profile` TUI |
+| `meldra/workspace-extension.ts` | `/workspace` TUI |
 
 ## 5. 标准工作流
 
@@ -164,7 +164,7 @@ Hypothesis -> Initial evaluation -> Information search -> Re-evaluation -> Modif
 优先实现为 Pi Extension。Extension 可以注册 command、tool、event、renderer、shortcut 和 TUI。使用 [Extension
 Guide](../packages/coding-agent/docs/extensions.md) 和 [TUI Components](../packages/coding-agent/docs/tui.md)。
 
-只有 Meldra 产品每个普通 Profile 都必须拥有的 composition capability 才进入 bundled built-in registry。`metapi-config` 是明确记录的 inline
+只有 Meldra 产品每个普通 Profile 都必须拥有的 composition capability 才进入 bundled built-in registry。`meldra-config` 是明确记录的 inline
 built-in 特例；不要为它另建 provision、package-copy 或源码 hot-reload 生命周期。
 
 ### 插件字段配置
@@ -313,7 +313,7 @@ Meldra 维护精确 upstream Pi baseline 与可审计 patch commits。升级时�
 6. 运行普通 Pi、default Profile、`pi` compatibility 和 DSH 聚焦验证；
 7. 记录 upstream baseline 与 patch commits。
 
-不要把 Meldra 的 `metapi` identity、自更新源或 Profile 行为机械改回 `pi`。
+不要把 Meldra identity、自更新源或 Profile 行为机械改回 `pi`。
 
 ## 12. 调试
 

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { collectDshContextEvidence } from "../src/metapi/dsh-context-evidence.ts";
-import { DshProfileRuntime } from "../src/metapi/dsh-profile-runtime.ts";
+import { collectDshContextEvidence } from "../src/meldra/dsh-context-evidence.ts";
+import { DshProfileRuntime } from "../src/meldra/dsh-profile-runtime.ts";
 
 describe("DSH context evidence", () => {
 	it("collects the latest real request header and durable context injections", () => {

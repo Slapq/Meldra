@@ -11,13 +11,13 @@ import {
 	assertProfileName,
 	DEFAULT_PROFILE_NAME,
 	getProfileAgentDir,
-	METAPI_PROFILES_DIR,
+	MELDRA_PROFILES_DIR,
 	PI_COMPATIBILITY_PROFILE_NAME,
 } from "./profile-service.ts";
 
 const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const UPDATE_CHECK_TIMEOUT_MS = 10_000;
-const PROFILE_EXPORT_AUDIT_FILE = "METAPI_PROFILE_EXPORT_AUDIT.md";
+const PROFILE_EXPORT_AUDIT_FILE = "MELDRA_PROFILE_EXPORT_AUDIT.md";
 const PROFILE_EXPORT_SCAN_LIMIT_BYTES = 1024 * 1024;
 
 export const PROFILE_EXPORT_INCLUDED_CATEGORIES = [
@@ -151,6 +151,7 @@ interface ProfilePackageJson {
 	keywords?: string[];
 	pi?: Record<string, unknown>;
 	metapi?: Partial<PortableProfileManifest>;
+	meldra?: Partial<PortableProfileManifest>;
 }
 
 export interface ImportProfileOptions {
@@ -171,7 +172,7 @@ export class ProfileConflictError extends Error {
 }
 
 function profileRoot(id: string): string {
-	return join(METAPI_PROFILES_DIR, assertProfileName(id));
+	return join(MELDRA_PROFILES_DIR, assertProfileName(id));
 }
 
 export function getProfileRecordPath(id: string): string {
@@ -243,10 +244,14 @@ function readPackageJson(packageRoot: string): ProfilePackageJson {
 	if (!existsSync(path)) throw new Error(`Profile Bundle has no package.json: ${packageRoot}`);
 	const value = JSON.parse(readFileSync(path, "utf8")) as ProfilePackageJson;
 	if (!value.name) throw new Error(`Profile Bundle package.json has no name: ${path}`);
-	if (!value.metapi || value.metapi.profileVersion !== 1) {
-		throw new Error(`Profile Bundle requires metapi.profileVersion = 1: ${path}`);
+	if ((!value.meldra || value.meldra.profileVersion !== 1) && (!value.metapi || value.metapi.profileVersion !== 1)) {
+		throw new Error(`Profile Bundle requires meldra.profileVersion = 1 (legacy metapi is also accepted): ${path}`);
 	}
 	return value;
+}
+
+function portableManifest(packageJson: ProfilePackageJson): Partial<PortableProfileManifest> {
+	return packageJson.meldra ?? packageJson.metapi ?? {};
 }
 
 function normalizeRuntimeDeclaration(value: unknown): PortableProfileRuntimeDeclaration | undefined {
@@ -369,7 +374,7 @@ export async function importProfile(source: string, options: ImportProfileOption
 
 		const firstInstall = await installProfilePackages(options.cwd, agentDir, installSource);
 		const packageJson = readPackageJson(firstInstall.installedPath);
-		const portable = normalizePortableProfileManifest(packageJson.metapi ?? {});
+		const portable = normalizePortableProfileManifest(portableManifest(packageJson));
 		if (portable.packages?.length) {
 			await installProfilePackages(options.cwd, agentDir, installSource, portable.packages);
 		}
@@ -439,7 +444,7 @@ function likelyPlaceholder(value: string): boolean {
 	const normalized = value.trim().replace(/^['"]|['"]$/g, "");
 	return (
 		normalized.length < 8 ||
-		/^(?:\$|%|<|\*+|process\.env\.|METAPI_MODEL_)/i.test(normalized) ||
+		/^(?:\$|%|<|\*+|process\.env\.|MELDRA_MODEL_|METAPI_MODEL_)/i.test(normalized) ||
 		/(?:example|placeholder|redacted|replace[-_ ]?me|your[-_ ]?(?:key|token|secret)|change[-_ ]?me)/i.test(normalized)
 	);
 }
@@ -558,8 +563,16 @@ export async function exportProfileWithAudit(
 		...original,
 		name: slugifyProfileId(record.displayName),
 		version: original.version ?? "0.1.0",
-		keywords: [...new Set([...(original.keywords ?? []), "pi-package", "metapi-profile"])],
-		metapi: {
+		keywords: [
+			...new Set([
+				...(original.keywords ?? []).filter(
+					(keyword) => keyword !== "metapi-profile" && keyword !== "metapi-starter",
+				),
+				"pi-package",
+				"meldra-profile",
+			]),
+		],
+		meldra: {
 			profileVersion: 1,
 			displayName: record.displayName,
 			settings: effectiveSettings,
@@ -602,10 +615,10 @@ export async function updateProfile(id: string, cwd: string): Promise<InstalledP
 	const packageJson = readPackageJson(installedPath);
 	const updated: InstalledProfileRecord = {
 		...record,
-		displayName: packageJson.metapi?.displayName ?? record.displayName,
+		displayName: portableManifest(packageJson).displayName ?? record.displayName,
 		installedPackagePath: installedPath,
 		packageVersion: packageJson.version,
-		portable: normalizePortableProfileManifest(packageJson.metapi ?? {}),
+		portable: normalizePortableProfileManifest(portableManifest(packageJson)),
 		updatedAt: new Date().toISOString(),
 	};
 	await restoreProfileRuntimePackages(updated, cwd);

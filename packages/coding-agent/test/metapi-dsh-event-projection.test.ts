@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { AgentSessionEvent } from "../src/core/agent-session.ts";
 import type { ModelRuntime } from "../src/core/model-runtime.ts";
 import type { ProfileAgentRuntimeHost } from "../src/core/profile-agent-runtime.ts";
-import { DSH_MESSAGE_ENTRY, DshProfileRuntime } from "../src/metapi/dsh-profile-runtime.ts";
+import { DSH_MESSAGE_ENTRY, DshProfileRuntime } from "../src/meldra/dsh-profile-runtime.ts";
 
 interface RuntimeStateStub {
 	sessionId: string;

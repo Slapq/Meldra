@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { delimiter, dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ProfileEnvironmentDescriptor } from "../src/core/profile-agent-runtime.ts";
-import { dshProfilePackageManager } from "../src/metapi/dsh-profile-packages.ts";
+import { dshProfilePackageManager, resolveCorepackPnpmShimDirectory } from "../src/meldra/dsh-profile-packages.ts";
 
 function writeFakePnpm(directory: string): void {
 	if (process.platform === "win32") {
@@ -36,7 +36,7 @@ describe("DSH Profile package manager", () => {
 			compatibility: false,
 			runtime: { provider: "deepseek-harness" },
 		};
-		const manifestPath = join(profile.agentDir, "dsh-runtime", "profiles", "metapi", "package.json");
+		const manifestPath = join(profile.agentDir, "dsh-runtime", "profiles", "meldra", "package.json");
 		mkdirSync(dirname(manifestPath), { recursive: true });
 		writeFileSync(
 			manifestPath,
@@ -78,6 +78,22 @@ describe("DSH Profile package manager", () => {
 		});
 	});
 
+	it("prefers the Meldra shim directory and falls back to the legacy MetaPi directory", () => {
+		const root = mkdtempSync(join(tmpdir(), "meldra-dsh-shim-"));
+		tempDirs.push(root);
+		const agentDir = join(root, "agent");
+		const legacyDirectory = join(agentDir, "dsh-runtime", ".metapi-bin");
+		const meldraDirectory = join(agentDir, "dsh-runtime", ".meldra-bin");
+		mkdirSync(legacyDirectory, { recursive: true });
+		writeFakePnpm(legacyDirectory);
+
+		expect(resolveCorepackPnpmShimDirectory(agentDir)).toBe(legacyDirectory);
+
+		mkdirSync(meldraDirectory, { recursive: true });
+		writeFakePnpm(meldraDirectory);
+		expect(resolveCorepackPnpmShimDirectory(agentDir)).toBe(meldraDirectory);
+	});
+
 	it("forwards a unified list request through the native DSH profile CLI", async () => {
 		const root = mkdtempSync(join(tmpdir(), "metapi-dsh-packages-"));
 		tempDirs.push(root);
@@ -101,7 +117,7 @@ describe("DSH Profile package manager", () => {
 
 		expect(result.code).toBe(0);
 		expect(result.output).toContain("fake-pnpm list --depth 0");
-		const manifestPath = join(agentDir, "dsh-runtime", "profiles", "metapi", "package.json");
+		const manifestPath = join(agentDir, "dsh-runtime", "profiles", "meldra", "package.json");
 		expect(existsSync(manifestPath)).toBe(true);
 		const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
 			dsh: { profile: { bundles: string[] } };

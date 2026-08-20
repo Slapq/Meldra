@@ -186,7 +186,7 @@ export function isProfileCommand(args: string[]): boolean {
 
 export async function handleMeldraInitCommand(args: string[]): Promise<boolean> {
 	if (args[0] !== "init") return false;
-	const manifestPath = join(process.cwd(), CONFIG_DIR_NAME, "metapi.json");
+	const manifestPath = join(process.cwd(), CONFIG_DIR_NAME, "meldra.json");
 	if (existsSync(manifestPath)) {
 		console.log(`Meldra project manifest already exists: ${manifestPath}`);
 		return true;

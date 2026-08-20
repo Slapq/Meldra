@@ -90,7 +90,7 @@ export class AgentSessionRuntime {
 	private readonly createRuntime: CreateAgentSessionRuntimeFactory;
 	private _diagnostics: AgentSessionRuntimeDiagnostic[];
 	private _modelFallbackMessage?: string;
-	private readonly metapiLifecycle?: MeldraSessionLifecycle;
+	private readonly meldraLifecycle?: MeldraSessionLifecycle;
 
 	constructor(
 		_session: AgentSession,
@@ -98,14 +98,14 @@ export class AgentSessionRuntime {
 		createRuntime: CreateAgentSessionRuntimeFactory,
 		_diagnostics: AgentSessionRuntimeDiagnostic[] = [],
 		_modelFallbackMessage?: string,
-		metapiLifecycle?: MeldraSessionLifecycle,
+		meldraLifecycle?: MeldraSessionLifecycle,
 	) {
 		this._session = _session;
 		this._services = _services;
 		this.createRuntime = createRuntime;
 		this._diagnostics = _diagnostics;
 		this._modelFallbackMessage = _modelFallbackMessage;
-		this.metapiLifecycle = metapiLifecycle;
+		this.meldraLifecycle = meldraLifecycle;
 	}
 
 	get services(): AgentSessionServices {
@@ -193,7 +193,7 @@ export class AgentSessionRuntime {
 	}
 
 	private getCurrentProfileName(): string | undefined {
-		return this.metapiLifecycle?.getProfileName(this.session.sessionManager);
+		return this.meldraLifecycle?.getProfileName(this.session.sessionManager);
 	}
 
 	private apply(result: CreateAgentSessionRuntimeResult): void {
@@ -213,7 +213,7 @@ export class AgentSessionRuntime {
 	}
 
 	async switchProfile(profileName: string): Promise<{ cancelled: boolean }> {
-		if (!this.metapiLifecycle) {
+		if (!this.meldraLifecycle) {
 			throw new Error("Profile switching is not available in this runtime");
 		}
 		return this.newSession({ profileName, preserveWorkspace: true });
@@ -235,7 +235,7 @@ export class AgentSessionRuntime {
 		const previousSessionFile = this.session.sessionFile;
 		const sessionManager = SessionManager.open(sessionPath, undefined, options?.cwdOverride);
 		assertSessionCwdExists(sessionManager, this.cwd);
-		const profileName = this.metapiLifecycle?.getProfileName(sessionManager) ?? this.getCurrentProfileName();
+		const profileName = this.meldraLifecycle?.getProfileName(sessionManager) ?? this.getCurrentProfileName();
 		await this.teardownCurrent("resume", sessionManager.getSessionFile());
 		this.apply(
 			await this.createRuntime({
@@ -266,36 +266,32 @@ export class AgentSessionRuntime {
 		const previousSessionFile = this.session.sessionFile;
 		const sourceCwd = this.cwd;
 		const profileName = options?.profileName ?? this.getCurrentProfileName();
-		const workspaceRoot = this.metapiLifecycle?.getWorkspaceRoot(this.session.sessionManager, sourceCwd);
+		const workspaceRoot = this.meldraLifecycle?.getWorkspaceRoot(this.session.sessionManager, sourceCwd);
 		let targetCwd = sourceCwd;
 		let sessionManager: SessionManager;
-		if (workspaceRoot && this.metapiLifecycle && profileName) {
+		if (workspaceRoot && this.meldraLifecycle && profileName) {
 			const provisional = options?.preserveWorkspace ? undefined : SessionManager.inMemory(sourceCwd);
 			targetCwd = options?.preserveWorkspace
 				? sourceCwd
-				: this.metapiLifecycle.createEmptyWorkspace(workspaceRoot, provisional!.getSessionId());
-			const sessionDir = this.metapiLifecycle.getSessionDir(targetCwd, profileName);
+				: this.meldraLifecycle.createEmptyWorkspace(workspaceRoot, provisional!.getSessionId());
+			const sessionDir = this.meldraLifecycle.getSessionDir(targetCwd, profileName);
 			sessionManager = this.session.sessionManager.isPersisted()
-				? SessionManager.create(
-					targetCwd,
-					sessionDir,
-					provisional ? { id: provisional.getSessionId() } : undefined,
-				)
+				? SessionManager.create(targetCwd, sessionDir, provisional ? { id: provisional.getSessionId() } : undefined)
 				: provisional
 					? SessionManager.inMemory(targetCwd, { id: provisional.getSessionId() })
 					: SessionManager.inMemory(targetCwd);
-			this.metapiLifecycle.setProfileName(sessionManager, profileName);
-			this.metapiLifecycle.setWorkspaceRoot(sessionManager, workspaceRoot);
+			this.meldraLifecycle.setProfileName(sessionManager, profileName);
+			this.meldraLifecycle.setWorkspaceRoot(sessionManager, workspaceRoot);
 		} else {
 			const sessionDir =
-				options?.profileName && this.metapiLifecycle
-					? this.metapiLifecycle.getSessionDir(sourceCwd, options.profileName)
+				options?.profileName && this.meldraLifecycle
+					? this.meldraLifecycle.getSessionDir(sourceCwd, options.profileName)
 					: this.session.sessionManager.getSessionDir();
 			sessionManager = this.session.sessionManager.isPersisted()
 				? SessionManager.create(sourceCwd, sessionDir)
 				: SessionManager.inMemory(sourceCwd);
-			if (options?.profileName && this.metapiLifecycle) {
-				this.metapiLifecycle.setProfileName(sessionManager, options.profileName);
+			if (options?.profileName && this.meldraLifecycle) {
+				this.meldraLifecycle.setProfileName(sessionManager, options.profileName);
 			}
 		}
 		if (options?.parentSession) {
@@ -350,7 +346,7 @@ export class AgentSessionRuntime {
 		const previousSessionFile = this.session.sessionFile;
 		const profileName = this.getCurrentProfileName();
 		const sourceCwd = this.cwd;
-		const workspaceRoot = this.metapiLifecycle?.getWorkspaceRoot(this.session.sessionManager, sourceCwd);
+		const workspaceRoot = this.meldraLifecycle?.getWorkspaceRoot(this.session.sessionManager, sourceCwd);
 		if (this.session.sessionManager.isPersisted()) {
 			const currentSessionFile = this.session.sessionFile;
 			if (!currentSessionFile) {
@@ -360,19 +356,19 @@ export class AgentSessionRuntime {
 			if (!targetLeafId) {
 				const provisional = SessionManager.inMemory(sourceCwd);
 				const targetCwd =
-					workspaceRoot && this.metapiLifecycle
-						? this.metapiLifecycle.copyWorkspace(sourceCwd, workspaceRoot, provisional.getSessionId())
+					workspaceRoot && this.meldraLifecycle
+						? this.meldraLifecycle.copyWorkspace(sourceCwd, workspaceRoot, provisional.getSessionId())
 						: sourceCwd;
 				const targetSessionDir =
-					profileName && this.metapiLifecycle
-						? this.metapiLifecycle.getSessionDir(targetCwd, profileName)
+					profileName && this.meldraLifecycle
+						? this.meldraLifecycle.getSessionDir(targetCwd, profileName)
 						: sessionDir;
 				const sessionManager = SessionManager.create(targetCwd, targetSessionDir, {
 					id: provisional.getSessionId(),
 					parentSession: currentSessionFile,
 				});
-				if (profileName) this.metapiLifecycle?.setProfileName(sessionManager, profileName);
-				if (workspaceRoot) this.metapiLifecycle?.setWorkspaceRoot(sessionManager, workspaceRoot);
+				if (profileName) this.meldraLifecycle?.setProfileName(sessionManager, profileName);
+				if (workspaceRoot) this.meldraLifecycle?.setWorkspaceRoot(sessionManager, workspaceRoot);
 				await this.teardownCurrent("fork", sessionManager.getSessionFile());
 				this.apply(
 					await this.createRuntime({
@@ -395,19 +391,19 @@ export class AgentSessionRuntime {
 			const sessionManager = SessionManager.open(currentSessionFile, sessionDir);
 			const provisional = SessionManager.inMemory(sourceCwd);
 			const targetCwd =
-				workspaceRoot && this.metapiLifecycle
-					? this.metapiLifecycle.copyWorkspace(sourceCwd, workspaceRoot, provisional.getSessionId())
+				workspaceRoot && this.meldraLifecycle
+					? this.meldraLifecycle.copyWorkspace(sourceCwd, workspaceRoot, provisional.getSessionId())
 					: sourceCwd;
 			const targetSessionDir =
-				profileName && this.metapiLifecycle
-					? this.metapiLifecycle.getSessionDir(targetCwd, profileName)
+				profileName && this.meldraLifecycle
+					? this.meldraLifecycle.getSessionDir(targetCwd, profileName)
 					: sessionDir;
 			const forkedSessionPath = sessionManager.createBranchedSession(targetLeafId, {
 				cwd: targetCwd,
 				sessionDir: targetSessionDir,
 				id: provisional.getSessionId(),
 			});
-			if (workspaceRoot) this.metapiLifecycle?.setWorkspaceRoot(sessionManager, workspaceRoot);
+			if (workspaceRoot) this.meldraLifecycle?.setWorkspaceRoot(sessionManager, workspaceRoot);
 			if (!forkedSessionPath) {
 				throw new Error("Failed to create forked session");
 			}
@@ -427,9 +423,9 @@ export class AgentSessionRuntime {
 
 		const sessionManager = this.session.sessionManager;
 		let targetCwd = sourceCwd;
-		if (workspaceRoot && this.metapiLifecycle) {
+		if (workspaceRoot && this.meldraLifecycle) {
 			const provisional = SessionManager.inMemory(sourceCwd);
-			targetCwd = this.metapiLifecycle.copyWorkspace(sourceCwd, workspaceRoot, provisional.getSessionId());
+			targetCwd = this.meldraLifecycle.copyWorkspace(sourceCwd, workspaceRoot, provisional.getSessionId());
 			if (!targetLeafId) {
 				sessionManager.newSession({ id: provisional.getSessionId(), parentSession: this.session.sessionFile });
 			} else {
@@ -440,8 +436,8 @@ export class AgentSessionRuntime {
 		} else {
 			sessionManager.createBranchedSession(targetLeafId);
 		}
-		if (profileName) this.metapiLifecycle?.setProfileName(sessionManager, profileName);
-		if (workspaceRoot) this.metapiLifecycle?.setWorkspaceRoot(sessionManager, workspaceRoot);
+		if (profileName) this.meldraLifecycle?.setProfileName(sessionManager, profileName);
+		if (workspaceRoot) this.meldraLifecycle?.setWorkspaceRoot(sessionManager, workspaceRoot);
 		await this.teardownCurrent("fork", sessionManager.getSessionFile());
 		this.apply(
 			await this.createRuntime({
@@ -487,7 +483,7 @@ export class AgentSessionRuntime {
 
 		const sessionManager = SessionManager.open(destinationPath, sessionDir, cwdOverride);
 		assertSessionCwdExists(sessionManager, this.cwd);
-		const profileName = this.metapiLifecycle?.getProfileName(sessionManager) ?? this.getCurrentProfileName();
+		const profileName = this.meldraLifecycle?.getProfileName(sessionManager) ?? this.getCurrentProfileName();
 		await this.teardownCurrent("resume", sessionManager.getSessionFile());
 		this.apply(
 			await this.createRuntime({
@@ -527,6 +523,8 @@ export async function createAgentSessionRuntime(
 		sessionManager: SessionManager;
 		sessionStartEvent?: SessionStartEvent;
 		profileName?: string;
+		meldraLifecycle?: MeldraSessionLifecycle;
+		/** @deprecated Use meldraLifecycle. */
 		metapiLifecycle?: MeldraSessionLifecycle;
 	},
 ): Promise<AgentSessionRuntime> {
@@ -544,7 +542,7 @@ export async function createAgentSessionRuntime(
 		createRuntime,
 		result.diagnostics,
 		result.modelFallbackMessage,
-		options.metapiLifecycle,
+		options.meldraLifecycle ?? options.metapiLifecycle,
 	);
 }
 

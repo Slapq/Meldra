@@ -60,10 +60,10 @@ It extends Pi without cloning the Pi agent or converting external Runtime state 
 
 | Environment | Default state path | Purpose |
 |---|---|---|
-| `default` | `~/.metapi/profiles/default/` | Meldra's default isolated environment |
-| Ordinary Profile | `~/.metapi/profiles/<name>/` | Independent workflow, models, packages, and optional Runtime |
+| `default` | `~/.meldra/profiles/default/` | Meldra's default isolated environment |
+| Ordinary Profile | `~/.meldra/profiles/<name>/` | Independent workflow, models, packages, and optional Runtime |
 | `pi` | `~/.pi/agent/` | Original Pi compatibility with no Meldra-only injection |
-| WorkSpace | `~/.metapi/workspaces/` or an explicit directory | Current Session working directory |
+| WorkSpace | `~/.meldra/workspaces/` or an explicit directory | Current Session working directory |
 
 > [!NOTE]
 > Profile resolution is fixed: explicit `--profile` → nearest directory binding → `default`.
@@ -139,7 +139,7 @@ Analyze this repository, explain its structure, and tell me which checks I shoul
 | Configure the Starter Profile | `/setup` | `meldra setup` |
 | Configure plugin fields | `/config` | — |
 | Manage Pi Packages | — | `meldra install` / `list` / `config` |
-| Resume a Session | `/resume` | `metapi -c` / `metapi -r` |
+| Resume a Session | `/resume` | `meldra -c` / `meldra -r` |
 | Share and audit a Profile | `/profile export` | `meldra profile export <name>` |
 | Export a Session | `/export` | `meldra --export <file>` |
 | Reload resources | `/reload` | — |

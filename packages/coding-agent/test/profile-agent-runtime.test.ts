@@ -10,7 +10,7 @@ import {
 import { createAgentSession } from "../src/core/sdk.ts";
 import { SessionManager } from "../src/core/session-manager.ts";
 import { SettingsManager } from "../src/core/settings-manager.ts";
-import { dshProfileRuntimeProvider } from "../src/metapi/dsh-profile-runtime-provider.ts";
+import { dshProfileRuntimeProvider } from "../src/meldra/dsh-profile-runtime-provider.ts";
 
 class FakeProfileRuntime implements ProfileAgentRuntime {
 	isStreaming = false;

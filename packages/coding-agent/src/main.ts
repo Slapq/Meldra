@@ -38,9 +38,9 @@ import {
 	ENV_AUTH_PATH,
 	ENV_MODELS_PATH,
 	ENV_MODELS_STORE_PATH,
-	ENV_SESSION_DIR,
 	expandTildePath,
 	getPackageDir,
+	getSessionDirOverride,
 	VERSION,
 } from "./config.ts";
 import { type CreateAgentSessionRuntimeFactory, createAgentSessionRuntime } from "./core/agent-session-runtime.ts";
@@ -71,17 +71,17 @@ import { SettingsManager } from "./core/settings-manager.ts";
 import { printTimings, resetTimings, time } from "./core/timings.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "./core/trust-manager.ts";
 import { builtInExtensions } from "./extensions/index.ts";
-import { readProfileRecord } from "./metapi/profile-bundle.ts";
-import { handleMeldraInitCommand, handleProfileCommand } from "./metapi/profile-cli.ts";
-import { applyProfileEnvironment, captureProfileEnvironment } from "./metapi/profile-environment.ts";
-import { builtInProfileRuntimeProviders } from "./metapi/profile-runtime-providers.ts";
+import { readProfileRecord } from "./meldra/profile-bundle.ts";
+import { handleMeldraInitCommand, handleProfileCommand } from "./meldra/profile-cli.ts";
+import { applyProfileEnvironment, captureProfileEnvironment } from "./meldra/profile-environment.ts";
+import { builtInProfileRuntimeProviders } from "./meldra/profile-runtime-providers.ts";
 import {
 	DEFAULT_PROFILE_NAME,
 	extractProfileArgument,
 	getProfileAgentDir,
 	removeProfileArguments,
 	resolveProfile,
-} from "./metapi/profile-service.ts";
+} from "./meldra/profile-service.ts";
 import {
 	getProfileSessionDir,
 	getSessionProfile,
@@ -91,8 +91,9 @@ import {
 	replaceSessionProfile,
 	setSessionProfile,
 	setSessionWorkspaceRoot,
-} from "./metapi/session-profile.ts";
-import { setupStarterProfile } from "./metapi/starter-setup.ts";
+} from "./meldra/session-profile.ts";
+import { setupStarterProfile } from "./meldra/starter-setup.ts";
+import { migrateLegacyMeldraStorage } from "./meldra/storage-migrations.ts";
 import {
 	composeProfileSettings,
 	getMeldraModelPaths,
@@ -102,8 +103,8 @@ import {
 	MeldraSettingsStorage,
 	materializeEffectiveModels,
 	readMeldraUserPreferences,
-} from "./metapi/user-assets.ts";
-import { copyWorkspace, createEmptyWorkspace, resolveWorkspaceRoot } from "./metapi/workspace-service.ts";
+} from "./meldra/user-assets.ts";
+import { copyWorkspace, createEmptyWorkspace, resolveWorkspaceRoot } from "./meldra/workspace-service.ts";
 import { runMigrations, showDeprecationWarnings } from "./migrations.ts";
 import { InteractiveMode, runPrintMode, runRpcMode } from "./modes/index.ts";
 import { initTheme, stopThemeWatcher } from "./modes/interactive/theme/theme.ts";
@@ -727,6 +728,13 @@ export async function main(args: string[], options?: MainOptions) {
 		return;
 	}
 	const effectiveArgs = removeProfileArguments(args);
+	try {
+		migrateLegacyMeldraStorage(process.cwd());
+	} catch (error) {
+		console.error(chalk.red(error instanceof Error ? error.message : String(error)));
+		process.exitCode = 1;
+		return;
+	}
 	const extensionFactories = [...builtInExtensions, ...(options?.extensionFactories ?? [])];
 	time("parseProfileArgument");
 	const offlineMode = args.includes("--offline") || isTruthyEnvFlag(process.env.PI_OFFLINE);
@@ -786,16 +794,12 @@ export async function main(args: string[], options?: MainOptions) {
 		const missingEnvironment = applyProfileEnvironment(profile, record, hostEnvironment);
 		const runtime = record?.portable.runtime;
 		process.env.MELDRA_PROFILE_NAME = profile.name;
-		process.env.METAPI_PROFILE_NAME = profile.name;
 		if (runtime) {
 			process.env.MELDRA_PROFILE_RUNTIME_PROVIDER = runtime.provider;
-			process.env.METAPI_PROFILE_RUNTIME_PROVIDER = runtime.provider;
 		} else {
 			delete process.env.MELDRA_PROFILE_RUNTIME_PROVIDER;
-			delete process.env.METAPI_PROFILE_RUNTIME_PROVIDER;
 		}
 		process.env[ENV_AGENT_DIR] = profile.agentDir;
-		process.env.METAPI_CODING_AGENT_DIR = profile.agentDir;
 		process.env[ENV_AUTH_PATH] = modelPaths.authPath;
 		process.env[ENV_MODELS_PATH] = modelPaths.modelsPath;
 		process.env[ENV_MODELS_STORE_PATH] = modelPaths.modelsStorePath;
@@ -962,7 +966,7 @@ export async function main(args: string[], options?: MainOptions) {
 	// settings, resources, provider registrations, and models must be resolved only after
 	// the target session cwd is known. The startup-cwd settings manager is used only for
 	// sessionDir lookup during session selection.
-	const envSessionDir = process.env[ENV_SESSION_DIR];
+	const envSessionDir = getSessionDirOverride();
 	const sessionDir =
 		(parsed.sessionDir ? normalizePath(parsed.sessionDir) : undefined) ??
 		(envSessionDir ? expandTildePath(envSessionDir) : undefined) ??
@@ -1223,7 +1227,7 @@ export async function main(args: string[], options?: MainOptions) {
 		agentDir,
 		sessionManager,
 		profileName: activeProfileName,
-		metapiLifecycle: {
+		meldraLifecycle: {
 			getProfileName: getSessionProfile,
 			setProfileName: replaceSessionProfile,
 			getWorkspaceRoot: (manager) => getSessionWorkspaceRoot(manager) ?? workspaceRoot,

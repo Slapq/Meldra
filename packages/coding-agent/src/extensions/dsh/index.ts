@@ -10,11 +10,20 @@ import {
 	Spacer,
 	Text,
 } from "@earendil-works/pi-tui";
-import type { ExtensionAPI, ExtensionCommandContext, ExtensionContext } from "../../core/extensions/types.ts";
+import type {
+	EntryRenderer,
+	ExtensionAPI,
+	ExtensionCommandContext,
+	ExtensionContext,
+} from "../../core/extensions/types.ts";
 import type { ProfileRuntimePackageRequest } from "../../core/profile-agent-runtime.ts";
-import { dshFileReferenceFromCompletion, expandSelectedDshFileReferences } from "../../metapi/dsh-file-references.ts";
-import { DSH_MESSAGE_ENTRY, DshProfileRuntime } from "../../metapi/dsh-profile-runtime.ts";
-import { DSH_PROFILE_RUNTIME_PROVIDER } from "../../metapi/dsh-profile-runtime-provider.ts";
+import { dshFileReferenceFromCompletion, expandSelectedDshFileReferences } from "../../meldra/dsh-file-references.ts";
+import {
+	DshProfileRuntime,
+	LEGACY_METAPI_DSH_MESSAGE_ENTRY,
+	MELDRA_DSH_MESSAGE_ENTRY,
+} from "../../meldra/dsh-profile-runtime.ts";
+import { DSH_PROFILE_RUNTIME_PROVIDER } from "../../meldra/dsh-profile-runtime-provider.ts";
 import { BorderedLoader } from "../../modes/interactive/components/bordered-loader.ts";
 import { DynamicBorder } from "../../modes/interactive/components/dynamic-border.ts";
 import {
@@ -31,9 +40,9 @@ interface DshEntryData {
 }
 
 function activeDshProfile(): boolean {
-	const provider = process.env.METAPI_PROFILE_RUNTIME_PROVIDER;
+	const provider = process.env.MELDRA_PROFILE_RUNTIME_PROVIDER ?? process.env.METAPI_PROFILE_RUNTIME_PROVIDER;
 	if (provider) return provider === DSH_PROFILE_RUNTIME_PROVIDER;
-	const name = process.env.METAPI_PROFILE_NAME;
+	const name = process.env.MELDRA_PROFILE_NAME ?? process.env.METAPI_PROFILE_NAME;
 	return name === "dsh" || name === "deepseek-harness";
 }
 
@@ -949,7 +958,7 @@ export default function dshExtension(pi: ExtensionAPI): void {
 	const updateQueueSurface = (ctx: ExtensionContext): void => {
 		const visible = queueItems.filter((item) => item.placement === "queued" || item.placement === "steering");
 		ctx.ui.setStatus(
-			"metapi-dsh-2-queue",
+			"meldra-dsh-2-queue",
 			visible.length ? ctx.ui.theme.fg("warning", `队列 ${visible.length}`) : undefined,
 		);
 		const lines = visible.slice(0, 4).map((item) => {
@@ -964,7 +973,7 @@ export default function dshExtension(pi: ExtensionAPI): void {
 		});
 		if (visible.length > lines.length)
 			lines.push(ctx.ui.theme.fg("muted", `  … 还有 ${visible.length - lines.length} 项`));
-		ctx.ui.setWidget("metapi-dsh-2-queue", lines.length > 0 ? lines : undefined);
+		ctx.ui.setWidget("meldra-dsh-2-queue", lines.length > 0 ? lines : undefined);
 	};
 	const clearQueueSurface = (ctx: ExtensionContext): void => {
 		queueItems = [];
@@ -1004,7 +1013,7 @@ export default function dshExtension(pi: ExtensionAPI): void {
 			);
 			label += ` · Profile preference ${preference.provider}/${preference.id}${preferenceInCatalog ? "" : " · not in Harness catalog"}`;
 		}
-		ctx.ui.setStatus("metapi-dsh-0-model", ctx.ui.theme.fg("dim", label));
+		ctx.ui.setStatus("meldra-dsh-0-model", ctx.ui.theme.fg("dim", label));
 	};
 	const invalidateCommandCatalog = (): void => {
 		commandCatalogSessionId = undefined;
@@ -1046,7 +1055,7 @@ export default function dshExtension(pi: ExtensionAPI): void {
 				? (projections.plan as Record<string, unknown>)
 				: undefined;
 		const planEnabled = plan ? (plan.pending === true ? plan.active !== true : plan.active === true) : false;
-		ctx.ui.setStatus("metapi-dsh-4-plan", planEnabled ? ctx.ui.theme.fg("accent", "📝 计划") : undefined);
+		ctx.ui.setStatus("meldra-dsh-4-plan", planEnabled ? ctx.ui.theme.fg("accent", "📝 计划") : undefined);
 		const todos = Array.isArray(projections.todos)
 			? projections.todos.filter(
 					(todo): todo is Record<string, unknown> => todo !== null && typeof todo === "object",
@@ -1054,7 +1063,7 @@ export default function dshExtension(pi: ExtensionAPI): void {
 			: [];
 		const complete = todos.filter((todo) => todo.status === "completed").length;
 		ctx.ui.setStatus(
-			"metapi-dsh-5-todos",
+			"meldra-dsh-5-todos",
 			todos.length
 				? ctx.ui.theme.fg(complete === todos.length ? "success" : "muted", `✓ ${complete}/${todos.length}`)
 				: undefined,
@@ -1062,13 +1071,13 @@ export default function dshExtension(pi: ExtensionAPI): void {
 		const projectedMetrics = formatProjectionMetrics(projections);
 		if (projectedMetrics !== undefined) metrics = projectedMetrics;
 		// Core status: running/idle only
-		ctx.ui.setStatus("metapi-dsh-1-status", running ? ctx.ui.theme.fg("warning", "▶ 运行中") : undefined);
+		ctx.ui.setStatus("meldra-dsh-1-status", running ? ctx.ui.theme.fg("warning", "▶ 运行中") : undefined);
 		// Detailed metrics: widget when available
-		ctx.ui.setWidget("metapi-dsh-metrics", metrics ? [ctx.ui.theme.fg("dim", metrics)] : undefined, {
+		ctx.ui.setWidget("meldra-dsh-metrics", metrics ? [ctx.ui.theme.fg("dim", metrics)] : undefined, {
 			placement: "aboveEditor",
 		});
 	};
-	pi.registerEntryRenderer<DshEntryData>(DSH_MESSAGE_ENTRY, (entry, _options, theme) => {
+	const renderDshEntry: EntryRenderer<DshEntryData> = (entry, _options, theme) => {
 		const data = entry.data;
 		if (!data || typeof data.text !== "string") return undefined;
 		const label =
@@ -1108,7 +1117,9 @@ export default function dshExtension(pi: ExtensionAPI): void {
 			new Text(`${label}\n${data.kind === "error" ? theme.fg("error", formattedText) : formattedText}`, 0, 0),
 		);
 		return box;
-	});
+	};
+	pi.registerEntryRenderer<DshEntryData>(MELDRA_DSH_MESSAGE_ENTRY, renderDshEntry);
+	pi.registerEntryRenderer<DshEntryData>(LEGACY_METAPI_DSH_MESSAGE_ENTRY, renderDshEntry);
 
 	const dshCommand: Parameters<ExtensionAPI["registerCommand"]>[1] = {
 		description: "打开 DeepSeek Harness 管理中心，或执行 /dsh <action>",
@@ -2859,7 +2870,7 @@ export default function dshExtension(pi: ExtensionAPI): void {
 
 	pi.on("session_start", (_event, ctx) => {
 		if (!activeDshProfile() || ctx.mode !== "tui") return;
-		ctx.ui.setStatus("metapi-dsh-0-runtime", ctx.ui.theme.fg("accent", "DSH"));
+		ctx.ui.setStatus("meldra-dsh-0-runtime", ctx.ui.theme.fg("accent", "DSH"));
 		const runtime = runtimeOf(ctx);
 		if (!runtime) return;
 		selectedFileReferences.clear();
@@ -2930,7 +2941,7 @@ export default function dshExtension(pi: ExtensionAPI): void {
 					typeof payload.running === "boolean"
 				) {
 					running = payload.running;
-					ctx.ui.setStatus("metapi-dsh-1-status", running ? ctx.ui.theme.fg("warning", "运行中") : undefined);
+					ctx.ui.setStatus("meldra-dsh-1-status", running ? ctx.ui.theme.fg("warning", "运行中") : undefined);
 					return;
 				}
 				if (
@@ -2947,7 +2958,7 @@ export default function dshExtension(pi: ExtensionAPI): void {
 					const key = data ? stepKey(data) : undefined;
 					if (sessionEvent.type === "compaction/start" && data) {
 						ctx.ui.setStatus(
-							"metapi-dsh-6-compaction",
+							"meldra-dsh-6-compaction",
 							ctx.ui.theme.fg(
 								"warning",
 								`💾 压缩中${typeof data.compactionId === "string" ? ` · ${data.compactionId}` : ""}`,
@@ -2956,7 +2967,7 @@ export default function dshExtension(pi: ExtensionAPI): void {
 					}
 					if (sessionEvent.type === "compaction/summary" && data) {
 						ctx.ui.setStatus(
-							"metapi-dsh-6-compaction",
+							"meldra-dsh-6-compaction",
 							ctx.ui.theme.fg(
 								"success",
 								[
@@ -2974,7 +2985,7 @@ export default function dshExtension(pi: ExtensionAPI): void {
 						);
 					}
 					if (sessionEvent.type === "compaction/end" && data) {
-						ctx.ui.setStatus("metapi-dsh-6-compaction", undefined);
+						ctx.ui.setStatus("meldra-dsh-6-compaction", undefined);
 						if (typeof data.error === "string") ctx.ui.notify(`DSH compaction失败：${data.error}`, "error");
 					}
 					if (sessionEvent.type === "turn/start") stepTimings.clear();
@@ -3040,11 +3051,11 @@ export default function dshExtension(pi: ExtensionAPI): void {
 										return ctx.ui.theme.fg("dim", part);
 									})
 									.join("  ");
-								ctx.ui.setWidget("metapi-dsh-metrics", [formatted], {
+								ctx.ui.setWidget("meldra-dsh-metrics", [formatted], {
 									placement: "aboveEditor",
 								});
 							} else {
-								ctx.ui.setWidget("metapi-dsh-metrics", undefined);
+								ctx.ui.setWidget("meldra-dsh-metrics", undefined);
 							}
 						}
 					}
@@ -3136,7 +3147,7 @@ export default function dshExtension(pi: ExtensionAPI): void {
 					jobs = records(payload.jobs);
 					const activeJobs = jobs.filter((job) => job.status === "running" || job.status === "stopping").length;
 					ctx.ui.setStatus(
-						"metapi-dsh-3-jobs",
+						"meldra-dsh-3-jobs",
 						activeJobs ? ctx.ui.theme.fg("accent", `⚡ ${activeJobs}`) : undefined,
 					);
 					return;
@@ -3179,12 +3190,12 @@ export default function dshExtension(pi: ExtensionAPI): void {
 		projections = {};
 		stepTimings.clear();
 		clearQueueSurface(ctx);
-		ctx.ui.setStatus("metapi-dsh-3-jobs", undefined);
-		ctx.ui.setStatus("metapi-dsh-4-plan", undefined);
-		ctx.ui.setStatus("metapi-dsh-5-todos", undefined);
-		ctx.ui.setStatus("metapi-dsh-6-compaction", undefined);
-		ctx.ui.setStatus("metapi-dsh-1-status", undefined);
-		ctx.ui.setStatus("metapi-dsh-0-runtime", undefined);
-		ctx.ui.setWidget("metapi-dsh-metrics", undefined);
+		ctx.ui.setStatus("meldra-dsh-3-jobs", undefined);
+		ctx.ui.setStatus("meldra-dsh-4-plan", undefined);
+		ctx.ui.setStatus("meldra-dsh-5-todos", undefined);
+		ctx.ui.setStatus("meldra-dsh-6-compaction", undefined);
+		ctx.ui.setStatus("meldra-dsh-1-status", undefined);
+		ctx.ui.setStatus("meldra-dsh-0-runtime", undefined);
+		ctx.ui.setWidget("meldra-dsh-metrics", undefined);
 	});
 }

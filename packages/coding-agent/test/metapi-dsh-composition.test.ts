@@ -5,8 +5,8 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import {
-	METAPI_DSH_DEFAULT_BUNDLES,
-	METAPI_DSH_PROFILE,
+	MELDRA_DSH_DEFAULT_BUNDLES,
+	MELDRA_DSH_PROFILE,
 	prepareDshComposition,
 } from "../src/extensions/dsh/composition.ts";
 
@@ -22,11 +22,14 @@ function containsEntryId(value: unknown, id: string): boolean {
 
 function prepare(home: string) {
 	return prepareDshComposition({
-		binName: "metapi-dsh-test",
+		binName: "meldra-dsh-test",
 		home,
 		installAnchor: require.resolve("@deepseek-ai/dsh/package.json"),
 		surfacePath: join(import.meta.dirname, "../src/extensions/dsh/surface.patch.yml"),
 		serverPath: pathToFileURL(join(import.meta.dirname, "../src/extensions/dsh/server.ts")).href,
+		sandboxEscalationCompatPath: pathToFileURL(
+			join(import.meta.dirname, "../src/extensions/dsh/sandbox-escalation-compat.ts"),
+		).href,
 	});
 }
 
@@ -46,11 +49,15 @@ describe("DSH Profile composition", () => {
 				dsh: { profile: { bundles: string[] } };
 			};
 
-			expect(composition.profile.name).toBe(METAPI_DSH_PROFILE);
-			expect(manifest.dsh.profile.bundles).toEqual(METAPI_DSH_DEFAULT_BUNDLES);
-			expect(composition.profile.layers.map((layer) => layer.packageName)).toEqual(METAPI_DSH_DEFAULT_BUNDLES);
+			expect(composition.profile.name).toBe(MELDRA_DSH_PROFILE);
+			expect(manifest.dsh.profile.bundles).toEqual(MELDRA_DSH_DEFAULT_BUNDLES);
+			expect(composition.profile.layers.map((layer) => layer.packageName)).toEqual(MELDRA_DSH_DEFAULT_BUNDLES);
 			expect(readFileSync(composition.rootPath, "utf8")).toContain("[]");
-			expect(composition.patches.some((patch) => containsEntryId(patch, "metapi-tui-jsonrpc-server"))).toBe(true);
+			expect(composition.patches.some((patch) => containsEntryId(patch, "meldra-directory-picker"))).toBe(true);
+			expect(composition.patches.some((patch) => containsEntryId(patch, "meldra-sandbox-escalation-compat"))).toBe(
+				true,
+			);
+			expect(composition.patches.some((patch) => containsEntryId(patch, "meldra-tui-jsonrpc-server"))).toBe(true);
 		},
 		DSH_COMPOSITION_TEST_TIMEOUT_MS,
 	);
@@ -75,7 +82,7 @@ describe("DSH Profile composition", () => {
 			};
 			const userIndex = composition.patches.findIndex((patch) => patch.id === "metapi-test-user-row");
 			const surfaceIndex = composition.patches.findIndex((patch) =>
-				containsEntryId(patch, "metapi-tui-jsonrpc-server"),
+				containsEntryId(patch, "meldra-tui-jsonrpc-server"),
 			);
 
 			expect(persisted.dependencies.example).toBe("1.0.0");

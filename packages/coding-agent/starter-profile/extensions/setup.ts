@@ -92,7 +92,7 @@ function updateStatus(ctx: ExtensionContext): SetupStatus {
 	const status = inspectStatus(ctx);
 	const completed = completedCount(status);
 	ctx.ui.setStatus(
-		"metapi-starter-setup",
+		"meldra-starter-setup",
 		completed === SETUP_STEPS.length
 			? undefined
 			: ctx.ui.theme.fg("warning", `Setup ${completed}/${SETUP_STEPS.length} · /setup`),

@@ -9,12 +9,12 @@ Meldra-owned built-ins are named inline factories with `hidden: true`. Hidden do
 Extension still registers commands, providers, or lifecycle guidance. It means the resource is marked hidden in loader
 metadata.
 
-### `metapi-config`
+### `meldra-config`
 
 | Field | Value |
 |---|---|
-| Entry | `packages/coding-agent/src/extensions/metapi-config/index.ts` |
-| Built-in name | `metapi-config` |
+| Entry | `packages/coding-agent/src/extensions/meldra-config/index.ts` |
+| Built-in name | `meldra-config` |
 | User entry | `/config [plugin-id]` |
 | Events | `config:register`, `config:unregister`, `config:get`, `config:updated:<id>` |
 | State | In-memory registration catalog plus Profile-local plugin values |
@@ -56,12 +56,12 @@ register `custom-anthropic` and `gitlab-duo`, not `llama.cpp`.
 Evidence: `src/extensions/index.ts`, `src/extensions/llama/index.ts`, `src/extensions/llama/provider.ts`,
 `src/extensions/llama/client.ts`, `src/extensions/llama/huggingface.ts`, and `src/extensions/llama/ui.ts`.
 
-### `metapi-dsh`
+### `meldra-dsh`
 
 | Field | Value |
 |---|---|
 | Entry | `packages/coding-agent/src/extensions/dsh/index.ts` |
-| Built-in name | `metapi-dsh` |
+| Built-in name | `meldra-dsh` |
 | Activation | Only a Profile whose selected Runtime provider is `deepseek-harness` |
 | User entry | `/dsh`, documented direct DSH aliases, renderers, dialogs, and compact status |
 | Runtime ownership | None; `DshProfileRuntime` owns Harness subprocesses, cursors, listeners, and Sessions |
@@ -72,45 +72,46 @@ packages, and diagnostics through Pi's TUI. It consumes the attached Profile Run
 or persist a second Harness Agent loop. See [DeepSeek Harness Profile
 Runtime](../../packages/coding-agent/docs/deepseek-harness.md).
 
-### `metapi-profile`
+### `meldra-profile`
 
 | Field | Value |
 |---|---|
-| Entry | `packages/coding-agent/src/metapi/profile-extension.ts` |
-| Built-in name | `metapi-profile` |
+| Entry | `packages/coding-agent/src/meldra/profile-extension.ts` |
+| Built-in name | `meldra-profile` |
 | User entry | `/profile` |
 | Command | `profile`, with `status`, `list`, `import`, `export`, `update`, `bind`, `unbind` |
 | Event | `session_start` |
 | Tools / providers | None |
 | Main UI | Single configuration chooser and confirmation dialogs |
-| Status key | `metapi-profile` |
+| Status key | `meldra-profile` |
 | State | Directory bindings and installed Profile records |
-| Configuration | `METAPI_PROFILE_NAME`, `METAPI_CODING_AGENT_DIR`, `PI_OFFLINE` |
-| Files | `~/.metapi/project-bindings.json`, `~/.metapi/profiles/<id>/profile.json`, optional project `.pi/metapi.json` |
+| Configuration | `MELDRA_PROFILE_NAME`, `MELDRA_CODING_AGENT_DIR`, `PI_OFFLINE` |
+| Files | `~/.meldra/project-bindings.json`, `~/.meldra/profiles/<id>/profile.json`, optional project `.pi/meldra.json` |
 
 **Responsibility.** It presents and switches the Profile used by the current Meldra session, imports and manages Profile
 Bundles, persists the active Profile with the session, and separately records which Profile the current directory will
-use when a new session is launched there.
+use when a new session is launched there. Legacy `METAPI_PROFILE_NAME` and `METAPI_CODING_AGENT_DIR` inputs remain
+readable when their canonical Meldra counterparts are absent; Meldra does not emit them for new Profile state.
 
 **Direct relationships.** It shares `session_start` with many official examples and uses a distinct keyed status slot,
 so it can coexist with other `setStatus()` users. No official example registers `/profile`.
 
-Evidence: `src/extensions/index.ts`, `src/metapi/profile-extension.ts`, `src/metapi/profile-service.ts`,
-`src/metapi/profile-bundle.ts`, and `src/metapi/session-profile.ts`.
+Evidence: `src/extensions/index.ts`, `src/meldra/profile-extension.ts`, `src/meldra/profile-service.ts`,
+`src/meldra/profile-bundle.ts`, and `src/meldra/session-profile.ts`.
 
-### `metapi-workspace`
+### `meldra-workspace`
 
 | Field | Value |
 |---|---|
-| Entry | `packages/coding-agent/src/metapi/workspace-extension.ts` |
-| Built-in name | `metapi-workspace` |
+| Entry | `packages/coding-agent/src/meldra/workspace-extension.ts` |
+| Built-in name | `meldra-workspace` |
 | User entry | `/workspace` |
 | Command | `workspace` |
 | Events | `session_start`, `before_agent_start` |
 | Tools / providers | None |
-| Status key | `metapi-workspace` |
+| Status key | `meldra-workspace` |
 | State | Session custom entry containing the WorkSpace root |
-| Default root | `~/.metapi/workspaces/` |
+| Default root | `~/.meldra/workspaces/` |
 
 **Responsibility.** It shows the WorkSpace bound to the current conversation and injects scope guidance so Skills,
 Extensions, Prompt Templates, Themes, and package resources remain in the current Profile unless the user explicitly
@@ -119,8 +120,8 @@ selects Current WorkSpace. WorkSpace scope maps to Pi's project-local `.pi` reso
 **Direct relationships.** It shares `session_start` with the Profile extension, uses a distinct keyed status slot, and
 modifies the per-turn system prompt only for sessions carrying WorkSpace metadata.
 
-Evidence: `src/extensions/index.ts`, `src/metapi/workspace-extension.ts`, `src/metapi/workspace-service.ts`, and
-`src/metapi/session-profile.ts`.
+Evidence: `src/extensions/index.ts`, `src/meldra/workspace-extension.ts`, `src/meldra/workspace-service.ts`, and
+`src/meldra/session-profile.ts`.
 
 ## Current-machine inventory
 

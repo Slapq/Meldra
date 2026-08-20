@@ -8,7 +8,7 @@
   disabled: true
 
 - insert:
-    - id: metapi-directory-picker
+    - id: meldra-directory-picker
       name: '@deepseek-ai/dsh-host-directory-picker-browse'
 
 - id: web-startup
@@ -130,7 +130,11 @@
         trust: system
 
 - insert:
-    - id: metapi-tui-jsonrpc-server
-      name: '__METAPI_DSH_SERVER_PATH__'
+    - id: meldra-sandbox-escalation-compat
+      name: '__MELDRA_DSH_SANDBOX_ESCALATION_COMPAT_PATH__'
+
+- insert:
+    - id: meldra-tui-jsonrpc-server
+      name: '__MELDRA_DSH_SERVER_PATH__'
       config:
         maxTokensAsSuccess: true

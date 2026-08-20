@@ -26,7 +26,7 @@ import type { ModelRuntime } from "../src/core/model-runtime.ts";
 import { createAgentSession } from "../src/core/sdk.ts";
 import { SessionManager } from "../src/core/session-manager.ts";
 import { SettingsManager } from "../src/core/settings-manager.ts";
-import { DSH_MESSAGE_ENTRY, DshProfileRuntime } from "../src/metapi/dsh-profile-runtime.ts";
+import { DSH_MESSAGE_ENTRY, DshProfileRuntime } from "../src/meldra/dsh-profile-runtime.ts";
 
 interface ProbeRuntimeState {
 	harness: {
@@ -177,7 +177,7 @@ describe("DSH Profile Runtime cancellation lifecycle", () => {
 			await runtime.prompt({ text: "next instruction", streamingBehavior });
 			expect(appended).toEqual([]);
 
-			expect(request).toHaveBeenCalledWith("metapi/api.call", {
+			expect(request).toHaveBeenCalledWith("meldra/api.call", {
 				method: "session.prompt",
 				payload: {
 					sessionId: "busy-session",
@@ -259,7 +259,7 @@ describe("DSH Profile Runtime cancellation lifecycle", () => {
 			content: [{ type: "text", text: "updated" }],
 		});
 
-		expect(request).toHaveBeenCalledWith("metapi/api.call", {
+		expect(request).toHaveBeenCalledWith("meldra/api.call", {
 			method: "session.updateQueue",
 			payload: {
 				sessionId: "busy-session",
@@ -273,14 +273,64 @@ describe("DSH Profile Runtime cancellation lifecycle", () => {
 		await runtime.dispose();
 	});
 
+	it("creates new Harness Sessions with the Meldra-prefixed host Session ID", async () => {
+		const cwd = mkdtempSync(join(tmpdir(), "meldra-dsh-session-id-"));
+		cleanupPaths.push(cwd);
+		harnessSdk.request.mockImplementation(async (method: string, params?: Record<string, unknown>) => {
+			if (method === "meldra/api.events.open") return { cursorId: `${String(params?.stream)}-cursor` };
+			if (method === "meldra/api.events.next") return { done: true };
+			if (method === "meldra/api.events.close") return {};
+			if (method === "meldra/api.call") return { result: { ok: true, value: {} } };
+			if (method === "meldra/plugin-inventory.list") return { entries: [] };
+			throw new Error(`unexpected request: ${method}`);
+		});
+		const runtime = createRuntime(cwd);
+		runtime.attach({
+			cwd,
+			sessionId: "pi-session",
+			appendEntry: () => {},
+			emit: () => {},
+		});
+
+		await expect(runtime.plugins()).resolves.toEqual([]);
+		expect(harnessSdk.request).toHaveBeenCalledWith("meldra/api.call", {
+			method: "session.create",
+			payload: { sessionId: "meldra-pi-session", cwd },
+		});
+		await runtime.dispose();
+	});
+
+	it("creates standalone Harness Sessions with a Meldra UUID", async () => {
+		const cwd = mkdtempSync(join(tmpdir(), "meldra-dsh-standalone-session-id-"));
+		cleanupPaths.push(cwd);
+		harnessSdk.request.mockImplementation(async (method: string, params?: Record<string, unknown>) => {
+			if (method === "meldra/api.events.open") return { cursorId: `${String(params?.stream)}-cursor` };
+			if (method === "meldra/api.events.next") return { done: true };
+			if (method === "meldra/api.events.close") return {};
+			if (method === "meldra/api.call") return { result: { ok: true, value: {} } };
+			if (method === "meldra/plugin-inventory.list") return { entries: [] };
+			throw new Error(`unexpected request: ${method}`);
+		});
+		const runtime = createRuntime(cwd);
+
+		await expect(runtime.plugins()).resolves.toEqual([]);
+		const createCall = harnessSdk.request.mock.calls.find(
+			([method, params]) => method === "meldra/api.call" && params?.method === "session.create",
+		);
+		expect(createCall?.[1]).toMatchObject({
+			payload: { sessionId: expect.stringMatching(/^meldra-[0-9a-f-]{36}$/), cwd },
+		});
+		await runtime.dispose();
+	});
+
 	it("closes a started Harness when event cursor initialization fails", async () => {
 		const cwd = mkdtempSync(join(tmpdir(), "metapi-dsh-start-failure-"));
 		cleanupPaths.push(cwd);
 		harnessSdk.request.mockImplementation(async (method: string, params?: { stream?: string }) => {
-			if (method === "metapi/api.events.open" && params?.stream === "mux") return { cursorId: "mux-cursor" };
-			if (method === "metapi/api.events.open" && params?.stream === "host") throw new Error("host cursor failed");
-			if (method === "metapi/api.events.next") return { done: true };
-			if (method === "metapi/api.events.close") return {};
+			if (method === "meldra/api.events.open" && params?.stream === "mux") return { cursorId: "mux-cursor" };
+			if (method === "meldra/api.events.open" && params?.stream === "host") throw new Error("host cursor failed");
+			if (method === "meldra/api.events.next") return { done: true };
+			if (method === "meldra/api.events.close") return {};
 			throw new Error(`unexpected request: ${method}`);
 		});
 		const runtime = createRuntime(cwd);
@@ -342,7 +392,7 @@ describe("DSH Profile Runtime cancellation lifecycle", () => {
 		]);
 
 		expect(result).toBe("disposed");
-		expect(request).toHaveBeenCalledWith("metapi/api.events.close", {
+		expect(request).toHaveBeenCalledWith("meldra/api.events.close", {
 			cursorId: "cursor-1",
 		});
 		expect(close).toHaveBeenCalledTimes(1);

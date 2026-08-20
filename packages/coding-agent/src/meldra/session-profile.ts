@@ -11,8 +11,14 @@ import {
 	PI_COMPATIBILITY_PROFILE_NAME,
 } from "./profile-service.ts";
 
-export const METAPI_SESSION_PROFILE_ENTRY = "metapi-session-profile";
-export const METAPI_SESSION_WORKSPACE_ENTRY = "metapi-session-workspace";
+export const MELDRA_SESSION_PROFILE_ENTRY = "meldra-session-profile";
+export const LEGACY_METAPI_SESSION_PROFILE_ENTRY = "metapi-session-profile";
+export const MELDRA_SESSION_WORKSPACE_ENTRY = "meldra-session-workspace";
+export const LEGACY_METAPI_SESSION_WORKSPACE_ENTRY = "metapi-session-workspace";
+/** @deprecated Use MELDRA_SESSION_PROFILE_ENTRY. Retained for source compatibility. */
+export const METAPI_SESSION_PROFILE_ENTRY = LEGACY_METAPI_SESSION_PROFILE_ENTRY;
+/** @deprecated Use MELDRA_SESSION_WORKSPACE_ENTRY. Retained for source compatibility. */
+export const METAPI_SESSION_WORKSPACE_ENTRY = LEGACY_METAPI_SESSION_WORKSPACE_ENTRY;
 
 const MAX_CONCURRENT_SESSION_PROFILE_READS = 10;
 
@@ -27,7 +33,11 @@ interface SessionWorkspaceData {
 function readProfileFromEntries(entries: readonly SessionEntry[]): string | undefined {
 	for (let index = entries.length - 1; index >= 0; index--) {
 		const entry = entries[index];
-		if (entry.type !== "custom" || entry.customType !== METAPI_SESSION_PROFILE_ENTRY) continue;
+		if (
+			entry.type !== "custom" ||
+			(entry.customType !== MELDRA_SESSION_PROFILE_ENTRY && entry.customType !== LEGACY_METAPI_SESSION_PROFILE_ENTRY)
+		)
+			continue;
 		const data = entry.data as Partial<SessionProfileData> | undefined;
 		if (typeof data?.profile === "string" && data.profile.trim()) return data.profile;
 	}
@@ -42,7 +52,12 @@ export function getSessionWorkspaceRoot(sessionManager: Pick<SessionManager, "ge
 	const entries = sessionManager.getEntries();
 	for (let index = entries.length - 1; index >= 0; index--) {
 		const entry = entries[index];
-		if (entry.type !== "custom" || entry.customType !== METAPI_SESSION_WORKSPACE_ENTRY) continue;
+		if (
+			entry.type !== "custom" ||
+			(entry.customType !== MELDRA_SESSION_WORKSPACE_ENTRY &&
+				entry.customType !== LEGACY_METAPI_SESSION_WORKSPACE_ENTRY)
+		)
+			continue;
 		const data = entry.data as Partial<SessionWorkspaceData> | undefined;
 		if (typeof data?.root === "string" && data.root.trim()) return resolvePath(data.root);
 	}
@@ -54,14 +69,14 @@ export function setSessionProfile(
 	profile: string,
 ): void {
 	if (getSessionProfile(sessionManager) === profile) return;
-	sessionManager.appendCustomEntry(METAPI_SESSION_PROFILE_ENTRY, { profile } satisfies SessionProfileData);
+	sessionManager.appendCustomEntry(MELDRA_SESSION_PROFILE_ENTRY, { profile } satisfies SessionProfileData);
 }
 
 export function replaceSessionProfile(
 	sessionManager: Pick<SessionManager, "appendCustomEntry" | "getEntries">,
 	profile: string,
 ): void {
-	sessionManager.appendCustomEntry(METAPI_SESSION_PROFILE_ENTRY, { profile } satisfies SessionProfileData);
+	sessionManager.appendCustomEntry(MELDRA_SESSION_PROFILE_ENTRY, { profile } satisfies SessionProfileData);
 }
 
 export function setSessionWorkspaceRoot(
@@ -70,7 +85,7 @@ export function setSessionWorkspaceRoot(
 ): void {
 	const resolvedRoot = resolvePath(root);
 	if (getSessionWorkspaceRoot(sessionManager) === resolvedRoot) return;
-	sessionManager.appendCustomEntry(METAPI_SESSION_WORKSPACE_ENTRY, {
+	sessionManager.appendCustomEntry(MELDRA_SESSION_WORKSPACE_ENTRY, {
 		root: resolvedRoot,
 	} satisfies SessionWorkspaceData);
 }
@@ -119,7 +134,12 @@ async function readStoredSessionProfile(path: string): Promise<string | undefine
 			}
 			if (!entry || typeof entry !== "object") continue;
 			const candidate = entry as { type?: unknown; customType?: unknown; data?: unknown };
-			if (candidate.type !== "custom" || candidate.customType !== METAPI_SESSION_PROFILE_ENTRY) continue;
+			if (
+				candidate.type !== "custom" ||
+				(candidate.customType !== MELDRA_SESSION_PROFILE_ENTRY &&
+					candidate.customType !== LEGACY_METAPI_SESSION_PROFILE_ENTRY)
+			)
+				continue;
 			if (!candidate.data || typeof candidate.data !== "object") continue;
 			const value = (candidate.data as Partial<SessionProfileData>).profile;
 			if (typeof value === "string" && value.trim()) profile = value;

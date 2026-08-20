@@ -194,7 +194,7 @@ describe("parseArgs", () => {
 			]);
 			expect(parseArgs(["--startup-command", "setup"]).diagnostics).toEqual([
 				{ type: "error", message: "--startup-command requires a single slash command" },
-		]);
+			]);
 		});
 	});
 

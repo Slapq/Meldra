@@ -36,8 +36,8 @@ describe("Meldra Session discovery ownership", () => {
 				listSessionsForCwdAcrossProfiles,
 				replaceSessionProfile,
 				setSessionProfile,
-			} = await import("../src/metapi/session-profile.ts");
-			const { getProfileAgentDir } = await import("../src/metapi/profile-service.ts");
+			} = await import("../src/meldra/session-profile.ts");
+			const { getProfileAgentDir } = await import("../src/meldra/profile-service.ts");
 
 			for (const name of ["default", "dsh", "pi"]) mkdirSync(getProfileAgentDir(name), { recursive: true });
 

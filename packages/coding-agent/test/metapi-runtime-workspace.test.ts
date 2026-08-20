@@ -17,8 +17,8 @@ import {
 	getSessionProfile,
 	replaceSessionProfile,
 	setSessionProfile,
-} from "../src/metapi/session-profile.ts";
-import { copyWorkspace, createEmptyWorkspace } from "../src/metapi/workspace-service.ts";
+} from "../src/meldra/session-profile.ts";
+import { copyWorkspace, createEmptyWorkspace } from "../src/meldra/workspace-service.ts";
 
 const cleanups: Array<() => Promise<void> | void> = [];
 
@@ -66,7 +66,7 @@ describe("Meldra runtime WorkSpace lifecycle", () => {
 			agentDir: join(root, "agent"),
 			sessionManager: manager,
 			profileName: "default",
-			metapiLifecycle: {
+			meldraLifecycle: {
 				getProfileName: getSessionProfile,
 				setProfileName: replaceSessionProfile,
 				getWorkspaceRoot: () => workspaceRoot,

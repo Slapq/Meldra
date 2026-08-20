@@ -1,5 +1,31 @@
 # Meldra 更新日志
 
+## v0.2.1
+
+本版本是一次迁移性 Fix 更新，完成当前代码、Windows 入口、Profile、Starter、Session 与 DeepSeek Harness 边界从 MetaPi 到 Meldra 的规范化，并修复迁移过程中发现的运行时问题。
+
+### 迁移修复
+
+- `meldra` 成为完整的主 CLI、Windows launcher、安装器和 PATH 入口，`metapi` 仅作为兼容别名保留。
+- 用户资产、项目清单、源码模块、Starter Bundle、Workflow、Profile Bundle 与导出审计统一使用 Meldra 路径和标识。
+- 新 Session metadata、DSH RPC、DSH Session ID、Cordis surface、模型凭据引用和 UI 状态键统一写入 `meldra-*` / `MELDRA_*`。
+- 历史环境变量、Session metadata、Bundle metadata、Workflow state、RPC 方法和存储入口继续作为兼容读取路径。
+- DSH 原生 Profile 切换到 `profiles/meldra`，Starter 切换到 `packages/meldra-starter` 和 `meldra-workflows`。
+
+### 修复
+
+- 修复 Workflow Session 恢复检查缺少回调参数导致的 `ReferenceError`，补充旧状态读取与新状态写入回归测试。
+- 修复跨 Profile Session discovery 未识别新 `meldra-session-profile` metadata 的问题。
+- DSH sandbox compatibility 会移除已被当前权限覆盖的冗余提权参数，避免工具调用因重复权限请求失败。
+- 补充 Meldra RPC namespace、存储迁移、Starter、Workflow、DSH Profile、模型凭据与品牌兼容回归测试。
+
+### 发布边界
+
+- Windows x64 安装器提供内置 Node.js 和使用系统 Node.js 两个版本。
+- 安装器当前未签名，Windows 可能显示 Unknown publisher 或 SmartScreen 提示。
+- scoped npm Bootstrap 尚未发布。
+- DeepSeek Harness 仍固定使用 `0.1.0-rc.7`。
+
 ## v0.1.2
 
 本版本改善 DeepSeek Harness 对话辨识与权限控制，并修复原生命令被错误发送给模型的问题。

@@ -40,7 +40,7 @@ describe("Meldra Profile update checks", () => {
 		process.env.PATH = [binDir, originalEnvironment.PATH].filter(Boolean).join(delimiter);
 		vi.resetModules();
 
-		const { checkProfileUpdate, getProfileRecordPath } = await import("../src/metapi/profile-bundle.ts");
+		const { checkProfileUpdate, getProfileRecordPath } = await import("../src/meldra/profile-bundle.ts");
 		const recordPath = getProfileRecordPath("release-test");
 		mkdirSync(dirname(recordPath), { recursive: true });
 		writeFileSync(

@@ -10,6 +10,15 @@ import { HarnessSdkJsonRpcServer } from "@deepseek-ai/dsh-sdk-jsonrpc-server";
 import { JsonRpcLineTransport } from "@deepseek-ai/dsh-sdk-protocol";
 import Schema from "@deepseek-ai/schemastery";
 
+const LEGACY_METAPI_RPC_PREFIX = "metapi/";
+const MELDRA_RPC_PREFIX = "meldra/";
+
+export function canonicalMeldraDshRpcMethod(method: string): string {
+	return method.startsWith(LEGACY_METAPI_RPC_PREFIX)
+		? `${MELDRA_RPC_PREFIX}${method.slice(LEGACY_METAPI_RPC_PREFIX.length)}`
+		: method;
+}
+
 const API_METHODS = new Map<string, [keyof ApiProxy, string]>([
 	...[
 		"list",
@@ -64,7 +73,7 @@ interface EventCursor {
 	iterator: AsyncIterator<unknown>;
 }
 
-export const name = "metapi-tui-jsonrpc-server";
+export const name = "meldra-tui-jsonrpc-server";
 export const inject = ["apiProxy", "agents", "commands", "messageFeedback", "pluginInventory"];
 export const Config = Schema.object({
 	maxTokensAsSuccess: Schema.boolean().default(false),
@@ -107,7 +116,7 @@ export function apply(ctx: Context, config: BridgeConfig): void {
 		const method = params?.method;
 		const payload = params?.payload;
 		if (typeof method !== "string" || payload === null || typeof payload !== "object" || Array.isArray(payload)) {
-			throw new TypeError("metapi/api.call requires method and object payload");
+			throw new TypeError("meldra/api.call requires method and object payload");
 		}
 		const target = API_METHODS.get(method);
 		if (!target) throw new Error(`unsupported Meldra DSH API method: ${method}`);
@@ -119,7 +128,7 @@ export function apply(ctx: Context, config: BridgeConfig): void {
 
 	const commandList = (params: Record<string, unknown> | undefined): unknown => {
 		const sessionId = params?.sessionId;
-		if (typeof sessionId !== "string") throw new TypeError("metapi/commands.list requires sessionId");
+		if (typeof sessionId !== "string") throw new TypeError("meldra/commands.list requires sessionId");
 		const agent = ctx.agents.get(sessionId as Parameters<typeof ctx.agents.get>[0]);
 		if (!agent) throw new Error(`unknown DSH Session Agent: ${sessionId}`);
 		const commands: CommandRuntime = ctx.commands;
@@ -130,7 +139,7 @@ export function apply(ctx: Context, config: BridgeConfig): void {
 		const sessionId = params?.sessionId;
 		const line = params?.line;
 		if (typeof sessionId !== "string" || typeof line !== "string")
-			throw new TypeError("metapi/commands.execute requires sessionId and line");
+			throw new TypeError("meldra/commands.execute requires sessionId and line");
 		const agent = ctx.agents.get(sessionId as Parameters<typeof ctx.agents.get>[0]);
 		if (!agent) throw new Error(`unknown DSH Session Agent: ${sessionId}`);
 		const commands: CommandRuntime = ctx.commands;
@@ -148,7 +157,7 @@ export function apply(ctx: Context, config: BridgeConfig): void {
 			typeof payload !== "object" ||
 			Array.isArray(payload)
 		)
-			throw new TypeError("metapi/message-feedback.call requires list/put/delete and object payload");
+			throw new TypeError("meldra/message-feedback.call requires list/put/delete and object payload");
 		const feedback: MessageFeedbackService = ctx.messageFeedback;
 		return feedback[method](payload as never);
 	};
@@ -168,24 +177,25 @@ export function apply(ctx: Context, config: BridgeConfig): void {
 	};
 
 	transport.onRequest(async (method, params) => {
-		switch (method) {
-			case "metapi/api.call":
+		const rpcMethod = canonicalMeldraDshRpcMethod(method);
+		switch (rpcMethod) {
+			case "meldra/api.call":
 				return apiCall(params);
-			case "metapi/api.respond":
+			case "meldra/api.respond":
 				return api.respond(params?.response as ClientResponse);
-			case "metapi/commands.list":
+			case "meldra/commands.list":
 				return commandList(params);
-			case "metapi/commands.execute":
+			case "meldra/commands.execute":
 				return commandExecute(params);
-			case "metapi/message-feedback.call":
+			case "meldra/message-feedback.call":
 				return messageFeedbackCall(params);
-			case "metapi/plugin-inventory.list": {
+			case "meldra/plugin-inventory.list": {
 				const inventory = (ctx as Context & { pluginInventory: PluginInventoryGateway }).pluginInventory;
 				return inventory.list();
 			}
-			case "metapi/api.events.open":
+			case "meldra/api.events.open":
 				return openEvents(params);
-			case "metapi/api.events.next": {
+			case "meldra/api.events.next": {
 				const cursorId = params?.cursorId;
 				if (typeof cursorId !== "string") throw new TypeError("cursorId is required");
 				const cursor = cursors.get(cursorId);
@@ -194,7 +204,7 @@ export function apply(ctx: Context, config: BridgeConfig): void {
 				if (result.done) await closeCursor(cursorId);
 				return { done: Boolean(result.done), value: result.value };
 			}
-			case "metapi/api.events.close": {
+			case "meldra/api.events.close": {
 				const cursorId = params?.cursorId;
 				if (typeof cursorId !== "string") throw new TypeError("cursorId is required");
 				return { closed: await closeCursor(cursorId) };
@@ -214,5 +224,5 @@ export function apply(ctx: Context, config: BridgeConfig): void {
 			await sdk.shutdown();
 			transport.close();
 		};
-	}, "metapi.tui-jsonrpc.serve");
+	}, "meldra.tui-jsonrpc.serve");
 }

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, renameSync } from "node:fs";
 import { join } from "node:path";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import { type Api, type Message, type Model, uuidv7 } from "@earendil-works/pi-ai";
@@ -29,9 +29,12 @@ import {
 } from "@earendil-works/pi-tui";
 import questionnaireExtension from "./questionnaire.ts";
 
-const CONFIG_ID = "metapi-workflows";
-const PRESET_ENTRY = "metapi-workflow-preset";
-const TOOLS_ENTRY = "metapi-workflow-tools";
+const CONFIG_ID = "meldra-workflows";
+const LEGACY_CONFIG_ID = "metapi-workflows";
+const PRESET_ENTRY = "meldra-workflow-preset";
+const LEGACY_PRESET_ENTRY = "metapi-workflow-preset";
+const TOOLS_ENTRY = "meldra-workflow-tools";
+const LEGACY_TOOLS_ENTRY = "metapi-workflow-tools";
 const QUESTIONNAIRE_TOOL = "questionnaire";
 
 interface WorkflowConfig {
@@ -154,7 +157,20 @@ const HANDOFF_SYSTEM_PROMPT = `You are a context transfer assistant. Given a con
 
 Return only the prompt for the new thread, without a preamble.`;
 
+function migrateLegacyConfig(): void {
+	const configDir = join(getAgentDir(), "plugin-configs");
+	const legacyPath = join(configDir, `${LEGACY_CONFIG_ID}.json`);
+	const currentPath = join(configDir, `${CONFIG_ID}.json`);
+	if (!existsSync(legacyPath) || existsSync(currentPath)) return;
+	try {
+		renameSync(legacyPath, currentPath);
+	} catch {
+		// Leave the legacy file intact if the one-time migration cannot complete.
+	}
+}
+
 export default function meldraWorkflows(pi: ExtensionAPI) {
+	migrateLegacyConfig();
 	let config = { ...DEFAULT_CONFIG };
 	let presets: PresetsConfig = {};
 	let activePresetName: string | undefined;
@@ -237,7 +253,7 @@ export default function meldraWorkflows(pi: ExtensionAPI) {
 
 	function updatePresetStatus(ctx: ExtensionContext) {
 		ctx.ui.setStatus(
-			"metapi-workflow-preset",
+			"meldra-workflow-preset",
 			activePresetName ? ctx.ui.theme.fg("accent", `模式:${activePresetName}`) : undefined,
 		);
 	}
@@ -574,8 +590,12 @@ export default function meldraWorkflows(pi: ExtensionAPI) {
 		for (let index = 0; index < branch.length; index++) {
 			const entry = branch[index];
 			if (entry.type !== "custom") continue;
-			if (entry.customType === PRESET_ENTRY) lastPreset = { index, state: (entry.data ?? {}) as PresetState };
-			if (entry.customType === TOOLS_ENTRY) lastTools = { index, state: (entry.data ?? {}) as ToolsState };
+			if (entry.customType === PRESET_ENTRY || entry.customType === LEGACY_PRESET_ENTRY) {
+				lastPreset = { index, state: (entry.data ?? {}) as PresetState };
+			}
+			if (entry.customType === TOOLS_ENTRY || entry.customType === LEGACY_TOOLS_ENTRY) {
+				lastTools = { index, state: (entry.data ?? {}) as ToolsState };
+			}
 		}
 
 		activePresetName = lastPreset?.state.name;
@@ -606,11 +626,14 @@ export default function meldraWorkflows(pi: ExtensionAPI) {
 			return;
 		}
 
-		const hasWorkflowState = ctx.sessionManager
-			.getBranch()
-			.some(
-				(entry) => entry.type === "custom" && (entry.customType === PRESET_ENTRY || entry.customType === TOOLS_ENTRY),
-			);
+		const hasWorkflowState = ctx.sessionManager.getBranch().some(
+			(entry) =>
+				entry.type === "custom" &&
+				(entry.customType === PRESET_ENTRY ||
+					entry.customType === LEGACY_PRESET_ENTRY ||
+					entry.customType === TOOLS_ENTRY ||
+					entry.customType === LEGACY_TOOLS_ENTRY),
+		);
 		if (hasWorkflowState) {
 			restoreWorkflowState(ctx);
 			return;

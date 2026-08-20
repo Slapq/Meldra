@@ -1,24 +1,24 @@
 {
-  "name": "@slapq/metapi-starter-profile",
-  "version": "0.1.0",
+  "name": "@slapq/meldra-starter-profile",
+  "version": "0.2.1",
   "private": true,
   "description": "Project-maintained Starter Profile resources for Meldra.",
   "license": "MIT",
   "type": "module",
   "keywords": [
     "pi-package",
-    "metapi-profile",
-    "metapi-starter"
+    "meldra-profile",
+    "meldra-starter"
   ],
   "pi": {
     "extensions": [
       "./extensions/provider-manager.ts",
       "./extensions/scout.ts",
-      "./extensions/metapi-workflows.ts",
+      "./extensions/meldra-workflows.ts",
       "./extensions/setup.ts"
     ]
   },
-  "metapi": {
+  "meldra": {
     "profileVersion": 1,
     "displayName": "Meldra Starter"
   },

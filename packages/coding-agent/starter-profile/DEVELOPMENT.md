@@ -14,7 +14,7 @@ Starter Bundle 声明以下运行时入口：
 |---|---|---|
 | `extensions/provider-manager.ts` | `/provider` | Provider 和模型目录管理 |
 | `extensions/scout.ts` | `scout`、`/scout` | 隔离的只读侦察子进程 |
-| `extensions/metapi-workflows.ts` | `/commands`、`/preset`、`/tools`、`/handoff` | 当前 Session 工作流 |
+| `extensions/meldra-workflows.ts` | `/commands`、`/preset`、`/tools`、`/handoff` | 当前 Session 工作流 |
 | `extensions/setup.ts` | `/setup` | Provider → 模型 → Scout 连续配置向导 |
 | `extensions/questionnaire.ts` | `questionnaire` 工具 | Workflows 内嵌的结构化问询能力 |
 
@@ -23,7 +23,7 @@ Starter Bundle 声明以下运行时入口：
 Profile Config Host 不属于 Starter Bundle。它是普通 Meldra Profile 自动加载的 hidden inline Extension：
 
 ```text
-packages/coding-agent/src/extensions/metapi-config/index.ts
+packages/coding-agent/src/extensions/meldra-config/index.ts
 ```
 
 它提供 `/config` 和 `config:*` 事件协议。保留的 `pi` Compatibility Profile 不加载该 Host。
@@ -51,7 +51,7 @@ packages/coding-agent/starter-profile/
 └── extensions/
     ├── provider-manager.ts
     ├── scout.ts
-    ├── metapi-workflows.ts
+    ├── meldra-workflows.ts
     ├── questionnaire.ts
     └── setup.ts
 ```
@@ -64,7 +64,7 @@ packages/coding-agent/starter-profile/
 条目。典型部署位置是：
 
 ```text
-<profile-agentDir>/packages/metapi-starter/
+<profile-agentDir>/packages/meldra-starter/
 ```
 
 源码修改不会自动进入已部署 Profile。开发者需要明确区分：
@@ -101,7 +101,7 @@ Starter Extension factory 在 Runtime 加载时执行并注册命令、工具、
 | Profile 插件 scalar config | `<agentDir>/plugin-configs/<id>.json` | 当前 Profile | 保存后持续存在 |
 | Provider Manager 语言 | `<agentDir>/plugin-configs/provider-manager.json` | 当前 Profile | 持续存在 |
 | Scout legacy fallback | `<agentDir>/scout.json` | 旧版 Profile | 只读兼容来源 |
-| 共享用户模型目录 | `~/.metapi/user/models.json` 的实际解析路径 | Meldra 用户资产 | 普通 Profile 共享 |
+| 共享用户模型目录 | `~/.meldra/user/models.json` 的实际解析路径 | Meldra 用户资产 | 普通 Profile 共享 |
 | `pi` Profile 模型目录 | `<pi-agentDir>/models.json` | Pi Compatibility Profile | 与普通 Profile 隔离 |
 | 工作流 Profile Presets | `<agentDir>/presets.json` | 当前 Profile | 跨项目复用 |
 | 工作流项目 Presets | `<cwd>/.pi/presets.json` | 当前可信项目 | 同名覆盖 Profile Preset |
@@ -433,7 +433,7 @@ meldra --mode json -p --no-session --no-extensions
 Workflows 注册：
 
 ```text
-/config metapi-workflows
+/config meldra-workflows
 --preset <name>
 Ctrl+Shift+U
 /commands [extension|prompt|skill]
@@ -494,8 +494,8 @@ Session 启动工具
 Workflows 使用 custom entries：
 
 ```text
-metapi-workflow-preset
-metapi-workflow-tools
+meldra-workflow-preset
+meldra-workflow-tools
 ```
 
 它在 `session_start` 和 `session_tree` 上重建当前分支的最后有效状态。不要只依赖进程内变量，否则 `/reload`、resume
@@ -730,7 +730,7 @@ Content-Type 和流格式；不要根据发现成功推断生成协议正确。
 ### 修改源码后 `/reload` 没变化
 
 确认修改的是当前 Runtime 实际加载的文件。仓库 Starter 源码和已部署 Profile Package 是两份文件；先 build，运行
-`meldra setup` 恢复部署副本，再启动新进程。内建 `metapi-config` 随 build/process 更新，不是普通源码热重载边界。
+`meldra setup` 恢复部署副本，再启动新进程。内建 `meldra-config` 随 build/process 更新，不是普通源码热重载边界。
 
 ## 15. 文档维护清单
 

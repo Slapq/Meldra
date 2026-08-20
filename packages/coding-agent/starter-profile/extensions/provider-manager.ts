@@ -475,7 +475,8 @@ const COMPAT_MAX_TOKENS_FIELDS = ["max_completion_tokens", "max_tokens"];
 function modelsJsonPath(): string {
 	// Ordinary Meldra Profiles share the user model catalog. Keep Pi compatibility
 	// behavior unchanged if this package is reused from the reserved `pi` Profile.
-	if (process.env.METAPI_PROFILE_NAME && process.env.METAPI_PROFILE_NAME !== "pi") {
+	const profileName = process.env.MELDRA_PROFILE_NAME ?? process.env.METAPI_PROFILE_NAME;
+	if (profileName && profileName !== "pi") {
 		return resolve(getAgentDir(), "../../../user/models.json");
 	}
 	return join(getAgentDir(), "models.json");

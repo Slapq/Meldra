@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { normalizePortableProfileManifest } from "../src/metapi/profile-bundle.ts";
-import { applyProfileEnvironment } from "../src/metapi/profile-environment.ts";
-import type { ProfileSelection } from "../src/metapi/profile-service.ts";
+import { normalizePortableProfileManifest } from "../src/meldra/profile-bundle.ts";
+import { applyProfileEnvironment } from "../src/meldra/profile-environment.ts";
+import type { ProfileSelection } from "../src/meldra/profile-service.ts";
 
 const originalEnvironment = { ...process.env };
 
