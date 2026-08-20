@@ -42,6 +42,7 @@ export type CreateAgentSessionRuntimeFactory = (options: {
 }) => Promise<CreateAgentSessionRuntimeResult>;
 
 export interface MeldraSessionLifecycle {
+	prepareCwd?(cwd: string): void;
 	getProfileName(sessionManager: SessionManager): string | undefined;
 	setProfileName(sessionManager: SessionManager, profileName: string): void;
 	getWorkspaceRoot(sessionManager: SessionManager, cwd: string): string | undefined;
@@ -178,6 +179,10 @@ export class AgentSessionRuntime {
 		return { cancelled: result?.cancel === true };
 	}
 
+	private prepareCwd(cwd: string): void {
+		this.meldraLifecycle?.prepareCwd?.(cwd);
+	}
+
 	private async teardownCurrent(reason: SessionShutdownEvent["reason"], targetSessionFile?: string): Promise<void> {
 		// Settle any active response first so the aborted turn (including tool
 		// results) is persisted to the outgoing session before it is replaced.
@@ -235,6 +240,7 @@ export class AgentSessionRuntime {
 		const previousSessionFile = this.session.sessionFile;
 		const sessionManager = SessionManager.open(sessionPath, undefined, options?.cwdOverride);
 		assertSessionCwdExists(sessionManager, this.cwd);
+		this.prepareCwd(sessionManager.getCwd());
 		const profileName = this.meldraLifecycle?.getProfileName(sessionManager) ?? this.getCurrentProfileName();
 		await this.teardownCurrent("resume", sessionManager.getSessionFile());
 		this.apply(
@@ -297,6 +303,7 @@ export class AgentSessionRuntime {
 		if (options?.parentSession) {
 			sessionManager.newSession({ parentSession: options.parentSession });
 		}
+		this.prepareCwd(targetCwd);
 
 		await this.teardownCurrent("new", sessionManager.getSessionFile());
 		this.apply(
@@ -369,6 +376,7 @@ export class AgentSessionRuntime {
 				});
 				if (profileName) this.meldraLifecycle?.setProfileName(sessionManager, profileName);
 				if (workspaceRoot) this.meldraLifecycle?.setWorkspaceRoot(sessionManager, workspaceRoot);
+				this.prepareCwd(targetCwd);
 				await this.teardownCurrent("fork", sessionManager.getSessionFile());
 				this.apply(
 					await this.createRuntime({
@@ -407,6 +415,7 @@ export class AgentSessionRuntime {
 			if (!forkedSessionPath) {
 				throw new Error("Failed to create forked session");
 			}
+			this.prepareCwd(targetCwd);
 			await this.teardownCurrent("fork", sessionManager.getSessionFile());
 			this.apply(
 				await this.createRuntime({
@@ -438,6 +447,7 @@ export class AgentSessionRuntime {
 		}
 		if (profileName) this.meldraLifecycle?.setProfileName(sessionManager, profileName);
 		if (workspaceRoot) this.meldraLifecycle?.setWorkspaceRoot(sessionManager, workspaceRoot);
+		this.prepareCwd(targetCwd);
 		await this.teardownCurrent("fork", sessionManager.getSessionFile());
 		this.apply(
 			await this.createRuntime({
@@ -483,6 +493,7 @@ export class AgentSessionRuntime {
 
 		const sessionManager = SessionManager.open(destinationPath, sessionDir, cwdOverride);
 		assertSessionCwdExists(sessionManager, this.cwd);
+		this.prepareCwd(sessionManager.getCwd());
 		const profileName = this.meldraLifecycle?.getProfileName(sessionManager) ?? this.getCurrentProfileName();
 		await this.teardownCurrent("resume", sessionManager.getSessionFile());
 		this.apply(

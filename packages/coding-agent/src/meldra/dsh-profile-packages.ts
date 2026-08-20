@@ -10,7 +10,11 @@ import type {
 	ProfileRuntimePackageRequest,
 	ProfileRuntimePackageResult,
 } from "../core/profile-agent-runtime.ts";
-import { MELDRA_DSH_PROFILE, prepareDshComposition } from "../extensions/dsh/composition.ts";
+import {
+	LEGACY_METAPI_DSH_PROFILE,
+	MELDRA_DSH_PROFILE,
+	prepareDshComposition,
+} from "../extensions/dsh/composition.ts";
 
 const COREPACK_PNPM_VERSION = "10.34.4";
 const MAX_OUTPUT_CHARS = 200_000;
@@ -166,7 +170,11 @@ function requestArgs(request: ProfileRuntimePackageRequest): string[] {
 }
 
 function profilePackageManifestPath(profile: ProfileEnvironmentDescriptor): string {
-	return join(profile.agentDir, "dsh-runtime", "profiles", MELDRA_DSH_PROFILE, "package.json");
+	const profilesDir = join(profile.agentDir, "dsh-runtime", "profiles");
+	const meldraPath = join(profilesDir, MELDRA_DSH_PROFILE, "package.json");
+	if (existsSync(meldraPath)) return meldraPath;
+	const legacyPath = join(profilesDir, LEGACY_METAPI_DSH_PROFILE, "package.json");
+	return existsSync(legacyPath) ? legacyPath : meldraPath;
 }
 
 function packageSourcesFromConfig(config: unknown): string[] | undefined {

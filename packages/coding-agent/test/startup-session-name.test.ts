@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { ENV_AGENT_DIR } from "../src/config.ts";
 
@@ -118,6 +118,44 @@ describe("startup session name", () => {
 		expect(result.code).toBe(1);
 		expect(result.signal).toBeNull();
 		expect(readSessionInfoNames(dirs.sessionFile)).toEqual(["CLI Named Session"]);
+	});
+
+	it("migrates the selected Session project's legacy manifest before runtime model validation", async () => {
+		const dirs = setup();
+		const sessionProjectDir = join(dirname(dirs.projectDir), "session-project");
+		mkdirSync(join(sessionProjectDir, ".pi"), { recursive: true });
+		writeFileSync(join(sessionProjectDir, ".pi", "metapi.json"), '{"profile":{"name":"default"}}');
+		createSessionFile(sessionProjectDir, dirs.sessionFile);
+
+		const result = await runCli(
+			["--session", dirs.sessionFile, "--model", "missing-model", "-p", "hi"],
+			dirs,
+		);
+
+		expect(result.code).toBe(1);
+		expect(result.signal).toBeNull();
+		expect(existsSync(join(sessionProjectDir, ".pi", "metapi.json"))).toBe(false);
+		expect(readFileSync(join(sessionProjectDir, ".pi", "meldra.json"), "utf8")).toBe(
+			'{"profile":{"name":"default"}}',
+		);
+	});
+
+	it("reports selected Session project manifest conflicts without an unhandled rejection", async () => {
+		const dirs = setup();
+		const sessionProjectDir = join(dirname(dirs.projectDir), "session-project-conflict");
+		mkdirSync(join(sessionProjectDir, ".pi"), { recursive: true });
+		writeFileSync(join(sessionProjectDir, ".pi", "metapi.json"), "legacy");
+		writeFileSync(join(sessionProjectDir, ".pi", "meldra.json"), "current");
+		createSessionFile(sessionProjectDir, dirs.sessionFile);
+
+		const result = await runCli(["--session", dirs.sessionFile, "--model", "missing-model", "-p", "hi"], dirs);
+
+		expect(result.code).toBe(1);
+		expect(result.signal).toBeNull();
+		expect(result.stderr).toContain("both legacy and Meldra paths exist");
+		expect(result.stderr).not.toContain("at migrateLegacyMeldraStorage");
+		expect(readFileSync(join(sessionProjectDir, ".pi", "metapi.json"), "utf8")).toBe("legacy");
+		expect(readFileSync(join(sessionProjectDir, ".pi", "meldra.json"), "utf8")).toBe("current");
 	});
 
 	it("rejects empty --name values without appending session metadata", async () => {

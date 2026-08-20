@@ -6,6 +6,7 @@ import { Type } from "typebox";
 import { afterEach, describe, expect, it } from "vitest";
 import {
 	type CreateAgentSessionRuntimeFactory,
+	type MeldraSessionLifecycle,
 	createAgentSessionFromServices,
 	createAgentSessionRuntime,
 	createAgentSessionServices,
@@ -39,7 +40,12 @@ describe("AgentSessionRuntime characterization", () => {
 
 	async function createRuntimeForTest(
 		extensionFactory: ExtensionFactory,
-		options?: { cwd?: string; bootstrapModel?: boolean; bootstrapThinkingLevel?: boolean },
+		options?: {
+			cwd?: string;
+			bootstrapModel?: boolean;
+			bootstrapThinkingLevel?: boolean;
+			meldraLifecycle?: MeldraSessionLifecycle;
+		},
 	) {
 		const tempDir =
 			options?.cwd ?? join(tmpdir(), `pi-runtime-suite-${Date.now()}-${Math.random().toString(36).slice(2)}`);
@@ -108,6 +114,7 @@ describe("AgentSessionRuntime characterization", () => {
 			cwd: tempDir,
 			agentDir: tempDir,
 			sessionManager: SessionManager.create(tempDir),
+			meldraLifecycle: options?.meldraLifecycle,
 		});
 		await runtime.session.bindExtensions({});
 
@@ -509,6 +516,79 @@ describe("AgentSessionRuntime characterization", () => {
 	it("throws when forking with an invalid entry id", async () => {
 		const { runtime } = await createRuntimeForTest(() => {});
 		await expect(runtime.fork("missing-entry")).rejects.toThrow("Invalid entry ID for forking");
+	});
+
+	it("prepares a replacement cwd before switching sessions", async () => {
+		const firstDir = join(tmpdir(), `pi-runtime-prepare-a-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+		const secondDir = join(tmpdir(), `pi-runtime-prepare-b-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+		mkdirSync(firstDir, { recursive: true });
+		mkdirSync(secondDir, { recursive: true });
+		cleanups.push(() => rmSync(secondDir, { recursive: true, force: true }));
+		const prepared: string[] = [];
+		const lifecycle: MeldraSessionLifecycle = {
+			prepareCwd: (cwd) => prepared.push(cwd),
+			getProfileName: () => undefined,
+			setProfileName: () => {},
+			getWorkspaceRoot: () => undefined,
+			setWorkspaceRoot: () => {},
+			getSessionDir: (cwd) => cwd,
+			createEmptyWorkspace: () => {
+				throw new Error("not used");
+			},
+			copyWorkspace: () => {
+				throw new Error("not used");
+			},
+		};
+		const { runtime, faux } = await createRuntimeForTest(() => {}, { cwd: firstDir, meldraLifecycle: lifecycle });
+		const target = SessionManager.create(secondDir);
+		target.appendMessage({ role: "user", content: "target", timestamp: Date.now() });
+		target.appendMessage(fauxAssistantMessage("target"));
+
+		await runtime.switchSession(target.getSessionFile()!);
+
+		expect(prepared).toEqual([secondDir]);
+		expect(realpathSync(runtime.cwd)).toBe(realpathSync(secondDir));
+	});
+
+	it("keeps the current runtime active when replacement cwd preparation fails", async () => {
+		const firstDir = join(tmpdir(), `pi-runtime-prepare-fail-a-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+		const secondDir = join(tmpdir(), `pi-runtime-prepare-fail-b-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+		mkdirSync(firstDir, { recursive: true });
+		mkdirSync(secondDir, { recursive: true });
+		cleanups.push(() => rmSync(secondDir, { recursive: true, force: true }));
+		const shutdownEvents: SessionShutdownEvent[] = [];
+		const lifecycle: MeldraSessionLifecycle = {
+			prepareCwd: () => {
+				throw new Error("migration conflict");
+			},
+			getProfileName: () => undefined,
+			setProfileName: () => {},
+			getWorkspaceRoot: () => undefined,
+			setWorkspaceRoot: () => {},
+			getSessionDir: (cwd) => cwd,
+			createEmptyWorkspace: () => {
+				throw new Error("not used");
+			},
+			copyWorkspace: () => {
+				throw new Error("not used");
+			},
+		};
+		const { runtime, faux } = await createRuntimeForTest(
+			(pi) => {
+				pi.on("session_shutdown", (event) => shutdownEvents.push(event));
+			},
+			{ cwd: firstDir, meldraLifecycle: lifecycle },
+		);
+		const currentSession = runtime.session;
+		const target = SessionManager.create(secondDir);
+		target.appendMessage({ role: "user", content: "target", timestamp: Date.now() });
+		target.appendMessage(fauxAssistantMessage("target"));
+
+		await expect(runtime.switchSession(target.getSessionFile()!)).rejects.toThrow("migration conflict");
+
+		expect(runtime.session).toBe(currentSession);
+		expect(shutdownEvents).toEqual([]);
+		await expect(runtime.session.prompt("still active")).resolves.toBeUndefined();
 	});
 
 	it("updates the runtime session cwd on cross-cwd session replacement", async () => {

@@ -3,7 +3,7 @@
 [中文](setup-and-distribution.md) | [English](setup-and-distribution.en.md) | [返回首页](../README.md)
 
 > [!IMPORTANT]
-> Windows x64 双安装器从 `v0.1.0-preview.7` 开始发布。安装器目前未做代码签名，Windows 可能显示 Unknown publisher 或 SmartScreen 提示。scoped npm Bootstrap 仍未发布。
+> Windows x64 双安装器目前已发布。安装器未做代码签名，Windows 可能显示 Unknown publisher 或 SmartScreen 提示。scoped npm Bootstrap 仍未发布。
 
 ## 当前状态
 

@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -58,6 +58,54 @@ describe("DSH Profile composition", () => {
 				true,
 			);
 			expect(composition.patches.some((patch) => containsEntryId(patch, "meldra-tui-jsonrpc-server"))).toBe(true);
+		},
+		DSH_COMPOSITION_TEST_TIMEOUT_MS,
+	);
+
+	it(
+		"migrates the legacy native MetaPi profile before loading it",
+		() => {
+			const home = mkdtempSync(join(tmpdir(), "meldra-dsh-profile-migration-"));
+			homes.push(home);
+			const first = prepare(home);
+			const meldraDir = first.profile.dir;
+			const legacyDir = join(home, "profiles", "metapi");
+			const manifestPath = join(meldraDir, "package.json");
+			const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
+				dependencies: Record<string, string>;
+			};
+			manifest.dependencies["@example/legacy-plugin"] = "1.0.0";
+			writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+			writeFileSync(first.profile.patchPath, "- id: legacy-user-row\n  disabled: true\n");
+			renameSync(meldraDir, legacyDir);
+
+			const composition = prepare(home);
+			const migrated = JSON.parse(readFileSync(join(composition.profile.dir, "package.json"), "utf8")) as {
+				dependencies: Record<string, string>;
+			};
+
+			expect(composition.profile.dir).toBe(meldraDir);
+			expect(existsSync(legacyDir)).toBe(false);
+			expect(migrated.dependencies["@example/legacy-plugin"]).toBe("1.0.0");
+			expect(composition.patches.some((patch) => patch.id === "legacy-user-row")).toBe(true);
+		},
+		DSH_COMPOSITION_TEST_TIMEOUT_MS,
+	);
+
+	it(
+		"fails without modifying either native profile when legacy and Meldra directories both exist",
+		() => {
+			const home = mkdtempSync(join(tmpdir(), "meldra-dsh-profile-conflict-"));
+			homes.push(home);
+			const current = prepare(home);
+			const legacyDir = join(home, "profiles", "metapi");
+			mkdirSync(legacyDir, { recursive: true });
+			writeFileSync(join(legacyDir, "legacy-marker"), "legacy");
+			writeFileSync(join(current.profile.dir, "meldra-marker"), "meldra");
+
+			expect(() => prepare(home)).toThrow("both legacy and Meldra paths exist");
+			expect(readFileSync(join(legacyDir, "legacy-marker"), "utf8")).toBe("legacy");
+			expect(readFileSync(join(current.profile.dir, "meldra-marker"), "utf8")).toBe("meldra");
 		},
 		DSH_COMPOSITION_TEST_TIMEOUT_MS,
 	);

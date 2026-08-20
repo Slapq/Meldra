@@ -1021,7 +1021,6 @@ export async function main(args: string[], options?: MainOptions) {
 		setSessionProfile(sessionManager, activeProfileName);
 		setSessionWorkspaceRoot(sessionManager, workspaceRoot);
 	}
-	agentDir = resolveProfile(sessionManager.getCwd(), activeProfileName).agentDir;
 	const missingSessionCwdIssue = getMissingSessionCwdIssue(sessionManager, cwd);
 	if (missingSessionCwdIssue) {
 		if (appMode === "interactive") {
@@ -1035,6 +1034,15 @@ export async function main(args: string[], options?: MainOptions) {
 			process.exit(1);
 		}
 	}
+	const sessionCwd = sessionManager.getCwd();
+	try {
+		if (sessionCwd !== launchCwd) migrateLegacyMeldraStorage(sessionCwd);
+	} catch (error) {
+		console.error(chalk.red(error instanceof Error ? error.message : String(error)));
+		process.exitCode = 1;
+		return;
+	}
+	agentDir = resolveProfile(sessionCwd, activeProfileName).agentDir;
 	if (parsed.name !== undefined) {
 		const name = parsed.name.trim();
 		if (!name) {
@@ -1046,7 +1054,6 @@ export async function main(args: string[], options?: MainOptions) {
 	time("createSessionManager");
 
 	const trustStore = new ProjectTrustStore(startupProfile.agentDir);
-	const sessionCwd = sessionManager.getCwd();
 	const autoTrustOnReloadCwd =
 		parsed.projectTrustOverride === undefined && !hasTrustRequiringProjectResources(sessionCwd)
 			? sessionCwd
@@ -1228,6 +1235,7 @@ export async function main(args: string[], options?: MainOptions) {
 		sessionManager,
 		profileName: activeProfileName,
 		meldraLifecycle: {
+			prepareCwd: migrateLegacyMeldraStorage,
 			getProfileName: getSessionProfile,
 			setProfileName: replaceSessionProfile,
 			getWorkspaceRoot: (manager) => getSessionWorkspaceRoot(manager) ?? workspaceRoot,

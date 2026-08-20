@@ -78,6 +78,26 @@ describe("DSH Profile package manager", () => {
 		});
 	});
 
+	it("snapshots dependencies from a legacy native MetaPi profile", async () => {
+		const root = mkdtempSync(join(tmpdir(), "meldra-dsh-legacy-package-config-"));
+		tempDirs.push(root);
+		const profile: ProfileEnvironmentDescriptor = {
+			name: "research",
+			displayName: "Research",
+			agentDir: join(root, "agent"),
+			cwd: root,
+			compatibility: false,
+			runtime: { provider: "deepseek-harness" },
+		};
+		const manifestPath = join(profile.agentDir, "dsh-runtime", "profiles", "metapi", "package.json");
+		mkdirSync(dirname(manifestPath), { recursive: true });
+		writeFileSync(manifestPath, JSON.stringify({ dependencies: { "@example/legacy-plugin": "2.0.0" } }), "utf8");
+
+		await expect(dshProfilePackageManager.snapshot?.(profile, undefined)).resolves.toEqual({
+			plugins: ["@example/legacy-plugin@2.0.0"],
+		});
+	});
+
 	it("prefers the Meldra shim directory and falls back to the legacy MetaPi directory", () => {
 		const root = mkdtempSync(join(tmpdir(), "meldra-dsh-shim-"));
 		tempDirs.push(root);

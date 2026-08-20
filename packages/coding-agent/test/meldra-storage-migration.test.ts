@@ -42,6 +42,20 @@ describe("Meldra storage migration", () => {
 		expect(migrateLegacyMeldraStorage(cwd)).toEqual({ home: false, projectManifest: false });
 	});
 
+	test("migrates a project manifest when the final Session cwd differs from the launch cwd", () => {
+		mkdirSync(join(LEGACY_METAPI_HOME, "user"), { recursive: true });
+		const launchCwd = join(temporaryHome, "launch-project");
+		const sessionCwd = join(temporaryHome, "session-project");
+		mkdirSync(join(sessionCwd, ".pi"), { recursive: true });
+		writeFileSync(join(sessionCwd, ".pi", "metapi.json"), '{"profile":{"source":"legacy"}}');
+
+		expect(migrateLegacyMeldraStorage(launchCwd)).toEqual({ home: true, projectManifest: false });
+		expect(migrateLegacyMeldraStorage(sessionCwd)).toEqual({ home: false, projectManifest: true });
+		expect(readFileSync(join(sessionCwd, ".pi", "meldra.json"), "utf8")).toBe(
+			'{"profile":{"source":"legacy"}}',
+		);
+	});
+
 	test("fails without modifying either side when both storage roots exist", () => {
 		mkdirSync(LEGACY_METAPI_HOME, { recursive: true });
 		mkdirSync(MELDRA_HOME, { recursive: true });

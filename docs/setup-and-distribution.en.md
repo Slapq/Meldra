@@ -3,7 +3,7 @@
 [中文](setup-and-distribution.md) | [English](setup-and-distribution.en.md) | [Home](../README.en.md)
 
 > [!IMPORTANT]
-> Dual Windows x64 installers are published starting with `v0.1.0-preview.7`. They are currently unsigned, so Windows may show Unknown publisher or SmartScreen warnings. The scoped npm Bootstrap remains unpublished.
+> Dual Windows x64 installers are currently published. They are unsigned, so Windows may show Unknown publisher or SmartScreen warnings. The scoped npm Bootstrap remains unpublished.
 
 ## Current Status
 
