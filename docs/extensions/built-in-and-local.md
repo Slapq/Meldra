@@ -36,10 +36,10 @@ ordinary scalar configuration so configuration surfaces retain one style.
 | User entry | `/hooks` |
 | Configuration | Profile `settings.json` plus trusted project `.pi/settings.json` |
 | Runtime adapters | Native Pi Extension events; DSH `meldra-command-hooks` Cordis plugin |
-| State | Effective in-memory Hook snapshot; no separate persistence |
+| State | Effective last-known-good Hook snapshot plus Session-scoped settings watcher; no separate persistence |
 | Compatibility | Not registered in the reserved `pi` Profile |
 
-**Responsibility.** It parses the declarative Meldra command-Hook protocol, executes Native Pi lifecycle Hooks, exposes the read-only Hook browser, and transfers the same resolved snapshot to an attached Runtime adapter. It does not execute host-side tool gates for DSH or reproduce Harness lifecycle behavior. See [Meldra Hooks](../../packages/coding-agent/docs/hooks.md).
+**Responsibility.** It parses the declarative Meldra command-Hook protocol, filters tool handlers through the documented `if` subset, executes Native Pi lifecycle Hooks, watches Profile and trusted-project Hook settings, exposes the read-only Hook browser, and transfers the same last-known-good snapshot to an attached Runtime adapter. It does not apply unrelated settings, execute host-side tool gates for DSH, or reproduce Harness lifecycle behavior. See [Meldra Hooks](../../packages/coding-agent/docs/hooks.md).
 
 ### `llama.cpp`
 

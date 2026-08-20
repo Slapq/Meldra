@@ -1,0 +1,230 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${MELDRA_PROJECT_DIR}/.pi/hooks/inject-project-context.mjs",
+              "${MELDRA_PROJECT_DIR}/.pi/hook-context.md"
+            ],
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${MELDRA_PROJECT_DIR}/.pi/hooks/audit-hook-events.mjs",
+              "${MELDRA_PROJECT_DIR}/.pi/hooks/events.jsonl"
+            ],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${MELDRA_PROJECT_DIR}/.pi/hooks/audit-hook-events.mjs",
+              "${MELDRA_PROJECT_DIR}/.pi/hooks/events.jsonl"
+            ],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(rm *)",
+            "command": "node",
+            "args": ["${MELDRA_PROJECT_DIR}/.pi/hooks/block-destructive-commands.mjs"],
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Bash(git *)",
+            "command": "node",
+            "args": ["${MELDRA_PROJECT_DIR}/.pi/hooks/block-destructive-commands.mjs"],
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "PowerShell(Remove-Item *)",
+            "command": "node",
+            "args": ["${MELDRA_PROJECT_DIR}/.pi/hooks/block-destructive-commands.mjs"],
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "*(.env*)",
+            "command": "node",
+            "args": ["${MELDRA_PROJECT_DIR}/.pi/hooks/protect-sensitive-paths.mjs"],
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "*(.git)",
+            "command": "node",
+            "args": ["${MELDRA_PROJECT_DIR}/.pi/hooks/protect-sensitive-paths.mjs"],
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "*(**/.git/**)",
+            "command": "node",
+            "args": ["${MELDRA_PROJECT_DIR}/.pi/hooks/protect-sensitive-paths.mjs"],
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${MELDRA_PROJECT_DIR}/.pi/hooks/audit-hook-events.mjs",
+              "${MELDRA_PROJECT_DIR}/.pi/hooks/events.jsonl"
+            ],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${MELDRA_PROJECT_DIR}/.pi/hooks/audit-hook-events.mjs",
+              "${MELDRA_PROJECT_DIR}/.pi/hooks/events.jsonl"
+            ],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${MELDRA_PROJECT_DIR}/.pi/hooks/audit-hook-events.mjs",
+              "${MELDRA_PROJECT_DIR}/.pi/hooks/events.jsonl"
+            ],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "AgentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${MELDRA_PROJECT_DIR}/.pi/hooks/audit-hook-events.mjs",
+              "${MELDRA_PROJECT_DIR}/.pi/hooks/events.jsonl"
+            ],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "AgentEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${MELDRA_PROJECT_DIR}/.pi/hooks/audit-hook-events.mjs",
+              "${MELDRA_PROJECT_DIR}/.pi/hooks/events.jsonl"
+            ],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "TurnStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${MELDRA_PROJECT_DIR}/.pi/hooks/audit-hook-events.mjs",
+              "${MELDRA_PROJECT_DIR}/.pi/hooks/events.jsonl"
+            ],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "TurnEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${MELDRA_PROJECT_DIR}/.pi/hooks/audit-hook-events.mjs",
+              "${MELDRA_PROJECT_DIR}/.pi/hooks/events.jsonl"
+            ],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${MELDRA_PROJECT_DIR}/.pi/hooks/audit-hook-events.mjs",
+              "${MELDRA_PROJECT_DIR}/.pi/hooks/events.jsonl"
+            ],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${MELDRA_PROJECT_DIR}/.pi/hooks/audit-hook-events.mjs",
+              "${MELDRA_PROJECT_DIR}/.pi/hooks/events.jsonl"
+            ],
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

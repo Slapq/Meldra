@@ -237,7 +237,7 @@ An empty array starts with no built-in tools while preserving extension and SDK 
 | `hooks` | object | `{}` | Meldra command Hooks keyed by supported lifecycle event |
 | `disableAllHooks` | boolean | `false` | Disable effective Profile and project Hooks |
 
-Hooks are executable configuration. Profile Hooks live in `<agentDir>/settings.json`; project Hooks live in trusted `.pi/settings.json`. Matching Profile and project handlers append rather than replacing each other. Run `/reload` after editing and use `/hooks` to inspect the effective read-only catalog.
+Hooks are executable configuration. Profile Hooks live in `<agentDir>/settings.json`; project Hooks live in trusted `.pi/settings.json`. Matching Profile and project handlers append rather than replacing each other. Hook settings are watched during a live Session; valid changes apply atomically, invalid changes preserve the last-known-good snapshot, and `/hooks` shows the effective read-only catalog. Use `/reload` for unrelated resources and settings.
 
 ```json
 {
@@ -246,7 +246,7 @@ Hooks are executable configuration. Profile Hooks live in `<agentDir>/settings.j
       {
         "matcher": "Edit|Write",
         "hooks": [
-          { "type": "command", "command": "npm run format", "timeout": 60 }
+          { "type": "command", "if": "*(src/**)", "command": "npm run format", "timeout": 60 }
         ]
       }
     ]

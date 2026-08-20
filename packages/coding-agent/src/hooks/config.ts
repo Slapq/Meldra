@@ -1,3 +1,4 @@
+import { MELDRA_TOOL_HOOK_EVENTS, matchesHookCondition, validateHookCondition } from "./condition.ts";
 import {
 	MELDRA_HOOK_EVENTS,
 	type MeldraCommandHook,
@@ -24,7 +25,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 	return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function parseHandler(value: unknown, path: string): MeldraCommandHook {
+function parseHandler(value: unknown, path: string, eventName: MeldraHookEventName): MeldraCommandHook {
 	if (!isRecord(value) || value.type !== "command") throw new Error(`${path} must be a command hook`);
 	if (typeof value.command !== "string" || !value.command.trim()) throw new Error(`${path}.command must be non-empty`);
 	if (
@@ -42,16 +43,25 @@ function parseHandler(value: unknown, path: string): MeldraCommandHook {
 	if (value.shell !== undefined && value.shell !== "bash" && value.shell !== "powershell") {
 		throw new Error(`${path}.shell must be bash or powershell`);
 	}
+	if (value.if !== undefined) {
+		if (typeof value.if !== "string" || !validateHookCondition(value.if)) {
+			throw new Error(`${path}.if must be one permission rule such as Bash(git *)`);
+		}
+		if (!MELDRA_TOOL_HOOK_EVENTS.has(eventName)) {
+			throw new Error(`${path}.if is only supported on tool Hook events`);
+		}
+	}
 	return {
 		type: "command",
 		command: value.command,
 		...(value.args === undefined ? {} : { args: [...value.args] as string[] }),
 		...(value.timeout === undefined ? {} : { timeout: value.timeout }),
 		...(value.shell === undefined ? {} : { shell: value.shell }),
+		...(value.if === undefined ? {} : { if: value.if }),
 	};
 }
 
-function parseGroups(value: unknown, path: string): MeldraHookMatcherGroup[] {
+function parseGroups(value: unknown, path: string, eventName: MeldraHookEventName): MeldraHookMatcherGroup[] {
 	if (!Array.isArray(value)) throw new Error(`${path} must be an array`);
 	return value.map((item, groupIndex) => {
 		const groupPath = `${path}[${groupIndex}]`;
@@ -74,7 +84,7 @@ function parseGroups(value: unknown, path: string): MeldraHookMatcherGroup[] {
 		}
 		return {
 			...(typeof item.matcher === "string" ? { matcher: item.matcher } : {}),
-			hooks: item.hooks.map((hook, hookIndex) => parseHandler(hook, `${groupPath}.hooks[${hookIndex}]`)),
+			hooks: item.hooks.map((hook, hookIndex) => parseHandler(hook, `${groupPath}.hooks[${hookIndex}]`, eventName)),
 		};
 	});
 }
@@ -98,7 +108,11 @@ export function resolveMeldraHooks(sources: HookSettingsSource[]): ResolvedMeldr
 				continue;
 			}
 			try {
-				for (const group of parseGroups(rawGroups, `${source.source} hooks.${eventName}`)) {
+				for (const group of parseGroups(
+					rawGroups,
+					`${source.source} hooks.${eventName}`,
+					eventName as MeldraHookEventName,
+				)) {
 					for (const hook of group.hooks) {
 						const identity = JSON.stringify([eventName, group.matcher ?? "", hook]);
 						if (seen.has(identity)) continue;
@@ -142,9 +156,12 @@ export function hooksForEvent(
 	config: ResolvedMeldraHooks,
 	event: MeldraHookEventName,
 	matcherValue = "",
+	input?: import("./types.ts").MeldraHookInput,
 ): ResolvedMeldraCommandHook[] {
 	if (config.disabled) return [];
-	return config.events[event].filter((hook) => matchesMeldraHook(hook.matcher, matcherValue));
+	return config.events[event].filter(
+		(hook) => matchesMeldraHook(hook.matcher, matcherValue) && (!input || matchesHookCondition(hook.if, event, input)),
+	);
 }
 
 const TOOL_NAMES: Record<string, string> = {

@@ -4,6 +4,10 @@ export const MELDRA_HOOK_EVENTS = [
 	"PreToolUse",
 	"PostToolUse",
 	"PostToolUseFailure",
+	"AgentStart",
+	"AgentEnd",
+	"TurnStart",
+	"TurnEnd",
 	"Stop",
 	"SessionEnd",
 ] as const;
@@ -17,6 +21,7 @@ export interface MeldraCommandHook {
 	args?: string[];
 	timeout?: number;
 	shell?: "bash" | "powershell";
+	if?: string;
 }
 
 export interface MeldraHookMatcherGroup {

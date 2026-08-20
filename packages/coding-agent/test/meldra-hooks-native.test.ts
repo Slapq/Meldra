@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -43,6 +43,53 @@ let data=""; process.stdin.on("data", c => data += c); process.stdin.on("end", (
   if (JSON.parse(data).hook_event_name === "UserPromptSubmit") { process.stderr.write("prompt denied"); process.exit(2); }
 });`);
 		expect(await runner.emitInput("do not run", undefined, "interactive")).toEqual({ action: "handled" });
+	});
+
+	it("emits Agent and Turn lifecycle events with portable indexes", async () => {
+		const cwd = mkdtempSync(join(tmpdir(), "meldra-hooks-native-lifecycle-"));
+		dirs.push(cwd);
+		const script = join(cwd, "lifecycle.mjs");
+		const log = join(cwd, "events.jsonl");
+		writeFileSync(
+			script,
+			`import { appendFileSync } from "node:fs";
+let data=""; process.stdin.on("data", c => data += c); process.stdin.on("end", () => appendFileSync(${JSON.stringify(log)}, data + "\\n"));`,
+			"utf8",
+		);
+		const hook = { type: "command" as const, command: process.execPath, args: [script] };
+		const config = resolveHooksRuntimeConfig(
+			{
+				hooks: {
+					AgentStart: [{ hooks: [hook] }],
+					AgentEnd: [{ hooks: [hook] }],
+					TurnStart: [{ hooks: [hook] }],
+					TurnEnd: [{ hooks: [hook] }],
+				},
+			},
+			{},
+			cwd,
+		);
+		const result = await createTestExtensionsResult([createMeldraHooksExtension(() => config)], cwd);
+		const modelRegistry = await createInMemoryModelRegistry(AuthStorage.inMemory());
+		const runner = new ExtensionRunner(result.extensions, result.runtime, cwd, SessionManager.inMemory(), modelRegistry);
+
+		await runner.emit({ type: "agent_start" });
+		await runner.emit({ type: "turn_start", turnIndex: 0, timestamp: 1234 });
+		await runner.emit({ type: "turn_end", turnIndex: 0, message: {} as never, toolResults: [] });
+		await runner.emit({ type: "agent_end", messages: [] });
+
+		const events = readFileSync(log, "utf8")
+			.trim()
+			.split("\n")
+			.map((line) => JSON.parse(line) as Record<string, unknown>);
+		expect(events.map((event) => event.hook_event_name)).toEqual([
+			"AgentStart",
+			"TurnStart",
+			"TurnEnd",
+			"AgentEnd",
+		]);
+		expect(events[1]).toMatchObject({ turn_index: 0, timestamp: 1234 });
+		expect(events[2]).toMatchObject({ turn_index: 0, timestamp: expect.any(Number) });
 	});
 
 	it("applies structured updatedInput before native tool execution", async () => {

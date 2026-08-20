@@ -340,12 +340,14 @@ export {
 	type MeldraHookRunResult,
 	type MeldraHooksRuntimeConfig,
 	type MeldraHooksSettings,
+	matchesHookCondition,
 	matchesMeldraHook,
 	type ResolvedMeldraCommandHook,
 	type ResolvedMeldraHooks,
 	resolveMeldraHooks,
 	runMeldraCommandHook,
 	runMeldraCommandHooks,
+	validateHookCondition,
 } from "./hooks/index.ts";
 // Main entry point
 export { type MainOptions, main } from "./main.ts";

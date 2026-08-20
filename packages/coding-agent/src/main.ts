@@ -5,6 +5,7 @@
  * createAgentSession() options. The SDK does the heavy lifting.
  */
 
+import { join } from "node:path";
 import { createInterface } from "node:readline";
 import { type ImageContent, modelsAreEqual } from "@earendil-works/pi-ai";
 import chalk from "chalk";
@@ -34,6 +35,7 @@ import { selectSession } from "./cli/session-picker.ts";
 import { shouldRunFirstTimeSetup, showFirstTimeSetup, showStartupSelector } from "./cli/startup-ui.ts";
 import {
 	APP_NAME,
+	CONFIG_DIR_NAME,
 	ENV_AGENT_DIR,
 	ENV_AUTH_PATH,
 	ENV_MODELS_PATH,
@@ -1110,13 +1112,36 @@ export async function main(args: string[], options?: MainOptions) {
 			? extensionFactories
 			: [
 					...extensionFactories,
-					createMeldraHooksExtension(() =>
-						resolveHooksRuntimeConfig(
-							runtimeSettingsManager.getEffectiveGlobalSettings(),
-							runtimeSettingsManager.getProjectSettings(),
-							cwd,
-							runtimeSettingsManager.getShellPath(),
-						),
+					createMeldraHooksExtension(
+						() =>
+							resolveHooksRuntimeConfig(
+								runtimeSettingsManager.getEffectiveGlobalSettings(),
+								runtimeSettingsManager.getProjectSettings(),
+								cwd,
+								runtimeSettingsManager.getShellPath(),
+							),
+						{
+							paths: () => [
+								join(runtimeProfileState.profile.agentDir, "settings.json"),
+								...(runtimeSettingsManager.isProjectTrusted()
+									? [join(cwd, CONFIG_DIR_NAME, "settings.json")]
+									: []),
+							],
+							load() {
+								const snapshot = runtimeSettingsManager.readHookSettingsSnapshot();
+								return {
+									config: resolveHooksRuntimeConfig(
+										snapshot.profile,
+										snapshot.project,
+										cwd,
+										snapshot.shellPath,
+									),
+									diagnostics: snapshot.errors.map(
+										({ scope, error }) => `${scope} Hook settings reload failed: ${error.message}`,
+									),
+								};
+							},
+						},
 					),
 				];
 		const services = await createAgentSessionServices({

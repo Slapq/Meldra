@@ -2,11 +2,13 @@ import type { ExtensionAPI, ExtensionContext, InlineExtension } from "../../core
 import type { Settings } from "../../core/settings-manager.ts";
 import {
 	canonicalHookToolName,
+	createMeldraHooksSettingsWatcher,
 	hooksForEvent,
 	type MeldraHookEventName,
 	type MeldraHookInput,
 	type MeldraHookRunResult,
 	type MeldraHooksRuntimeConfig,
+	type MeldraHooksSettingsWatcher,
 	resolveMeldraHooks,
 	runMeldraCommandHooks,
 } from "../../hooks/index.ts";
@@ -15,6 +17,18 @@ interface HooksRuntimeConfig extends MeldraHooksRuntimeConfig {}
 
 interface ConfigurableProfileRuntime {
 	configureHooks?(config: HooksRuntimeConfig): void | Promise<void>;
+}
+
+export interface MeldraHooksHotReloadResult {
+	config?: HooksRuntimeConfig;
+	diagnostics?: string[];
+}
+
+export interface MeldraHooksHotReloadOptions {
+	paths: string[] | (() => string[]);
+	load(): MeldraHooksHotReloadResult | Promise<MeldraHooksHotReloadResult>;
+	intervalMs?: number;
+	debounceMs?: number;
 }
 
 function hookSpecificOutput(result: MeldraHookRunResult): Record<string, unknown> | undefined {
@@ -72,7 +86,7 @@ async function run(
 	ctx: ExtensionContext,
 ): Promise<MeldraHookRunResult[]> {
 	const results = await runMeldraCommandHooks({
-		hooks: hooksForEvent(config.hooks, event, matcher),
+		hooks: hooksForEvent(config.hooks, event, matcher, input),
 		input,
 		cwd: ctx.cwd,
 		signal: ctx.signal,
@@ -81,6 +95,17 @@ async function run(
 	const failures = diagnostics(results);
 	if (failures.length && ctx.hasUI) ctx.ui.notify(failures.join("\n"), "warning");
 	return results;
+}
+
+async function runNotification(
+	config: HooksRuntimeConfig,
+	event: "AgentStart" | "AgentEnd" | "TurnStart" | "TurnEnd",
+	input: MeldraHookInput,
+	ctx: ExtensionContext,
+): Promise<void> {
+	const results = await run(config, event, "", input, ctx);
+	const reason = blockReason(results);
+	if (reason && ctx.hasUI) ctx.ui.notify(`${event} is notification-only; block ignored: ${reason}`, "warning");
 }
 
 export function resolveHooksRuntimeConfig(
@@ -99,23 +124,30 @@ export function resolveHooksRuntimeConfig(
 	};
 }
 
-export function createMeldraHooksExtension(getConfig: () => HooksRuntimeConfig): InlineExtension {
+export function createMeldraHooksExtension(
+	getConfig: () => HooksRuntimeConfig,
+	hotReload?: MeldraHooksHotReloadOptions,
+): InlineExtension {
 	return {
 		name: "meldra-hooks",
 		hidden: true,
 		factory: (pi: ExtensionAPI) => {
 			let config = getConfig();
+			let settingsWatcher: MeldraHooksSettingsWatcher | undefined;
+			let hotReloadActive = false;
+			let hotReloadDiagnostics: string[] = [];
 			let pendingContext: string[] = [];
 			let stopHookActive = false;
 
 			pi.registerCommand("hooks", {
 				description: "Inspect active Meldra hooks",
 				handler: async (_args, ctx) => {
-					config = getConfig();
+					if (!hotReload) config = getConfig();
 					const events = Object.entries(config.hooks.events).filter(([, hooks]) => hooks.length > 0);
 					const labels = [
 						`Status: ${config.hooks.disabled ? "disabled" : "enabled"}`,
 						...config.hooks.diagnostics.map((message) => `Warning: ${message}`),
+						...hotReloadDiagnostics.map((message) => `Warning: ${message}`),
 						...events.map(([event, hooks]) => `${event} (${hooks.length})`),
 					];
 					const selected = await ctx.ui.select("Meldra Hooks", labels.length ? labels : ["No hooks configured"]);
@@ -125,21 +157,67 @@ export function createMeldraHooksExtension(getConfig: () => HooksRuntimeConfig):
 					if (!hooks?.length) return;
 					await ctx.ui.select(
 						eventName,
-						hooks.map((hook) => `[${hook.source}] ${hook.matcher || "*"} -> ${hook.command}`),
+						hooks.map(
+							(hook) =>
+								`[${hook.source}] ${hook.matcher || "*"}${hook.if ? ` if=${hook.if}` : ""} -> ${hook.command}`,
+						),
 					);
 				},
 			});
 
 			pi.on("session_start", async (event, ctx) => {
+				settingsWatcher?.close();
+				settingsWatcher = undefined;
+				hotReloadActive = true;
+				hotReloadDiagnostics = [];
 				config = getConfig();
 				const profileRuntime = ctx.profileRuntime as ConfigurableProfileRuntime | undefined;
-				if (profileRuntime) {
-					await profileRuntime.configureHooks?.(config);
-					return;
-				}
+				if (profileRuntime) await profileRuntime.configureHooks?.(config);
 				if (config.hooks.diagnostics.length && ctx.hasUI) {
 					ctx.ui.notify(config.hooks.diagnostics.join("\n"), "warning");
 				}
+				if (hotReload) {
+					const reload = async (): Promise<void> => {
+						const loaded = await hotReload.load();
+						if (!hotReloadActive) return;
+						const failures = [
+							...(loaded.diagnostics ?? []),
+							...(loaded.config?.hooks.diagnostics ?? []),
+						];
+						if (!loaded.config || failures.length > 0) {
+							hotReloadDiagnostics = failures.length > 0 ? failures : ["Hook settings reload returned no config"];
+							if (ctx.hasUI) ctx.ui.notify(hotReloadDiagnostics.join("\n"), "warning");
+							return;
+						}
+						if (JSON.stringify(loaded.config) === JSON.stringify(config)) {
+							hotReloadDiagnostics = [];
+							return;
+						}
+						try {
+							await profileRuntime?.configureHooks?.(loaded.config);
+						} catch (error) {
+							hotReloadDiagnostics = [`Hook settings reload failed: ${String(error)}`];
+							if (ctx.hasUI) ctx.ui.notify(hotReloadDiagnostics[0], "warning");
+							return;
+						}
+						if (!hotReloadActive) return;
+						config = loaded.config;
+						hotReloadDiagnostics = [];
+						if (ctx.hasUI) ctx.ui.notify("Meldra Hooks configuration reloaded", "info");
+					};
+					settingsWatcher = createMeldraHooksSettingsWatcher({
+						paths: typeof hotReload.paths === "function" ? hotReload.paths() : hotReload.paths,
+						reload,
+						onError(error) {
+							if (!hotReloadActive) return;
+							hotReloadDiagnostics = [`Hook settings watcher failed: ${String(error)}`];
+							if (ctx.hasUI) ctx.ui.notify(hotReloadDiagnostics[0], "warning");
+						},
+						intervalMs: hotReload.intervalMs,
+						debounceMs: hotReload.debounceMs,
+					});
+				}
+				if (profileRuntime) return;
 				const source = event.reason === "reload" ? "startup" : event.reason;
 				const results = await run(
 					config,
@@ -233,6 +311,36 @@ export function createMeldraHooksExtension(getConfig: () => HooksRuntimeConfig):
 				};
 			});
 
+			pi.on("agent_start", async (_event, ctx) => {
+				if (ctx.profileRuntime) return;
+				await runNotification(config, "AgentStart", commonInput("AgentStart", ctx), ctx);
+			});
+
+			pi.on("agent_end", async (_event, ctx) => {
+				if (ctx.profileRuntime) return;
+				await runNotification(config, "AgentEnd", commonInput("AgentEnd", ctx), ctx);
+			});
+
+			pi.on("turn_start", async (event, ctx) => {
+				if (ctx.profileRuntime) return;
+				await runNotification(
+					config,
+					"TurnStart",
+					{ ...commonInput("TurnStart", ctx), turn_index: event.turnIndex, timestamp: event.timestamp },
+					ctx,
+				);
+			});
+
+			pi.on("turn_end", async (event, ctx) => {
+				if (ctx.profileRuntime) return;
+				await runNotification(
+					config,
+					"TurnEnd",
+					{ ...commonInput("TurnEnd", ctx), turn_index: event.turnIndex, timestamp: Date.now() },
+					ctx,
+				);
+			});
+
 			pi.on("agent_settled", async (_event, ctx) => {
 				if (ctx.profileRuntime) return;
 				const results = await run(
@@ -255,6 +363,9 @@ export function createMeldraHooksExtension(getConfig: () => HooksRuntimeConfig):
 			});
 
 			pi.on("session_shutdown", async (event, ctx) => {
+				hotReloadActive = false;
+				settingsWatcher?.close();
+				settingsWatcher = undefined;
 				if (ctx.profileRuntime) return;
 				await run(
 					config,

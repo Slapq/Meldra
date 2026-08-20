@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -10,15 +10,16 @@ afterEach(() => {
 	for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
-function setup(preDecision: "deny" | "ask" | "updated" | "error" = "deny") {
+function setup(preDecision: "deny" | "ask" | "updated" | "error" | "lifecycle-block" = "deny") {
 	const cwd = mkdtempSync(join(tmpdir(), "meldra-hooks-dsh-"));
 	dirs.push(cwd);
 	const script = join(cwd, "hook.mjs");
 	writeFileSync(
 		script,
-		`import { writeFileSync } from "node:fs";
+		`import { appendFileSync, writeFileSync } from "node:fs";
 let data=""; process.stdin.on("data", c => data += c); process.stdin.on("end", () => {
  const input=JSON.parse(data);
+ if(input.hook_event_name==="AgentStart" && ${JSON.stringify(preDecision)}==="lifecycle-block"){process.stderr.write("cannot undo start");process.exit(2);}
  if(input.hook_event_name==="PreToolUse"){
   if(${JSON.stringify(preDecision)}==="ask") process.stdout.write(JSON.stringify({hookSpecificOutput:{permissionDecision:"ask"}}));
   else if(${JSON.stringify(preDecision)}==="updated") process.stdout.write(JSON.stringify({hookSpecificOutput:{updatedInput:{command:"changed"}}}));
@@ -28,6 +29,7 @@ let data=""; process.stdin.on("data", c => data += c); process.stdin.on("end", (
  if(input.hook_event_name==="PostToolUse")process.stdout.write(JSON.stringify({hookSpecificOutput:{additionalContext:"review the result"}}));
  if(input.hook_event_name==="Stop"){process.stderr.write("continue working");process.exit(2);}
  if(input.hook_event_name==="SessionEnd")setTimeout(() => writeFileSync(input.cwd + "/session-end.txt", "done"), 30);
+ if(["AgentStart","AgentEnd","TurnStart","TurnEnd"].includes(input.hook_event_name))appendFileSync(input.cwd + "/lifecycle.jsonl", JSON.stringify(input) + "\\n");
 });`,
 		"utf8",
 	);
@@ -54,6 +56,10 @@ let data=""; process.stdin.on("data", c => data += c); process.stdin.on("end", (
 				hooks: {
 					PreToolUse: [{ matcher: "Bash", hooks: [hook] }],
 					PostToolUse: [{ matcher: "Bash", hooks: [hook] }],
+					AgentStart: [{ hooks: [hook] }],
+					AgentEnd: [{ hooks: [hook] }],
+					TurnStart: [{ hooks: [hook] }],
+					TurnEnd: [{ hooks: [hook] }],
 					Stop: [{ hooks: [hook] }],
 					SessionEnd: [{ hooks: [hook] }],
 				},
@@ -62,9 +68,10 @@ let data=""; process.stdin.on("data", c => data += c); process.stdin.on("end", (
 	};
 	service?.configure(config);
 	service?.subscribeDiagnostics((diagnostic) => diagnostics.push(diagnostic));
-	const agent = { id: "session-1", steer: vi.fn() };
+	const session = {};
+	const agent = { id: "session-1", session, steer: vi.fn() };
 	if (!service) throw new Error("Meldra Hooks service was not registered");
-	return { handlers, agent, service, diagnostics, cwd };
+	return { handlers, agent, session, service, diagnostics, cwd };
 }
 
 describe("Meldra hooks DSH adapter", () => {
@@ -135,6 +142,58 @@ describe("Meldra hooks DSH adapter", () => {
 		);
 		expect(updated.diagnostics).toContainEqual({
 			message: "DSH does not support PreToolUse updatedInput; immutable arguments were preserved",
+		});
+	});
+
+	it("maps DSH agent status and model steps to ordered lifecycle Hooks", async () => {
+		const { handlers, agent, session, service, cwd } = setup();
+		handlers.get("agent/session-start")?.[0]?.({ agent, source: "startup" });
+		handlers.get("agent/status")?.[0]?.({ agent, status: "running" });
+		handlers.get("session/event")?.[0]?.(session, {
+			type: "step/start",
+			seq: 1,
+			time: 1000,
+			data: { turn: 3, step: 1 },
+		});
+		handlers.get("session/event")?.[0]?.(session, {
+			type: "step/end",
+			seq: 2,
+			time: 1200,
+			data: { turn: 3, step: 1 },
+		});
+		handlers.get("agent/status")?.[0]?.({ agent, status: "idle" });
+		await service.drain();
+
+		const events = readFileSync(join(cwd, "lifecycle.jsonl"), "utf8")
+			.trim()
+			.split("\n")
+			.map((line) => JSON.parse(line) as Record<string, unknown>);
+		expect(events.map((event) => event.hook_event_name)).toEqual([
+			"AgentStart",
+			"TurnStart",
+			"TurnEnd",
+			"AgentEnd",
+		]);
+		expect(events[1]).toMatchObject({
+			turn_index: 0,
+			timestamp: 1000,
+			runtime_turn: 3,
+			runtime_step: 1,
+		});
+		expect(events[2]).toMatchObject({
+			turn_index: 0,
+			timestamp: 1200,
+			runtime_turn: 3,
+			runtime_step: 1,
+		});
+	});
+
+	it("warns when a notification-only lifecycle Hook tries to block", async () => {
+		const { handlers, agent, service, diagnostics } = setup("lifecycle-block");
+		handlers.get("agent/status")?.[0]?.({ agent, status: "running" });
+		await service.drain();
+		expect(diagnostics).toContainEqual({
+			message: "AgentStart is notification-only; block ignored: cannot undo start",
 		});
 	});
 

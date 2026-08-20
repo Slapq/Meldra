@@ -18,8 +18,12 @@ Example extensions demonstrating:
 - External integrations (SSH, file watchers, system theme sync)
 - Custom providers (Anthropic with custom streaming, GitLab Duo)
 
+### [hooks/](hooks/)
+Standalone Meldra command Hook scripts for safety gates, project context, and metadata-only auditing. Includes a complete project settings example and runner-backed tests.
+
 ## Documentation
 
 - [SDK Reference](sdk/README.md)
+- [Meldra Hooks](../docs/hooks.md)
 - [Extensions Documentation](../docs/extensions.md)
 - [Skills Documentation](../docs/skills.md)

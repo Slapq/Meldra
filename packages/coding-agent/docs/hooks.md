@@ -18,7 +18,11 @@ Project Hooks apply only after Meldra Project Trust accepts the project:
 <cwd>/.pi/settings.json
 ```
 
-Profile and project handlers for the same event are appended. Identical event, matcher, and handler declarations run once. Project `disableAllHooks` overrides the Profile value when explicitly present. Run `/reload` after editing settings.
+Profile and project handlers for the same event are appended. Identical event, matcher, condition, and handler declarations run once. Project `disableAllHooks` overrides the Profile value when explicitly present.
+
+Meldra watches the Profile `settings.json` and the trusted project's `.pi/settings.json` during a live Session. Changes to `hooks`, `disableAllHooks`, or the Hook `shellPath` normally apply within about 600 ms. A valid snapshot replaces the previous configuration atomically and is forwarded to an active DSH Runtime. Invalid JSON, schema, matcher, or condition changes keep the last-known-good configuration and produce an interactive warning. Deleting one settings file removes only that source's Hook declarations. The watcher never applies unrelated model, provider, theme, or TUI setting changes; use `/reload` when those resources or settings must be refreshed.
+
+Command handlers are spawned anew for every matching event. Changes to an external script, executable, or its imported files therefore take effect on the next invocation without waiting for the settings watcher; a process already running keeps its current code.
 
 ```json
 {
@@ -55,6 +59,7 @@ A command handler supports:
 | `args` | string[] | Enables exec form; every argument is passed literally |
 | `timeout` | number | Positive timeout in seconds; default 600 |
 | `shell` | `"bash"` or `"powershell"` | Optional shell-form override |
+| `if` | string | Optional permission-rule subset evaluated before spawning on tool events |
 
 When `args` is present, Meldra spawns `command` directly, including Windows command shims such as `.cmd` files. Without `args`, Meldra uses the configured Pi shell, or PowerShell when explicitly selected. `${CLAUDE_PROJECT_DIR}` and `${MELDRA_PROJECT_DIR}` are replaced in exec-form command/arguments and exported to every Hook process.
 
@@ -81,6 +86,30 @@ Built-in tool names use Claude-compatible matcher names where there is a direct 
 
 Custom and MCP tool names are preserved.
 
+## Conditions
+
+A command handler on `PreToolUse`, `PostToolUse`, or `PostToolUseFailure` may set one `if` condition. Conditions run after the matcher group and before the process is spawned:
+
+```json
+{
+  "type": "command",
+  "if": "Bash(git *)",
+  "command": "node",
+  "args": ["${MELDRA_PROJECT_DIR}/.pi/hooks/check-git.mjs"]
+}
+```
+
+The supported permission-rule subset is:
+
+- `Tool` or `Tool(*)` for every call to one tool;
+- tool-name wildcards such as `mcp__github__*`;
+- `Tool(glob)` against the primary command, path, or URL field;
+- `Tool(param:value)` against one top-level scalar tool input field.
+
+`*` matches any character sequence. File paths use minimatch-style `*` and `**` after Windows separators are normalized to `/`. PowerShell command and scalar matching is case-insensitive.
+
+Bash and PowerShell conditions intentionally parse only simple single commands. If a command contains compound operators, quotes, substitutions, redirects, escapes, leading environment assignments, known execution wrappers, or other syntax that cannot be interpreted reliably, the condition fails open and the Hook runs. Common aliases for `Remove-Item` are normalized before a simple PowerShell match. This filter reduces irrelevant process spawns; it is not a permission boundary. The Hook script and Runtime sandbox or approval policy remain authoritative. Conditions on non-tool events and malformed rules produce configuration diagnostics and do not execute.
+
 ## Events
 
 | Hook Event | Matcher | Native Pi | DSH rc.8 |
@@ -90,6 +119,10 @@ Custom and MCP tool names are preserved.
 | `PreToolUse` | tool name | Allow, block, `updatedInput` | Allow, ask, deny; no argument rewriting |
 | `PostToolUse` | tool name | Result feedback/context | Result feedback/context |
 | `PostToolUseFailure` | tool name | Error feedback/context | Error feedback/context |
+| `AgentStart` | none | Exact native Agent run start | Approximate `agent/status: running` notification |
+| `AgentEnd` | none | Exact native Agent run end | Approximate `agent/status: idle` notification |
+| `TurnStart` | none | Exact native model turn start | DSH `step/start` notification |
+| `TurnEnd` | none | Exact native model turn end | DSH `step/end` notification |
 | `Stop` | none | Protected follow-up continuation | Native `agent/turn-stopping` steering |
 | `SessionEnd` | shutdown reason | Awaited `session_shutdown` | Approximate `agent/disposed` notification |
 
@@ -119,6 +152,8 @@ Tool events also receive:
 
 `UserPromptSubmit` receives `prompt`. `SessionStart` receives `source`. `SessionEnd` receives `reason`. `Stop` receives `stop_hook_active`, which lets scripts avoid continuation loops. `PostToolUse` and `PostToolUseFailure` receive `tool_response`; failures also receive `error`.
 
+`TurnStart` and `TurnEnd` receive zero-based `turn_index` and `timestamp`. In DSH, one Meldra Hook Turn deliberately maps to one Harness step because a step is one model call plus its requested tools; the input also includes Harness's authoritative one-based `runtime_turn` and `runtime_step`. `AgentStart`, `AgentEnd`, `TurnStart`, and `TurnEnd` are notification-only. Exit `2` cannot reverse an event that has already occurred and is reported as an ignored block warning.
+
 A Native Pi Session includes `transcript_path` when it has a persistent Session file. DSH does not expose a Pi transcript path because Harness owns its durable Session log.
 
 ## Decisions
@@ -147,10 +182,16 @@ All matching command handlers run to completion in parallel. Any blocking result
 
 Native Pi awaits `SessionEnd` during `session_shutdown`. DSH's `agent/disposed` notification remains approximate, but graceful Runtime shutdown drains Hook commands that have already started before exiting. Forced worker teardown terminates every tracked Hook process tree.
 
+## Examples
+
+See [`examples/hooks/`](../examples/hooks/) for standalone Node.js handlers that block destructive commands, protect sensitive paths, inject trusted project context, and write metadata-only audit records. The directory includes a complete project `settings.json` example and runner-backed tests.
+
 ## Inspect Hooks
 
-Run `/hooks` in the interactive TUI. The read-only browser shows whether Hooks are enabled, configuration diagnostics, event counts, source (`profile` or `project`), matcher, and command. Edit JSON settings to change Hooks, then run `/reload`.
+Run `/hooks` in the interactive TUI. The read-only browser shows whether Hooks are enabled, configuration and hot-reload diagnostics, event counts, source (`profile` or `project`), matcher, condition, and command. Valid Hook settings changes are watched automatically; use `/reload` for Extensions, Skills, prompts, themes, context files, and unrelated settings.
 
 ## Current Exclusions
 
-The first protocol version does not implement HTTP, MCP tool, prompt, or agent handlers; asynchronous handlers; `once`; permission-rule `if` filters; managed policy; automatic settings watchers; Skill/Subagent frontmatter Hooks; or Claude-specific events not listed above. Unsupported event names produce diagnostics and do not execute.
+The current protocol does not implement HTTP, MCP tool, prompt, or agent handlers; asynchronous handlers; `once`; managed policy; Skill/Subagent frontmatter Hooks; or Claude-specific events not listed above. Full Claude permission-rule shell AST parity is also outside the initial `if` subset. Unsupported event names produce diagnostics and do not execute.
+
+HTTP/Webhook execution remains deferred pending URL and environment allowlists, SSRF policy, payload redaction, retry semantics, and bounded response handling. See the [HTTP Hook handler evaluation](../../../docs/investigations/2026-08-21-meldra-http-hook-handler-evaluation.md).

@@ -197,6 +197,19 @@ export interface SettingsError {
 	error: Error;
 }
 
+export interface HookSettingsLayer {
+	hooks?: Settings["hooks"];
+	disableAllHooks?: boolean;
+	shellPath?: string;
+}
+
+export interface HookSettingsSnapshot {
+	profile: HookSettingsLayer;
+	project: HookSettingsLayer;
+	shellPath?: string;
+	errors: SettingsError[];
+}
+
 export class FileSettingsStorage implements SettingsStorage {
 	private globalSettingsPath: string;
 	private projectSettingsPath: string;
@@ -474,6 +487,36 @@ export class SettingsManager {
 
 	getProjectSettings(): Settings {
 		return structuredClone(this.projectSettings);
+	}
+
+	readHookSettingsSnapshot(): HookSettingsSnapshot {
+		const profileLoad = SettingsManager.tryLoadFromStorage(this.storage, "global");
+		const projectLoad = SettingsManager.tryLoadFromStorage(this.storage, "project", this.projectTrusted);
+		const profileSettings = profileLoad.error
+			? this.getEffectiveGlobalSettings()
+			: deepMergeSettings(this.baseSettings, profileLoad.settings);
+		const projectSettings = projectLoad.error ? this.getProjectSettings() : projectLoad.settings;
+		const pick = (settings: Settings): HookSettingsLayer => ({
+			...(settings.hooks === undefined ? {} : { hooks: structuredClone(settings.hooks) }),
+			...(typeof settings.disableAllHooks === "boolean"
+				? { disableAllHooks: settings.disableAllHooks }
+				: {}),
+			...(typeof settings.shellPath === "string" ? { shellPath: normalizePath(settings.shellPath) } : {}),
+		});
+		return {
+			profile: pick(profileSettings),
+			project: pick(projectSettings),
+			shellPath:
+				typeof projectSettings.shellPath === "string"
+					? normalizePath(projectSettings.shellPath)
+					: typeof profileSettings.shellPath === "string"
+						? normalizePath(profileSettings.shellPath)
+						: undefined,
+			errors: [
+				...(profileLoad.error ? [{ scope: "global" as const, error: profileLoad.error }] : []),
+				...(projectLoad.error ? [{ scope: "project" as const, error: projectLoad.error }] : []),
+			],
+		};
 	}
 
 	isProjectTrusted(): boolean {

@@ -1,6 +1,7 @@
 import type { Context } from "@deepseek-ai/cordis";
 import type { Agent, PreStepDecision } from "@deepseek-ai/dsh-agent";
 import { createUserMessage, type UserMessage } from "@deepseek-ai/dsh-llm";
+import type { Session, SessionEvent } from "@deepseek-ai/dsh-session";
 import type { PostToolDecision, PreToolDecision, ToolExecution, ToolExecutionResult } from "@deepseek-ai/dsh-tools";
 import {
 	canonicalHookToolName,
@@ -97,7 +98,7 @@ async function run(
 	signal?: AbortSignal,
 ): Promise<MeldraHookRunResult[]> {
 	return await runMeldraCommandHooks({
-		hooks: hooksForEvent(config.hooks, event, matcher),
+		hooks: hooksForEvent(config.hooks, event, matcher, input),
 		input,
 		cwd: config.cwd,
 		signal,
@@ -111,6 +112,10 @@ export function apply(ctx: Context): void {
 	const initialized = new WeakSet<Agent>();
 	const liveAgents = new Set<Agent>();
 	const endedAgents = new WeakSet<Agent>();
+	const sessionAgents = new WeakMap<Session, Agent>();
+	const turnIndexes = new WeakMap<Agent, number>();
+	const stepIndexes = new WeakMap<Agent, Map<string, number>>();
+	const notificationTails = new WeakMap<Agent, Promise<void>>();
 	const stopHookActive = new WeakSet<Agent>();
 	const diagnosticListeners = new Set<(diagnostic: MeldraDshHookDiagnostic) => void>();
 	const pendingRuns = new Set<Promise<unknown>>();
@@ -141,6 +146,25 @@ export function apply(ctx: Context): void {
 		);
 		return task;
 	};
+	const scheduleNotification = (
+		agent: Agent,
+		active: MeldraHooksRuntimeConfig,
+		event: MeldraHookEventName,
+		input: MeldraHookInput,
+	): void => {
+		const previous = notificationTails.get(agent) ?? Promise.resolve();
+		const task = previous
+			.catch(() => undefined)
+			.then(async () => {
+				const results = await invoke(active, event, "", input);
+				const reason = blockReason(results);
+				if (reason) report(`${event} is notification-only; block ignored: ${reason}`);
+			})
+			.catch((error) => report(`${event} hook failed: ${String(error)}`));
+		notificationTails.set(agent, task);
+		pendingRuns.add(task);
+		void task.finally(() => pendingRuns.delete(task));
+	};
 	const endAgent = async (agent: Agent): Promise<void> => {
 		if (endedAgents.has(agent)) return;
 		endedAgents.add(agent);
@@ -148,6 +172,7 @@ export function apply(ctx: Context): void {
 		const active = config;
 		if (!active || active.hooks.disabled) return;
 		try {
+			await notificationTails.get(agent);
 			await invoke(active, "SessionEnd", "other", {
 				...common(active, "SessionEnd", agent),
 				reason: "other",
@@ -178,7 +203,46 @@ export function apply(ctx: Context): void {
 
 	ctx.on("agent/session-start", ({ agent, source }) => {
 		liveAgents.add(agent);
+		sessionAgents.set(agent.session, agent);
 		startSources.set(agent, source);
+	});
+
+	ctx.on("agent/status", ({ agent, status }) => {
+		if (status === "running") {
+			turnIndexes.set(agent, 0);
+			stepIndexes.set(agent, new Map());
+		}
+		const active = config;
+		if (!active || active.hooks.disabled) return;
+		const event = status === "running" ? "AgentStart" : "AgentEnd";
+		scheduleNotification(agent, active, event, common(active, event, agent));
+	});
+
+	ctx.on("session/event", (session: Session, event: SessionEvent) => {
+		if (event.type !== "step/start" && event.type !== "step/end") return;
+		const agent = sessionAgents.get(session);
+		const active = config;
+		if (!agent || !active || active.hooks.disabled) return;
+		const key = `${event.data.turn}:${event.data.step}`;
+		let turnIndex: number;
+		if (event.type === "step/start") {
+			turnIndex = turnIndexes.get(agent) ?? 0;
+			turnIndexes.set(agent, turnIndex + 1);
+			const indexes = stepIndexes.get(agent) ?? new Map<string, number>();
+			indexes.set(key, turnIndex);
+			stepIndexes.set(agent, indexes);
+		} else {
+			turnIndex = stepIndexes.get(agent)?.get(key) ?? Math.max(0, (turnIndexes.get(agent) ?? 1) - 1);
+			stepIndexes.get(agent)?.delete(key);
+		}
+		const hookEvent = event.type === "step/start" ? "TurnStart" : "TurnEnd";
+		scheduleNotification(agent, active, hookEvent, {
+			...common(active, hookEvent, agent),
+			turn_index: turnIndex,
+			timestamp: event.time,
+			runtime_turn: event.data.turn,
+			runtime_step: event.data.step,
+		});
 	});
 
 	ctx.on("agent/pre-step", async ({ agent, messages, signal }, next): Promise<PreStepDecision> => {
