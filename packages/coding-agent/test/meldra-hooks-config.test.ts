@@ -54,6 +54,39 @@ describe("Meldra hooks config", () => {
 		expect(resolved.diagnostics).toContain("profile hooks.PreToolUse[0].matcher must be a valid regular expression");
 	});
 
+	it("retains disabled handlers for inspection but excludes them from execution", () => {
+		const resolved = resolveMeldraHooks([
+			{
+				source: "profile",
+				hooks: {
+					AgentEnd: [
+						{
+							hooks: [
+								{ type: "command", command: "enabled" },
+								{ type: "command", command: "disabled", disabled: true },
+							],
+						},
+					],
+				},
+			},
+		]);
+		expect(resolved.diagnostics).toEqual([]);
+		expect(resolved.events.AgentEnd).toHaveLength(2);
+		expect(resolved.events.AgentEnd[1]?.disabled).toBe(true);
+		expect(hooksForEvent(resolved, "AgentEnd").map((hook) => hook.command)).toEqual(["enabled"]);
+	});
+
+	it("rejects a non-boolean disabled field", () => {
+		const resolved = resolveMeldraHooks([
+			{
+				source: "project",
+				hooks: { Stop: [{ hooks: [{ type: "command", command: "echo", disabled: "yes" }] }] },
+			},
+		]);
+		expect(resolved.events.Stop).toEqual([]);
+		expect(resolved.diagnostics).toContain("project hooks.Stop[0].hooks[0].disabled must be a boolean");
+	});
+
 	it("implements exact-list and regex matcher behavior", () => {
 		expect(matchesMeldraHook("Edit, Write", "Write")).toBe(true);
 		expect(matchesMeldraHook("Edit|Write", "Bash")).toBe(false);

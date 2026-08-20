@@ -51,6 +51,8 @@ example README category tables; ten exist in the directory but are not listed in
 
 - [Meldra Starter plugin development](../../packages/coding-agent/starter-profile/DEVELOPMENT.md) — Profile Config,
   Provider Manager, Scout, Workflows, Questionnaire, Setup, packaging, testing, and troubleshooting.
+- [Meldra Hook 编写与开发](../hooks.md) / [English](../hooks.en.md) — Handler authoring, Decision protocol,
+  Runtime Adapters, TUI, security, and validation.
 - [Profile Config registration protocol](profile-config-protocol.md) — normative Chinese contract.
 - [Profile Config registration protocol (English)](profile-config-protocol.en.md) — normative English contract.
 - [Built-in and current-machine Extensions](built-in-and-local.md) — runtime inventory and ownership boundaries.

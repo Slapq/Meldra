@@ -1,11 +1,13 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { AuthStorage } from "../src/core/auth-storage.ts";
+import type { ExtensionAPI, ExtensionContext } from "../src/core/extensions/types.ts";
 import { ExtensionRunner } from "../src/core/extensions/runner.ts";
 import { SessionManager } from "../src/core/session-manager.ts";
 import { createMeldraHooksExtension, resolveHooksRuntimeConfig } from "../src/extensions/meldra-hooks/index.ts";
+import { MELDRA_HOOK_CONTINUATION_MESSAGE } from "../src/hooks/index.ts";
 import { createInMemoryModelRegistry } from "./model-runtime-test-utils.ts";
 import { createTestExtensionsResult } from "./utilities.ts";
 
@@ -15,12 +17,17 @@ afterEach(() => {
 	for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
-async function createRunner(source: string) {
+async function createRunner(source: string, disabled = false) {
 	const cwd = mkdtempSync(join(tmpdir(), "meldra-hooks-native-"));
 	dirs.push(cwd);
 	const script = join(cwd, "hook.mjs");
 	writeFileSync(script, source, "utf8");
-	const handler = { type: "command" as const, command: process.execPath, args: [script] };
+	const handler = {
+		type: "command" as const,
+		command: process.execPath,
+		args: [script],
+		...(disabled ? { disabled: true } : {}),
+	};
 	const config = resolveHooksRuntimeConfig(
 		{
 			hooks: {
@@ -43,6 +50,64 @@ let data=""; process.stdin.on("data", c => data += c); process.stdin.on("end", (
   if (JSON.parse(data).hook_event_name === "UserPromptSubmit") { process.stderr.write("prompt denied"); process.exit(2); }
 });`);
 		expect(await runner.emitInput("do not run", undefined, "interactive")).toEqual({ action: "handled" });
+	});
+
+	it("does not execute disabled Native handlers", async () => {
+		const runner = await createRunner(
+			`process.stdin.resume(); process.stdin.on("end", () => { process.stderr.write("must not run"); process.exit(2); });`,
+			true,
+		);
+		expect(await runner.emitInput("ordinary prompt", undefined, "interactive")).toEqual({ action: "continue" });
+	});
+
+	it("uses a fixed Runtime-owned continuation message instead of Hook output", async () => {
+		const cwd = mkdtempSync(join(tmpdir(), "meldra-hooks-native-continuation-"));
+		dirs.push(cwd);
+		const script = join(cwd, "continue.mjs");
+		writeFileSync(
+			script,
+			'process.stdin.resume(); process.stdin.on("end", () => { process.stderr.write("secret hook reason"); process.exit(2); });',
+			"utf8",
+		);
+		const config = resolveHooksRuntimeConfig(
+			{
+				hooks: {
+					Stop: [{ hooks: [{ type: "command", command: process.execPath, args: [script] }] }],
+				},
+			},
+			{},
+			cwd,
+		);
+		const extension = createMeldraHooksExtension(() => config);
+		if (!("factory" in extension)) throw new Error("Expected inline Meldra Hooks extension");
+		const handlers = new Map<string, (...args: unknown[]) => unknown>();
+		const sendMessage = vi.fn();
+		await extension.factory({
+			on: (event: string, handler: (...args: unknown[]) => unknown) => handlers.set(event, handler),
+			registerCommand: vi.fn(),
+			sendMessage,
+		} as unknown as ExtensionAPI);
+		const notify = vi.fn();
+		const ctx = {
+			cwd,
+			hasUI: true,
+			ui: { notify },
+			profileRuntime: undefined,
+			signal: undefined,
+			sessionManager: { getSessionId: () => "native-continuation", getSessionFile: () => undefined },
+		} as unknown as ExtensionContext;
+
+		await handlers.get("agent_settled")?.({}, ctx);
+		expect(sendMessage).toHaveBeenCalledWith(
+			{
+				customType: "meldra-hooks-continuation",
+				content: MELDRA_HOOK_CONTINUATION_MESSAGE,
+				display: false,
+			},
+			{ triggerTurn: true, deliverAs: "followUp" },
+		);
+		expect(JSON.stringify(sendMessage.mock.calls)).not.toContain("secret hook reason");
+		expect(notify).toHaveBeenCalledWith(expect.stringContaining("secret hook reason"), "info");
 	});
 
 	it("emits Agent and Turn lifecycle events with portable indexes", async () => {
@@ -90,6 +155,42 @@ let data=""; process.stdin.on("data", c => data += c); process.stdin.on("end", (
 		]);
 		expect(events[1]).toMatchObject({ turn_index: 0, timestamp: 1234 });
 		expect(events[2]).toMatchObject({ turn_index: 0, timestamp: expect.any(Number) });
+	});
+
+	it("keeps post-tool Hook output out of Native model context", async () => {
+		const cwd = mkdtempSync(join(tmpdir(), "meldra-hooks-native-post-tool-"));
+		dirs.push(cwd);
+		const script = join(cwd, "post.mjs");
+		writeFileSync(
+			script,
+			'process.stdin.resume(); process.stdin.on("end", () => process.stdout.write(JSON.stringify({hookSpecificOutput:{additionalContext:"must not enter prompt"}})));',
+			"utf8",
+		);
+		const hook = { type: "command" as const, command: process.execPath, args: [script] };
+		const config = resolveHooksRuntimeConfig(
+			{ hooks: { PostToolUse: [{ matcher: "Bash", hooks: [hook] }] } },
+			{},
+			cwd,
+		);
+		const extensions = await createTestExtensionsResult([createMeldraHooksExtension(() => config)], cwd);
+		const modelRegistry = await createInMemoryModelRegistry(AuthStorage.inMemory());
+		const runner = new ExtensionRunner(
+			extensions.extensions,
+			extensions.runtime,
+			cwd,
+			SessionManager.inMemory(),
+			modelRegistry,
+		);
+		const result = await runner.emitToolResult({
+			type: "tool_result",
+			toolName: "bash",
+			toolCallId: "post-tool",
+			input: { command: "npm test" },
+			content: [{ type: "text", text: "original result" }],
+			details: undefined,
+			isError: false,
+		});
+		expect(result).toBeUndefined();
 	});
 
 	it("applies structured updatedInput before native tool execution", async () => {

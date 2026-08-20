@@ -1,3 +1,7 @@
+---
+status: superseded by ADR-0045
+---
+
 # Keep hook interception inside the owning Agent Runtime
 
 Meldra defines one declarative Hook protocol, while each Agent Runtime executes lifecycle-sensitive Hook Events inside its own loop. Native Pi maps the protocol through Extension events. DeepSeek Harness maps it through a Meldra Cordis plugin using Harness-owned tool, agent, and session seams. Meldra may pass a resolved in-memory Hook snapshot across the Profile Runtime bridge, but it does not reproduce an external Runtime's tool or Agent loop in generic Pi core.

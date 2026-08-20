@@ -237,7 +237,7 @@ An empty array starts with no built-in tools while preserving extension and SDK 
 | `hooks` | object | `{}` | Meldra command Hooks keyed by supported lifecycle event |
 | `disableAllHooks` | boolean | `false` | Disable effective Profile and project Hooks |
 
-Hooks are executable configuration. Profile Hooks live in `<agentDir>/settings.json`; project Hooks live in trusted `.pi/settings.json`. Matching Profile and project handlers append rather than replacing each other. Hook settings are watched during a live Session; valid changes apply atomically, invalid changes preserve the last-known-good snapshot, and `/hooks` shows the effective read-only catalog. Use `/reload` for unrelated resources and settings.
+Hooks are executable configuration. Profile Hooks live in `<agentDir>/settings.json`; project Hooks live in trusted `.pi/settings.json`. Matching Profile and project handlers append rather than replacing each other. Hook settings are watched during a live Session; valid changes apply atomically and invalid changes preserve the last-known-good snapshot. `/hooks` is the dedicated Hook resource editor: it manages Profile or trusted-project handlers, per-handler and event disabling, `disableAllHooks`, Hook `shellPath`, and confirmed JSON imports while preserving unrelated settings fields. Use `/reload` for unrelated resources and settings.
 
 ```json
 {

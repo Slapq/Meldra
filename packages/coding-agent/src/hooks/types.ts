@@ -22,6 +22,7 @@ export interface MeldraCommandHook {
 	timeout?: number;
 	shell?: "bash" | "powershell";
 	if?: string;
+	disabled?: boolean;
 }
 
 export interface MeldraHookMatcherGroup {

@@ -139,6 +139,8 @@ Real credentials must not enter source, Profile Bundles, Session exports, logs, 
 - [Pi documentation index](docs/index.md)
 - [Profile Runtime providers](docs/profile-runtimes.md)
 - [DeepSeek Harness](docs/deepseek-harness.md)
+- [Meldra Hooks](docs/hooks.md)
+- [Authoring and Developing Meldra Hooks](../../docs/hooks.en.md)
 - [Extension development](docs/extensions.md)
 - [Pi Packages](docs/packages.md)
 - [Windows](docs/windows.md)

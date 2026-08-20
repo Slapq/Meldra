@@ -53,7 +53,7 @@ Reference: <https://code.claude.com/docs/en/hooks>
 7. Streaming response byte/character limits before JSON parsing, plus body cancellation on overflow.
 8. Exact status and response mapping to the existing normalized Hook decision protocol.
 9. Native Pi and DSH parity tests, including DSH's immutable tool arguments.
-10. Project Trust, Profile ownership, `/hooks` inspection, diagnostics, hot reload, and shutdown behavior documented and tested together.
+10. Project Trust, Profile ownership, `/hooks` management and inspection, diagnostics, hot reload, and shutdown behavior documented and tested together.
 
 ## 5. Decision and rollback
 

@@ -4,6 +4,12 @@ import {
 	canonicalHookToolName,
 	createMeldraHooksSettingsWatcher,
 	hooksForEvent,
+	MELDRA_HOOK_CONTINUATION_MESSAGE,
+	MELDRA_HOOK_TOOL_BLOCK_MESSAGE,
+	meldraHookBlockReason,
+	meldraHookContinuationRequested,
+	meldraHookPromptOutputDiagnostics,
+	meldraHookSpecificOutput,
 	type MeldraHookEventName,
 	type MeldraHookInput,
 	type MeldraHookRunResult,
@@ -12,6 +18,15 @@ import {
 	resolveMeldraHooks,
 	runMeldraCommandHooks,
 } from "../../hooks/index.ts";
+import {
+	type MeldraHooksManagementOptions,
+	showMeldraHooksManager,
+} from "./manager.ts";
+import { detectHooksManagerLanguage } from "./language.ts";
+import { HOOKS_MANAGER_LANGS } from "./ui.ts";
+
+export type { MeldraHooksManagementOptions } from "./manager.ts";
+export { loadHooksManagerLanguage, saveHooksManagerLanguage } from "./language.ts";
 
 interface HooksRuntimeConfig extends MeldraHooksRuntimeConfig {}
 
@@ -29,36 +44,6 @@ export interface MeldraHooksHotReloadOptions {
 	load(): MeldraHooksHotReloadResult | Promise<MeldraHooksHotReloadResult>;
 	intervalMs?: number;
 	debounceMs?: number;
-}
-
-function hookSpecificOutput(result: MeldraHookRunResult): Record<string, unknown> | undefined {
-	const value = result.output?.hookSpecificOutput;
-	return value !== null && typeof value === "object" && !Array.isArray(value)
-		? (value as Record<string, unknown>)
-		: undefined;
-}
-
-function blockReason(results: MeldraHookRunResult[]): string | undefined {
-	for (const result of results) {
-		if (result.status === "block") return result.stderr.trim() || result.stdout.trim() || "Blocked by Meldra hook";
-		const specific = hookSpecificOutput(result);
-		if (specific?.permissionDecision === "deny" || result.output?.decision === "block") {
-			return String(specific?.permissionDecisionReason ?? result.output?.reason ?? "Blocked by Meldra hook");
-		}
-	}
-	return undefined;
-}
-
-function additionalContext(results: MeldraHookRunResult[]): string[] {
-	const values: string[] = [];
-	for (const result of results) {
-		if (result.status !== "success") continue;
-		const specific = hookSpecificOutput(result);
-		const structured = specific?.additionalContext ?? result.output?.additionalContext;
-		if (typeof structured === "string" && structured.trim()) values.push(structured.trim());
-		else if (!result.output && result.stdout.trim()) values.push(result.stdout.trim());
-	}
-	return values;
 }
 
 function diagnostics(results: MeldraHookRunResult[]): string[] {
@@ -92,7 +77,7 @@ async function run(
 		signal: ctx.signal,
 		shellPath: config.shellPath,
 	});
-	const failures = diagnostics(results);
+	const failures = [...diagnostics(results), ...meldraHookPromptOutputDiagnostics(results)];
 	if (failures.length && ctx.hasUI) ctx.ui.notify(failures.join("\n"), "warning");
 	return results;
 }
@@ -104,7 +89,7 @@ async function runNotification(
 	ctx: ExtensionContext,
 ): Promise<void> {
 	const results = await run(config, event, "", input, ctx);
-	const reason = blockReason(results);
+	const reason = meldraHookBlockReason(results);
 	if (reason && ctx.hasUI) ctx.ui.notify(`${event} is notification-only; block ignored: ${reason}`, "warning");
 }
 
@@ -127,6 +112,7 @@ export function resolveHooksRuntimeConfig(
 export function createMeldraHooksExtension(
 	getConfig: () => HooksRuntimeConfig,
 	hotReload?: MeldraHooksHotReloadOptions,
+	management?: MeldraHooksManagementOptions,
 ): InlineExtension {
 	return {
 		name: "meldra-hooks",
@@ -136,32 +122,22 @@ export function createMeldraHooksExtension(
 			let settingsWatcher: MeldraHooksSettingsWatcher | undefined;
 			let hotReloadActive = false;
 			let hotReloadDiagnostics: string[] = [];
-			let pendingContext: string[] = [];
 			let stopHookActive = false;
 
 			pi.registerCommand("hooks", {
-				description: "Inspect active Meldra hooks",
+				description: "Manage Meldra hooks",
 				handler: async (_args, ctx) => {
-					if (!hotReload) config = getConfig();
-					const events = Object.entries(config.hooks.events).filter(([, hooks]) => hooks.length > 0);
-					const labels = [
-						`Status: ${config.hooks.disabled ? "disabled" : "enabled"}`,
-						...config.hooks.diagnostics.map((message) => `Warning: ${message}`),
-						...hotReloadDiagnostics.map((message) => `Warning: ${message}`),
-						...events.map(([event, hooks]) => `${event} (${hooks.length})`),
-					];
-					const selected = await ctx.ui.select("Meldra Hooks", labels.length ? labels : ["No hooks configured"]);
-					if (!selected) return;
-					const eventName = selected.replace(/ \(\d+\)$/, "") as MeldraHookEventName;
-					const hooks = config.hooks.events[eventName];
-					if (!hooks?.length) return;
-					await ctx.ui.select(
-						eventName,
-						hooks.map(
-							(hook) =>
-								`[${hook.source}] ${hook.matcher || "*"}${hook.if ? ` if=${hook.if}` : ""} -> ${hook.command}`,
-						),
-					);
+					if (!management) {
+						if (ctx.hasUI) {
+							ctx.ui.notify(HOOKS_MANAGER_LANGS[detectHooksManagerLanguage()].settingsUnavailable, "error");
+						}
+						return;
+					}
+					await showMeldraHooksManager(ctx, {
+						management,
+						hotReload: hotReload !== undefined,
+						getHotReloadDiagnostics: () => [...hotReloadDiagnostics],
+					});
 				},
 			});
 
@@ -226,7 +202,10 @@ export function createMeldraHooksExtension(
 					{ ...commonInput("SessionStart", ctx), source },
 					ctx,
 				);
-				pendingContext.push(...additionalContext(results));
+				const reason = meldraHookBlockReason(results);
+				if (reason && ctx.hasUI) {
+					ctx.ui.notify(`SessionStart is notification-only; block ignored: ${reason}`, "warning");
+				}
 			});
 
 			pi.on("input", async (event, ctx) => {
@@ -238,20 +217,12 @@ export function createMeldraHooksExtension(
 					{ ...commonInput("UserPromptSubmit", ctx), prompt: event.text },
 					ctx,
 				);
-				const reason = blockReason(results);
+				const reason = meldraHookBlockReason(results);
 				if (reason) {
 					if (ctx.hasUI) ctx.ui.notify(reason, "warning");
 					return { action: "handled" as const };
 				}
-				pendingContext.push(...additionalContext(results));
 				return { action: "continue" as const };
-			});
-
-			pi.on("before_agent_start", async (_event, ctx) => {
-				if (ctx.profileRuntime || pendingContext.length === 0) return;
-				const content = pendingContext.join("\n\n");
-				pendingContext = [];
-				return { message: { customType: "meldra-hooks", content, display: false } };
 			});
 
 			pi.on("tool_call", async (event, ctx) => {
@@ -269,10 +240,13 @@ export function createMeldraHooksExtension(
 					},
 					ctx,
 				);
-				const reason = blockReason(results);
-				if (reason) return { block: true, reason };
+				const reason = meldraHookBlockReason(results);
+				if (reason) {
+					if (ctx.hasUI) ctx.ui.notify(reason, "warning");
+					return { block: true, reason: MELDRA_HOOK_TOOL_BLOCK_MESSAGE };
+				}
 				for (const result of results) {
-					const updated = hookSpecificOutput(result)?.updatedInput;
+					const updated = meldraHookSpecificOutput(result)?.updatedInput;
 					if (!updated || typeof updated !== "object" || Array.isArray(updated)) continue;
 					const input = event.input as Record<string, unknown>;
 					for (const key of Object.keys(input)) delete input[key];
@@ -298,17 +272,10 @@ export function createMeldraHooksExtension(
 					},
 					ctx,
 				);
-				const reason = blockReason(results);
-				const context = additionalContext(results);
-				if (!reason && context.length === 0) return;
-				return {
-					content: [
-						...event.content,
-						...(context.length ? [{ type: "text" as const, text: context.join("\n\n") }] : []),
-						...(reason ? [{ type: "text" as const, text: reason }] : []),
-					],
-					...(reason ? { isError: true } : {}),
-				};
+				const reason = meldraHookBlockReason(results);
+				if (reason && ctx.hasUI) {
+					ctx.ui.notify(`${hookEvent} cannot change a completed tool result; decision ignored: ${reason}`, "warning");
+				}
 			});
 
 			pi.on("agent_start", async (_event, ctx) => {
@@ -350,11 +317,13 @@ export function createMeldraHooksExtension(
 					{ ...commonInput("Stop", ctx), stop_hook_active: stopHookActive },
 					ctx,
 				);
-				const reason = blockReason(results);
-				if (reason && !stopHookActive) {
+				const reason = meldraHookBlockReason(results);
+				const continuation = meldraHookContinuationRequested(results);
+				if (continuation && !stopHookActive) {
 					stopHookActive = true;
+					if (reason && ctx.hasUI) ctx.ui.notify(`Stop Hook requested continuation: ${reason}`, "info");
 					pi.sendMessage(
-						{ customType: "meldra-hooks", content: reason, display: true },
+						{ customType: "meldra-hooks-continuation", content: MELDRA_HOOK_CONTINUATION_MESSAGE, display: false },
 						{ triggerTurn: true, deliverAs: "followUp" },
 					);
 				} else {

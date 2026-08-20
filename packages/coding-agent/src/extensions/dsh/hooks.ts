@@ -6,6 +6,13 @@ import type { PostToolDecision, PreToolDecision, ToolExecution, ToolExecutionRes
 import {
 	canonicalHookToolName,
 	hooksForEvent,
+	MELDRA_HOOK_CONTINUATION_MESSAGE,
+	MELDRA_HOOK_TOOL_BLOCK_MESSAGE,
+	meldraHookBlockReason,
+	meldraHookContinuationRequested,
+	meldraHookPermissionRequest,
+	meldraHookPromptOutputDiagnostics,
+	meldraHookSpecificOutput,
 	type MeldraHookEventName,
 	type MeldraHookInput,
 	type MeldraHookRunResult,
@@ -25,44 +32,6 @@ export interface MeldraDshHooksService {
 	subscribeDiagnostics(listener: (diagnostic: MeldraDshHookDiagnostic) => void): () => void;
 	shutdown(): Promise<void>;
 	drain(): Promise<void>;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
-function specific(result: MeldraHookRunResult): Record<string, unknown> | undefined {
-	return isRecord(result.output?.hookSpecificOutput) ? result.output.hookSpecificOutput : undefined;
-}
-
-function blockReason(results: MeldraHookRunResult[]): string | undefined {
-	for (const result of results) {
-		if (result.status === "block") return result.stderr.trim() || result.stdout.trim() || "Blocked by Meldra hook";
-		const output = specific(result);
-		if (output?.permissionDecision === "deny" || result.output?.decision === "block") {
-			return String(output?.permissionDecisionReason ?? result.output?.reason ?? "Blocked by Meldra hook");
-		}
-	}
-	return undefined;
-}
-
-function permissionRequest(results: MeldraHookRunResult[]): { reason?: string } | undefined {
-	for (const result of results) {
-		const output = specific(result);
-		if (output?.permissionDecision === "ask") {
-			return typeof output.permissionDecisionReason === "string" ? { reason: output.permissionDecisionReason } : {};
-		}
-	}
-	return undefined;
-}
-
-function contexts(results: MeldraHookRunResult[]): string[] {
-	return results.flatMap((result) => {
-		if (result.status !== "success") return [];
-		const value = specific(result)?.additionalContext ?? result.output?.additionalContext;
-		if (typeof value === "string" && value.trim()) return [value.trim()];
-		return !result.output && result.stdout.trim() ? [result.stdout.trim()] : [];
-	});
 }
 
 function diagnostics(results: MeldraHookRunResult[]): string[] {
@@ -136,7 +105,9 @@ export function apply(ctx: Context): void {
 		signal?: AbortSignal,
 	): Promise<MeldraHookRunResult[]> => {
 		const task = run(active, event, matcher, input, signal).then((results) => {
-			for (const diagnostic of diagnostics(results)) report(diagnostic);
+			for (const diagnostic of [...diagnostics(results), ...meldraHookPromptOutputDiagnostics(results)]) {
+				report(diagnostic);
+			}
 			return results;
 		});
 		pendingRuns.add(task);
@@ -157,7 +128,7 @@ export function apply(ctx: Context): void {
 			.catch(() => undefined)
 			.then(async () => {
 				const results = await invoke(active, event, "", input);
-				const reason = blockReason(results);
+				const reason = meldraHookBlockReason(results);
 				if (reason) report(`${event} is notification-only; block ignored: ${reason}`);
 			})
 			.catch((error) => report(`${event} hook failed: ${String(error)}`));
@@ -248,7 +219,6 @@ export function apply(ctx: Context): void {
 	ctx.on("agent/pre-step", async ({ agent, messages, signal }, next): Promise<PreStepDecision> => {
 		const active = config;
 		if (!active || active.hooks.disabled) return await next();
-		const injected: UserMessage[] = [];
 		if (!initialized.has(agent)) {
 			initialized.add(agent);
 			const source = startSources.get(agent) ?? "startup";
@@ -259,7 +229,8 @@ export function apply(ctx: Context): void {
 				{ ...common(active, "SessionStart", agent), source },
 				signal,
 			);
-			injected.push(...contexts(results).map((value) => message(value, "SessionStart hook context")));
+			const reason = meldraHookBlockReason(results);
+			if (reason) report(`SessionStart is notification-only; block ignored: ${reason}`);
 		}
 		const userMessages = messages.filter((entry) => entry.source.kind === "user");
 		if (userMessages.length > 0) {
@@ -270,12 +241,13 @@ export function apply(ctx: Context): void {
 				{ ...common(active, "UserPromptSubmit", agent), prompt: textFromMessages(userMessages) },
 				signal,
 			);
-			if (blockReason(results)) return { kind: "reject" };
-			injected.push(...contexts(results).map((value) => message(value, "UserPromptSubmit hook context")));
+			const reason = meldraHookBlockReason(results);
+			if (reason) {
+				report(`UserPromptSubmit blocked: ${reason}`);
+				return { kind: "reject" };
+			}
 		}
-		const decision = await next();
-		if (decision.kind === "reject" || injected.length === 0) return decision;
-		return { kind: "enter", messages: [...decision.messages, ...injected] };
+		return await next();
 	});
 
 	ctx.on("tools/pre-execute", async (exec: ToolExecution, next): Promise<PreToolDecision> => {
@@ -295,14 +267,17 @@ export function apply(ctx: Context): void {
 			exec.signal,
 		);
 		for (const result of results) {
-			if (specific(result)?.updatedInput !== undefined) {
+			if (meldraHookSpecificOutput(result)?.updatedInput !== undefined) {
 				report("DSH does not support PreToolUse updatedInput; immutable arguments were preserved");
 				break;
 			}
 		}
-		const denied = blockReason(results);
-		if (denied) return { kind: "deny", reason: denied };
-		const ask = permissionRequest(results);
+		const denied = meldraHookBlockReason(results);
+		if (denied) {
+			report(`PreToolUse blocked: ${denied}`);
+			return { kind: "deny", reason: MELDRA_HOOK_TOOL_BLOCK_MESSAGE };
+		}
+		const ask = meldraHookPermissionRequest(results);
 		if (ask) {
 			const downstream = await next();
 			return downstream.kind === "allow" ? { kind: "ask", ...ask } : downstream;
@@ -332,14 +307,9 @@ export function apply(ctx: Context): void {
 				},
 				exec.signal,
 			);
-			const reason = blockReason(results);
-			const additionalContexts = contexts(results).map((value) => message(value, `${event} hook context`));
-			if (reason) return { kind: "block", feedback: [{ type: "text", text: reason }], additionalContexts };
-			if (additionalContexts.length === 0) return downstream;
-			return {
-				...downstream,
-				additionalContexts: [...(downstream.additionalContexts ?? []), ...additionalContexts],
-			};
+			const reason = meldraHookBlockReason(results);
+			if (reason) report(`${event} cannot change a completed tool result; decision ignored: ${reason}`);
+			return downstream;
 		},
 	);
 
@@ -354,10 +324,12 @@ export function apply(ctx: Context): void {
 			{ ...common(active, "Stop", agent), stop_hook_active: wasActive },
 			signal,
 		);
-		const reason = blockReason(results);
-		if (reason && !wasActive) {
+		const reason = meldraHookBlockReason(results);
+		const continuation = meldraHookContinuationRequested(results);
+		if (continuation && !wasActive) {
 			stopHookActive.add(agent);
-			agent.steer(message(reason, "Stop hook requested continuation"));
+			if (reason) report(`Stop Hook requested continuation: ${reason}`);
+			agent.steer(message(MELDRA_HOOK_CONTINUATION_MESSAGE, "Meldra Hook continuation"));
 		} else {
 			stopHookActive.delete(agent);
 		}

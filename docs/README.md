@@ -9,6 +9,7 @@ Meldra 是建立在 Pi 之上的 Profile 化补丁层。本目录记录 Meldra �
 - [使用教程](user-guide.md)：Profile、WorkSpace、Package、配置、DSH、Session、导出和故障处理。
 - [Setup 与发行合同](setup-and-distribution.md)：当前入口与计划中的安装器、npm Bootstrap、Starter Bundle、onboarding 和快捷方式。
 - [开发文档](development.md)：架构、仓库结构、源码工作流、扩展点、测试、上游同步和发行边界。
+- [Meldra Hook 编写与开发](hooks.md)：Handler、Decision、Runtime Adapter、TUI、热重载、安全和测试。
 - [领域术语](../CONTEXT.md)：Meldra 的权威术语和所有权边界。
 - [Agent 治理](../AGENTS.md)：调查、兼容、审批和验证要求。
 

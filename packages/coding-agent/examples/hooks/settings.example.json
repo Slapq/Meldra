@@ -7,15 +7,6 @@
             "type": "command",
             "command": "node",
             "args": [
-              "${MELDRA_PROJECT_DIR}/.pi/hooks/inject-project-context.mjs",
-              "${MELDRA_PROJECT_DIR}/.pi/hook-context.md"
-            ],
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "node",
-            "args": [
               "${MELDRA_PROJECT_DIR}/.pi/hooks/audit-hook-events.mjs",
               "${MELDRA_PROJECT_DIR}/.pi/hooks/events.jsonl"
             ],

@@ -149,6 +149,7 @@ meldra --profile research-harness
 - [Profile Runtime providers](docs/profile-runtimes.md)
 - [DeepSeek Harness](docs/deepseek-harness.md)
 - [Meldra Hooks](docs/hooks.md)
+- [Meldra Hook 编写与开发](../../docs/hooks.md)
 - [Extension 开发](docs/extensions.md)
 - [Pi Packages](docs/packages.md)
 - [Windows](docs/windows.md)

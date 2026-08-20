@@ -1,6 +1,8 @@
 # Meldra Hooks
 
-Meldra Hooks run deterministic external commands at supported Agent lifecycle points. The configuration shape follows Claude Code command hooks where Meldra can preserve the behavior truthfully.
+> Writing a Hook Handler or maintaining the protocol? Use the official Chinese-first [Meldra Hook authoring and development guide](../../../docs/hooks.md) or its [English version](../../../docs/hooks.en.md).
+
+Meldra Hooks run deterministic external commands at supported Agent lifecycle points. The configuration shape follows Claude Code command hooks where Meldra can preserve the behavior truthfully. Hooks form an out-of-band intervention plane: Handler stdout, stderr, reasons, and structured output never become model Prompt content. A normalized Decision may still block or mutate an external operation, and a Stop continuation uses Meldra's fixed Runtime-owned control message.
 
 Hooks are executable configuration. A Hook command has the same operating-system permissions as Meldra. Only configure commands and project repositories you trust.
 
@@ -17,6 +19,15 @@ Project Hooks apply only after Meldra Project Trust accepts the project:
 ```text
 <cwd>/.pi/settings.json
 ```
+
+Command scripts conventionally live under the source-owned root Hook directory:
+
+```text
+Profile: <profile-agentDir>/hooks/
+Project: <cwd>/.pi/hooks/
+```
+
+Ordinary Meldra Profiles own these directories as Hook resources and do not show Pi's historical "Hooks have been renamed to extensions" warning. The reserved `pi` Compatibility Profile does not load Meldra Hooks and retains the original Pi migration warning and `extensions/` behavior.
 
 Profile and project handlers for the same event are appended. Identical event, matcher, condition, and handler declarations run once. Project `disableAllHooks` overrides the Profile value when explicitly present.
 
@@ -44,7 +55,7 @@ Command handlers are spawned anew for every matching event. Changes to an extern
 }
 ```
 
-Use `"disableAllHooks": true` to disable Profile and project Hooks for the effective configuration.
+Use `"disableAllHooks": true` to disable Profile and project Hooks for the effective configuration. A command handler may set `"disabled": true` to remain visible and editable without executing. `/hooks` can also disable or enable every handler under one event by updating those handler fields.
 
 An old Pi setting shaped as `"hooks": ["extension.ts"]` is not a Meldra Hook configuration and is not executed. Move executable TypeScript extensions to the `extensions` setting.
 
@@ -60,6 +71,7 @@ A command handler supports:
 | `timeout` | number | Positive timeout in seconds; default 600 |
 | `shell` | `"bash"` or `"powershell"` | Optional shell-form override |
 | `if` | string | Optional permission-rule subset evaluated before spawning on tool events |
+| `disabled` | boolean | Keeps the handler configured but excludes it from Native and DSH execution |
 
 When `args` is present, Meldra spawns `command` directly, including Windows command shims such as `.cmd` files. Without `args`, Meldra uses the configured Pi shell, or PowerShell when explicitly selected. `${CLAUDE_PROJECT_DIR}` and `${MELDRA_PROJECT_DIR}` are replaced in exec-form command/arguments and exported to every Hook process.
 
@@ -114,16 +126,16 @@ Bash and PowerShell conditions intentionally parse only simple single commands. 
 
 | Hook Event | Matcher | Native Pi | DSH rc.8 |
 |---|---|---|---|
-| `SessionStart` | startup source | Context injection before next request | Context injection at first `agent/pre-step` |
+| `SessionStart` | startup source | Exact external notification | Approximate first-step external notification |
 | `UserPromptSubmit` | none | Exact input preflight | Approximate `agent/pre-step` preflight |
 | `PreToolUse` | tool name | Allow, block, `updatedInput` | Allow, ask, deny; no argument rewriting |
-| `PostToolUse` | tool name | Result feedback/context | Result feedback/context |
-| `PostToolUseFailure` | tool name | Error feedback/context | Error feedback/context |
+| `PostToolUse` | tool name | External observation after success | External observation after success |
+| `PostToolUseFailure` | tool name | External observation after failure | External observation after failure |
 | `AgentStart` | none | Exact native Agent run start | Approximate `agent/status: running` notification |
 | `AgentEnd` | none | Exact native Agent run end | Approximate `agent/status: idle` notification |
 | `TurnStart` | none | Exact native model turn start | DSH `step/start` notification |
 | `TurnEnd` | none | Exact native model turn end | DSH `step/end` notification |
-| `Stop` | none | Protected follow-up continuation | Native `agent/turn-stopping` steering |
+| `Stop` | none | Fixed Runtime-owned follow-up control | Fixed Runtime-owned `agent.steer` control |
 | `SessionEnd` | shutdown reason | Awaited `session_shutdown` | Approximate `agent/disposed` notification |
 
 DSH owns its tool and Agent loops. Its tool arguments are frozen before `tools/pre-execute`; an `updatedInput` returned for DSH is ignored with an explicit interactive warning. A Hook `ask` decision is combined with later DSH pre-execute decisions, guards, sandbox policy, and tool-owned approval checks; it does not replace a stronger denial. Meldra does not mutate DSH logs behind the Runtime's back.
@@ -158,8 +170,8 @@ A Native Pi Session includes `transcript_path` when it has a persistent Session 
 
 ## Decisions
 
-- Exit `0`: success. Plain stdout supplies additional context for `SessionStart` and `UserPromptSubmit`. A JSON object is interpreted as structured output.
-- Exit `2`: block where the event can block. Stderr is the preferred reason, then stdout.
+- Exit `0`: success. A JSON object is interpreted as structured decision output; plain stdout is discarded by Runtime adapters and never enters the Prompt.
+- Exit `2`: block for input/tool preflight. On `Stop`, it requests one protected continuation using the fixed Runtime-owned control message.
 - Other exit codes: non-blocking Hook errors. Interactive mode shows a warning in both Native Pi and DSH Profiles; DSH transports the diagnostic over its runtime bridge without adding it to model context or the Pi Session.
 
 `PreToolUse` accepts Claude-style structured output:
@@ -174,9 +186,11 @@ A Native Pi Session includes `transcript_path` when it has a persistent Session 
 }
 ```
 
-Native Pi also accepts `hookSpecificOutput.updatedInput`. DSH reports it as unsupported. A Hook `allow` decision means that Hook has no objection; it never bypasses a Runtime sandbox, deny rule, or approval policy.
+Native Pi also accepts `hookSpecificOutput.updatedInput`. DSH reports it as unsupported. A Hook `allow` decision means that Hook has no objection; it never bypasses a Runtime sandbox, deny rule, or approval policy. A blocking Handler's raw reason is shown only through external diagnostics; a model-visible tool denial uses the fixed generic message `Tool execution blocked by a Meldra Hook.`
 
-Context-producing events accept `hookSpecificOutput.additionalContext` or top-level `additionalContext`. Post-tool and Stop events accept top-level `decision: "block"` plus `reason`.
+A Stop Handler may request continuation with exit `2`, top-level `decision: "block"`, or top-level `decision: "continue"`. Both Native and DSH use the same fixed model-visible control message, `Continue the current task.` Handler output is never interpolated into that message. `stop_hook_active` prevents an immediate continuation loop.
+
+`additionalContext` is not supported. Structured attempts to return it produce a diagnostic and are ignored. Post-tool Hooks observe the completed result but cannot add feedback/context or retroactively change that result.
 
 All matching command handlers run to completion in parallel. Any blocking result wins. One handler's block does not prevent sibling Hook commands from running.
 
@@ -184,14 +198,53 @@ Native Pi awaits `SessionEnd` during `session_shutdown`. DSH's `agent/disposed` 
 
 ## Examples
 
-See [`examples/hooks/`](../examples/hooks/) for standalone Node.js handlers that block destructive commands, protect sensitive paths, inject trusted project context, and write metadata-only audit records. The directory includes a complete project `settings.json` example and runner-backed tests.
+See [`examples/hooks/`](../examples/hooks/) for standalone Node.js handlers that block destructive commands, protect sensitive paths, open an external browser on `AgentEnd`, and write metadata-only audit records. The directory includes a complete project `settings.json` example and runner-backed tests.
 
-## Inspect Hooks
+## Manage Hooks
 
-Run `/hooks` in the interactive TUI. The read-only browser shows whether Hooks are enabled, configuration and hot-reload diagnostics, event counts, source (`profile` or `project`), matcher, condition, and command. Valid Hook settings changes are watched automatically; use `/reload` for Extensions, Skills, prompts, themes, context files, and unrelated settings.
+Run `/hooks` in the interactive TUI to open the Profile/Project Hook manager. It shows the effective state, live-reload diagnostics, source-local event and handler counts, matcher, condition, command, arguments, timeout, shell mode, and disabled state. Project scope is unavailable until Project Trust succeeds.
+
+The manager follows the same hierarchical resource flow as Provider Manager:
+
+1. The home page shows **Management actions** and four event categories: Session, Agent, Turn, and Tool.
+2. A category opens its supported Hook Events with active/total counts.
+3. An Event opens **Event actions** plus its command handlers.
+4. Selecting a handler opens **Edit**, **Disable/Enable**, **Delete**, and **Back**.
+5. Only **Edit handler** opens that handler's JSON source editor.
+
+Event actions add a handler or enable/disable every handler under that Event. Management actions switch Profile/Project scope, import JSON, set `disableAllHooks`, edit the Hook shell path, open the complete source-local Hook JSON, and switch language. Every page uses Up/Down, Enter, and Escape navigation instead of requiring command hotkeys.
+
+The TUI provides complete English and Chinese dictionaries. Its language follows the Provider Manager convention: a Profile-local preference is stored in `<profile-agentDir>/plugin-configs/meldra-hooks.json`; when absent, Meldra checks `LANG`, `LC_ALL`, `LANGUAGE`, and the system locale. The language preference is UI state and is not written into Hook settings.
+
+Handler editing uses a JSON draft with one `matcher` and one `hook`. Every save validates the complete target layer before writing. Invalid drafts do not modify settings or replace the last-known-good Runtime snapshot. The editor writes only `hooks`, `disableAllHooks`, and `shellPath`; unrelated model, Provider, package, theme, and TUI fields already present in the same settings file are preserved and are not applied to the live Session.
+
+### Import
+
+Import accepts either a direct Hook event object or a settings envelope:
+
+```json
+{
+  "hooks": {
+    "AgentEnd": [
+      {
+        "hooks": [
+          { "type": "command", "command": "node", "args": ["notify.mjs"] }
+        ]
+      }
+    ]
+  },
+  "disableAllHooks": false
+}
+```
+
+JSON can be pasted into the multi-line editor or read from a local file path explicitly entered by the user. Local imports are limited to 1,000,000 bytes. Unrelated top-level settings fields are ignored with a warning.
+
+`Merge` appends events and handlers to the selected source, combines groups with the same matcher, and removes identical handlers. `Replace` replaces only Hook fields present in the import; omitted `disableAllHooks` and `shellPath` values remain unchanged. Both modes show a summary and require confirmation. Import never executes a Hook, copies a referenced script, installs a Package, reads a URL, or converts Claude settings automatically.
+
+A successful save is picked up by the existing settings watcher and forwarded to DSH through the same `meldra/hooks.configure` RPC. The manager does not create a second Runtime update path.
 
 ## Current Exclusions
 
-The current protocol does not implement HTTP, MCP tool, prompt, or agent handlers; asynchronous handlers; `once`; managed policy; Skill/Subagent frontmatter Hooks; or Claude-specific events not listed above. Full Claude permission-rule shell AST parity is also outside the initial `if` subset. Unsupported event names produce diagnostics and do not execute.
+The current protocol does not implement HTTP, MCP tool, prompt, or agent handlers; asynchronous handlers; `once`; managed policy; Skill/Subagent frontmatter Hooks; Prompt/context injection; or Claude-specific events not listed above. Full Claude permission-rule shell AST parity is also outside the initial `if` subset. Unsupported event names produce diagnostics and do not execute.
 
 HTTP/Webhook execution remains deferred pending URL and environment allowlists, SSRF policy, payload redaction, retry semantics, and bounded response handling. See the [HTTP Hook handler evaluation](../../../docs/investigations/2026-08-21-meldra-http-hook-handler-evaluation.md).

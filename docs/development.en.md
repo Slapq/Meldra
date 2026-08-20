@@ -347,5 +347,6 @@ Before committing:
 - [Extension API](../packages/coding-agent/docs/extensions.md)
 - [Profile Runtime providers](../packages/coding-agent/docs/profile-runtimes.md)
 - [DeepSeek Harness](../packages/coding-agent/docs/deepseek-harness.md)
+- [Authoring and Developing Meldra Hooks](hooks.en.md)
 - [Profile Config Protocol](extensions/profile-config-protocol.en.md)
 - [Contributing](../CONTRIBUTING.md)

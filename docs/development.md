@@ -365,5 +365,6 @@ npm run release:local
 - [Extension API](../packages/coding-agent/docs/extensions.md)
 - [Profile Runtime providers](../packages/coding-agent/docs/profile-runtimes.md)
 - [DeepSeek Harness](../packages/coding-agent/docs/deepseek-harness.md)
+- [Meldra Hook 编写与开发](hooks.md)
 - [Profile Config 注册规范](extensions/profile-config-protocol.md)
 - [贡献说明](../CONTRIBUTING.md)

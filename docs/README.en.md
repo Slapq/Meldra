@@ -13,6 +13,8 @@ under `packages/coding-agent/docs/` remain authoritative for unchanged Pi behavi
   Bootstrap, Starter Bundle, onboarding, and shortcut.
 - [Development Guide](development.en.md): architecture, repository layout, source workflow, extension points, tests,
   upstream synchronization, and release boundaries.
+- [Authoring and Developing Meldra Hooks](hooks.en.md): Handlers, Decisions, Runtime Adapters, TUI, hot reload,
+  security, and testing.
 - [Domain Context](../CONTEXT.md): canonical terminology and ownership.
 - [Agent Governance](../AGENTS.md): investigation, compatibility, approval, and validation requirements.
 

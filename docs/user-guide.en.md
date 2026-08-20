@@ -402,4 +402,5 @@ directory-level backup solve different problems.
 - [Pi Usage Reference](../packages/coding-agent/docs/usage.md)
 - [Profile Runtime provider](../packages/coding-agent/docs/profile-runtimes.md)
 - [Extension Development](../packages/coding-agent/docs/extensions.md)
+- [Authoring and Developing Meldra Hooks](hooks.en.md)
 - [Profile Config Protocol](extensions/profile-config-protocol.en.md)

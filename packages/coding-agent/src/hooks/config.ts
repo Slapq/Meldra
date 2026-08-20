@@ -43,6 +43,9 @@ function parseHandler(value: unknown, path: string, eventName: MeldraHookEventNa
 	if (value.shell !== undefined && value.shell !== "bash" && value.shell !== "powershell") {
 		throw new Error(`${path}.shell must be bash or powershell`);
 	}
+	if (value.disabled !== undefined && typeof value.disabled !== "boolean") {
+		throw new Error(`${path}.disabled must be a boolean`);
+	}
 	if (value.if !== undefined) {
 		if (typeof value.if !== "string" || !validateHookCondition(value.if)) {
 			throw new Error(`${path}.if must be one permission rule such as Bash(git *)`);
@@ -58,6 +61,7 @@ function parseHandler(value: unknown, path: string, eventName: MeldraHookEventNa
 		...(value.timeout === undefined ? {} : { timeout: value.timeout }),
 		...(value.shell === undefined ? {} : { shell: value.shell }),
 		...(value.if === undefined ? {} : { if: value.if }),
+		...(value.disabled === undefined ? {} : { disabled: value.disabled }),
 	};
 }
 
@@ -160,7 +164,10 @@ export function hooksForEvent(
 ): ResolvedMeldraCommandHook[] {
 	if (config.disabled) return [];
 	return config.events[event].filter(
-		(hook) => matchesMeldraHook(hook.matcher, matcherValue) && (!input || matchesHookCondition(hook.if, event, input)),
+		(hook) =>
+			hook.disabled !== true &&
+			matchesMeldraHook(hook.matcher, matcherValue) &&
+			(!input || matchesHookCondition(hook.if, event, input)),
 	);
 }
 

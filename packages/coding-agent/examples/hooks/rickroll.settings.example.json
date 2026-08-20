@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "AgentEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${MELDRA_PROJECT_DIR}/.pi/hooks/rickroll-on-agent-end.mjs"],
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

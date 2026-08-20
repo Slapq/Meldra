@@ -3,14 +3,22 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { apply, type MeldraDshHookDiagnostic, type MeldraDshHooksService } from "../src/extensions/dsh/hooks.ts";
-import { type MeldraHooksRuntimeConfig, resolveMeldraHooks } from "../src/hooks/index.ts";
+import {
+	MELDRA_HOOK_CONTINUATION_MESSAGE,
+	MELDRA_HOOK_TOOL_BLOCK_MESSAGE,
+	type MeldraHooksRuntimeConfig,
+	resolveMeldraHooks,
+} from "../src/hooks/index.ts";
 
 const dirs: string[] = [];
 afterEach(() => {
 	for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
-function setup(preDecision: "deny" | "ask" | "updated" | "error" | "lifecycle-block" = "deny") {
+function setup(
+	preDecision: "deny" | "ask" | "updated" | "error" | "lifecycle-block" = "deny",
+	disabled = false,
+) {
 	const cwd = mkdtempSync(join(tmpdir(), "meldra-hooks-dsh-"));
 	dirs.push(cwd);
 	const script = join(cwd, "hook.mjs");
@@ -47,7 +55,12 @@ let data=""; process.stdin.on("data", c => data += c); process.stdin.on("end", (
 		}),
 	};
 	apply(ctx as never);
-	const hook = { type: "command" as const, command: process.execPath, args: [script] };
+	const hook = {
+		type: "command" as const,
+		command: process.execPath,
+		args: [script],
+		...(disabled ? { disabled: true } : {}),
+	};
 	const config: MeldraHooksRuntimeConfig = {
 		cwd,
 		hooks: resolveMeldraHooks([
@@ -76,7 +89,7 @@ let data=""; process.stdin.on("data", c => data += c); process.stdin.on("end", (
 
 describe("Meldra hooks DSH adapter", () => {
 	it("denies a tool through tools/pre-execute", async () => {
-		const { handlers, agent } = setup();
+		const { handlers, agent, diagnostics } = setup();
 		const handler = handlers.get("tools/pre-execute")?.[0];
 		const decision = await handler?.(
 			{
@@ -88,7 +101,26 @@ describe("Meldra hooks DSH adapter", () => {
 			},
 			async () => ({ kind: "allow" }),
 		);
-		expect(decision).toEqual({ kind: "deny", reason: "DSH denied" });
+		expect(decision).toEqual({ kind: "deny", reason: MELDRA_HOOK_TOOL_BLOCK_MESSAGE });
+		expect(diagnostics).toContainEqual({ message: "PreToolUse blocked: DSH denied" });
+	});
+
+	it("does not execute disabled handlers", async () => {
+		const { handlers, agent } = setup("deny", true);
+		const handler = handlers.get("tools/pre-execute")?.[0];
+		const next = vi.fn(async () => ({ kind: "allow" as const }));
+		const decision = await handler?.(
+			{
+				agent,
+				name: "bash",
+				arguments: { command: "rm -rf build" },
+				callId: "call-disabled",
+				signal: new AbortController().signal,
+			},
+			next,
+		);
+		expect(decision).toEqual({ kind: "allow" });
+		expect(next).toHaveBeenCalledOnce();
 	});
 
 	it("preserves an ask decision without a reason", async () => {
@@ -206,8 +238,8 @@ describe("Meldra hooks DSH adapter", () => {
 		expect(existsSync(join(cwd, "session-end.txt"))).toBe(true);
 	});
 
-	it("adds model context after a successful tool and steers on blocked Stop", async () => {
-		const { handlers, agent } = setup();
+	it("keeps post-tool output out of model context and uses a fixed continuation control", async () => {
+		const { handlers, agent, diagnostics } = setup();
 		const post = handlers.get("tools/post-execute")?.[0];
 		const decision = await post?.(
 			{
@@ -220,18 +252,16 @@ describe("Meldra hooks DSH adapter", () => {
 			{ isError: false, content: [{ type: "text", text: "ok" }], value: null },
 			async () => ({ kind: "accept" }),
 		);
-		const postDecision = decision as {
-			kind: string;
-			additionalContexts?: Array<{ content: Array<{ type: string; text: string }> }>;
-		};
-		expect(postDecision.kind).toBe("accept");
-		expect(postDecision.additionalContexts?.[0].content[0]).toEqual({
-			type: "text",
-			text: "review the result",
+		expect(decision).toEqual({ kind: "accept" });
+		expect(diagnostics).toContainEqual({
+			message: expect.stringContaining("additionalContext ignored; Hook output cannot enter Prompt"),
 		});
 
 		const stop = handlers.get("agent/turn-stopping")?.[0];
 		await stop?.({ agent, turn: 1, signal: new AbortController().signal });
 		expect(agent.steer).toHaveBeenCalledOnce();
+		const continuation = agent.steer.mock.calls[0]?.[0] as { content?: Array<{ type: string; text?: string }> };
+		expect(continuation.content).toEqual([{ type: "text", text: MELDRA_HOOK_CONTINUATION_MESSAGE }]);
+		expect(JSON.stringify(continuation)).not.toContain("continue working");
 	});
 });

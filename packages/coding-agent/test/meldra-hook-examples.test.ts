@@ -1,6 +1,6 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AuthStorage } from "../src/core/auth-storage.ts";
@@ -10,6 +10,7 @@ import { apply, type MeldraDshHooksService } from "../src/extensions/dsh/hooks.t
 import { createMeldraHooksExtension, resolveHooksRuntimeConfig } from "../src/extensions/meldra-hooks/index.ts";
 import {
 	type MeldraHookInput,
+	MELDRA_HOOK_TOOL_BLOCK_MESSAGE,
 	type ResolvedMeldraCommandHook,
 	hooksForEvent,
 	resolveMeldraHooks,
@@ -115,7 +116,7 @@ describe("Meldra Hook examples", () => {
 			toolCallId: "native-example",
 			input: { command: "git reset --hard HEAD~1" },
 		});
-		expect(result).toMatchObject({ block: true, reason: expect.stringContaining("hard Git reset") });
+		expect(result).toMatchObject({ block: true, reason: MELDRA_HOOK_TOOL_BLOCK_MESSAGE });
 	});
 
 	it("denies through the DSH tools/pre-execute adapter", async () => {
@@ -166,7 +167,7 @@ describe("Meldra Hook examples", () => {
 			},
 			async () => ({ kind: "allow" }),
 		);
-		expect(decision).toEqual({ kind: "deny", reason: "Blocked by example Hook: recursive forced removal" });
+		expect(decision).toEqual({ kind: "deny", reason: MELDRA_HOOK_TOOL_BLOCK_MESSAGE });
 	});
 
 	it.each([
@@ -220,22 +221,24 @@ describe("Meldra Hook examples", () => {
 		expect(result.status).toBe("success");
 	});
 
-	it("injects project context as structured output", async () => {
+	it("previews the opt-in Rickroll Hook without opening a browser", async () => {
 		const cwd = workspace();
-		const contextPath = join(cwd, ".pi", "hook-context.md");
-		mkdirSync(dirname(contextPath), { recursive: true });
-		writeFileSync(contextPath, "Use the repository test command.", "utf8");
+		const settings = JSON.parse(readFileSync(join(examplesDir, "rickroll.settings.example.json"), "utf8")) as {
+			hooks: unknown;
+		};
+		const resolved = resolveMeldraHooks([{ source: "project", hooks: settings.hooks }]);
+		expect(resolved.diagnostics).toEqual([]);
+		expect(resolved.events.AgentEnd).toHaveLength(1);
+
 		const result = await runMeldraCommandHook({
-			hook: exampleHook("inject-project-context.mjs", ["${MELDRA_PROJECT_DIR}/.pi/hook-context.md"]),
+			hook: exampleHook("rickroll-on-agent-end.mjs", ["--dry-run"]),
 			cwd,
-			input: input(cwd, { hook_event_name: "SessionStart", source: "startup" }),
+			input: input(cwd, { hook_event_name: "AgentEnd" }),
 		});
 		expect(result.status).toBe("success");
 		expect(result.output).toEqual({
-			hookSpecificOutput: {
-				hookEventName: "SessionStart",
-				additionalContext: "Use the repository test command.",
-			},
+			url: "https://www.bilibili.com/video/BV1UT42167xb/?autoplay=1",
+			autoplayMayBeBlocked: true,
 		});
 	});
 

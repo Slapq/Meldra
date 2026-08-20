@@ -215,16 +215,19 @@ function migrateToolsToBin(): void {
 	}
 }
 
-/**
- * Check for deprecated hooks/ and tools/ directories.
- * Note: tools/ may contain fd/rg binaries extracted by pi, so only warn if it has other files.
- */
-function checkDeprecatedExtensionDirs(baseDir: string, label: string): string[] {
+export type HooksDirectoryOwner = "legacy-extensions" | "meldra-hooks";
+
+/** Check for deprecated Extension directories while preserving the active Profile's hooks/ ownership. */
+export function collectDeprecatedExtensionDirectoryWarnings(
+	baseDir: string,
+	label: string,
+	hooksDirectoryOwner: HooksDirectoryOwner = "legacy-extensions",
+): string[] {
 	const hooksDir = join(baseDir, "hooks");
 	const toolsDir = join(baseDir, "tools");
 	const warnings: string[] = [];
 
-	if (existsSync(hooksDir)) {
+	if (hooksDirectoryOwner === "legacy-extensions" && existsSync(hooksDir)) {
 		warnings.push(`${label} hooks/ directory found. Hooks have been renamed to extensions.`);
 	}
 
@@ -254,7 +257,7 @@ function checkDeprecatedExtensionDirs(baseDir: string, label: string): string[] 
 /**
  * Run extension system migrations (commands→prompts) and collect warnings about deprecated directories.
  */
-function migrateExtensionSystem(cwd: string): string[] {
+function migrateExtensionSystem(cwd: string, hooksDirectoryOwner: HooksDirectoryOwner): string[] {
 	const agentDir = getAgentDir();
 	const projectDir = join(cwd, CONFIG_DIR_NAME);
 
@@ -264,8 +267,8 @@ function migrateExtensionSystem(cwd: string): string[] {
 
 	// Check for deprecated directories
 	const warnings = [
-		...checkDeprecatedExtensionDirs(agentDir, "Global"),
-		...checkDeprecatedExtensionDirs(projectDir, "Project"),
+		...collectDeprecatedExtensionDirectoryWarnings(agentDir, "Global", hooksDirectoryOwner),
+		...collectDeprecatedExtensionDirectoryWarnings(projectDir, "Project", hooksDirectoryOwner),
 	];
 
 	return warnings;
@@ -302,7 +305,10 @@ export async function showDeprecationWarnings(warnings: string[]): Promise<void>
  *
  * @returns Object with migration results and deprecation warnings
  */
-export function runMigrations(cwd: string): {
+export function runMigrations(
+	cwd: string,
+	options: { hooksDirectoryOwner?: HooksDirectoryOwner } = {},
+): {
 	migratedAuthProviders: string[];
 	deprecationWarnings: string[];
 } {
@@ -310,6 +316,6 @@ export function runMigrations(cwd: string): {
 	migrateSessionsFromAgentRoot();
 	migrateToolsToBin();
 	migrateKeybindingsConfigFile();
-	const deprecationWarnings = migrateExtensionSystem(cwd);
+	const deprecationWarnings = migrateExtensionSystem(cwd, options.hooksDirectoryOwner ?? "legacy-extensions");
 	return { migratedAuthProviders, deprecationWarnings };
 }

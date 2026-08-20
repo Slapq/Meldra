@@ -490,4 +490,5 @@ Profile 名称本身不是 Runtime provider 声明。
 - [Pi 使用参考](../packages/coding-agent/docs/usage.md)
 - [Profile Runtime provider](../packages/coding-agent/docs/profile-runtimes.md)
 - [Extension 开发](../packages/coding-agent/docs/extensions.md)
+- [Meldra Hook 编写与开发](hooks.md)
 - [Profile Config 注册规范](extensions/profile-config-protocol.md)

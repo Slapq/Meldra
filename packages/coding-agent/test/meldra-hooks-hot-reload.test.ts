@@ -137,6 +137,75 @@ describe("Meldra Hook settings hot reload", () => {
 		expect(manager.getEffectiveGlobalSettings()).toMatchObject({ theme: "dark", defaultModel: "old-model" });
 	});
 
+	it("keeps inherited Profile defaults out of the editable storage layer", () => {
+		const cwd = workspace("meldra-hook-editable-layer-");
+		const agentDir = join(cwd, "agent");
+		mkdirSync(agentDir, { recursive: true });
+		writeFileSync(
+			join(agentDir, "settings.json"),
+			JSON.stringify({ hooks: { AgentEnd: [{ hooks: [{ type: "command", command: "stored" }] }] } }),
+			"utf8",
+		);
+		const manager = SettingsManager.create(cwd, agentDir, {
+			projectTrusted: false,
+			baseSettings: {
+				hooks: { AgentStart: [{ hooks: [{ type: "command", command: "inherited" }] }] },
+			},
+		});
+		expect(manager.readEditableHookSettingsSnapshot().profile.hooks).toEqual({
+			AgentEnd: [{ hooks: [{ type: "command", command: "stored" }] }],
+		});
+		expect(manager.readHookSettingsSnapshot().profile.hooks).toMatchObject({
+			AgentStart: [{ hooks: [{ type: "command", command: "inherited" }] }],
+			AgentEnd: [{ hooks: [{ type: "command", command: "stored" }] }],
+		});
+	});
+
+	it("persists only Hook fields without applying unrelated external settings", async () => {
+		const cwd = workspace("meldra-hook-write-layer-");
+		const agentDir = join(cwd, "agent");
+		mkdirSync(agentDir, { recursive: true });
+		const profilePath = join(agentDir, "settings.json");
+		writeFileSync(profilePath, JSON.stringify({ theme: "dark", defaultModel: "old-model" }), "utf8");
+		const manager = SettingsManager.create(cwd, agentDir, { projectTrusted: false });
+		writeFileSync(
+			profilePath,
+			JSON.stringify({ theme: "light", defaultModel: "new-model", quietStartup: true }),
+			"utf8",
+		);
+
+		await manager.writeHookSettingsLayer("profile", {
+			hooks: { AgentEnd: [{ hooks: [{ type: "command", command: "notify", disabled: true }] }] },
+			disableAllHooks: false,
+		});
+
+		const persisted = JSON.parse(readFileSync(profilePath, "utf8")) as Record<string, unknown>;
+		expect(persisted).toMatchObject({
+			theme: "light",
+			defaultModel: "new-model",
+			quietStartup: true,
+			disableAllHooks: false,
+		});
+		expect(persisted.hooks).toBeDefined();
+		expect(manager.getEffectiveGlobalSettings()).toMatchObject({ theme: "dark", defaultModel: "old-model" });
+		expect(manager.getEffectiveGlobalSettings().quietStartup).toBeUndefined();
+	});
+
+	it("refuses untrusted project writes and preserves malformed settings", async () => {
+		const cwd = workspace("meldra-hook-write-guard-");
+		const agentDir = join(cwd, "agent");
+		mkdirSync(join(cwd, ".pi"), { recursive: true });
+		mkdirSync(agentDir, { recursive: true });
+		const manager = SettingsManager.create(cwd, agentDir, { projectTrusted: false });
+		await expect(manager.writeHookSettingsLayer("project", { hooks: {} })).rejects.toThrow("not trusted");
+		expect(existsSync(join(cwd, ".pi", "settings.json"))).toBe(false);
+
+		const profilePath = join(agentDir, "settings.json");
+		writeFileSync(profilePath, "{ invalid", "utf8");
+		await expect(manager.writeHookSettingsLayer("profile", { hooks: {} })).rejects.toThrow();
+		expect(readFileSync(profilePath, "utf8")).toBe("{ invalid");
+	});
+
 	it("does not expose project Hook settings before trust", () => {
 		const cwd = workspace("meldra-hook-trust-");
 		const agentDir = join(cwd, "agent");

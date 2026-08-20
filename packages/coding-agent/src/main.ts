@@ -73,7 +73,12 @@ import { SettingsManager } from "./core/settings-manager.ts";
 import { printTimings, resetTimings, time } from "./core/timings.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "./core/trust-manager.ts";
 import { builtInExtensions } from "./extensions/index.ts";
-import { createMeldraHooksExtension, resolveHooksRuntimeConfig } from "./extensions/meldra-hooks/index.ts";
+import {
+	createMeldraHooksExtension,
+	loadHooksManagerLanguage,
+	resolveHooksRuntimeConfig,
+	saveHooksManagerLanguage,
+} from "./extensions/meldra-hooks/index.ts";
 import { readProfileRecord } from "./meldra/profile-bundle.ts";
 import { handleMeldraInitCommand, handleProfileCommand } from "./meldra/profile-cli.ts";
 import { applyProfileEnvironment, captureProfileEnvironment } from "./meldra/profile-environment.ts";
@@ -945,7 +950,9 @@ export async function main(args: string[], options?: MainOptions) {
 	validateSessionIdFlags(parsed);
 
 	// Run migrations (pass cwd for project-local migrations)
-	const { migratedAuthProviders: migratedProviders, deprecationWarnings } = runMigrations(cwd);
+	const { migratedAuthProviders: migratedProviders, deprecationWarnings } = runMigrations(cwd, {
+		hooksDirectoryOwner: startupProfileState.profile.compatibility ? "legacy-extensions" : "meldra-hooks",
+	});
 	time("runMigrations");
 
 	const startupSettingsManager = createProfileSettingsManager(cwd, {
@@ -1141,6 +1148,14 @@ export async function main(args: string[], options?: MainOptions) {
 									),
 								};
 							},
+						},
+						{
+							isProjectTrusted: () => runtimeSettingsManager.isProjectTrusted(),
+							readEditable: () => runtimeSettingsManager.readEditableHookSettingsSnapshot(),
+							readEffective: () => runtimeSettingsManager.readHookSettingsSnapshot(),
+							write: (scope, layer) => runtimeSettingsManager.writeHookSettingsLayer(scope, layer),
+							loadLanguage: () => loadHooksManagerLanguage(runtimeProfileState.profile.agentDir),
+							saveLanguage: (lang) => saveHooksManagerLanguage(runtimeProfileState.profile.agentDir, lang),
 						},
 					),
 				];

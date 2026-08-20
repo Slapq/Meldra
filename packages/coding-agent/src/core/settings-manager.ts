@@ -210,6 +210,8 @@ export interface HookSettingsSnapshot {
 	errors: SettingsError[];
 }
 
+export type HookSettingsWriteScope = "profile" | "project";
+
 export class FileSettingsStorage implements SettingsStorage {
 	private globalSettingsPath: string;
 	private projectSettingsPath: string;
@@ -517,6 +519,66 @@ export class SettingsManager {
 				...(projectLoad.error ? [{ scope: "project" as const, error: projectLoad.error }] : []),
 			],
 		};
+	}
+
+	readEditableHookSettingsSnapshot(): HookSettingsSnapshot {
+		const profileLoad = SettingsManager.tryLoadFromStorage(this.storage, "global");
+		const projectLoad = SettingsManager.tryLoadFromStorage(this.storage, "project", this.projectTrusted);
+		const profileSettings = profileLoad.error ? this.getGlobalSettings() : profileLoad.settings;
+		const projectSettings = projectLoad.error ? this.getProjectSettings() : projectLoad.settings;
+		const pick = (settings: Settings): HookSettingsLayer => ({
+			...(settings.hooks === undefined ? {} : { hooks: structuredClone(settings.hooks) }),
+			...(typeof settings.disableAllHooks === "boolean"
+				? { disableAllHooks: settings.disableAllHooks }
+				: {}),
+			...(typeof settings.shellPath === "string" ? { shellPath: normalizePath(settings.shellPath) } : {}),
+		});
+		return {
+			profile: pick(profileSettings),
+			project: pick(projectSettings),
+			shellPath:
+				typeof projectSettings.shellPath === "string"
+					? normalizePath(projectSettings.shellPath)
+					: typeof profileSettings.shellPath === "string"
+						? normalizePath(profileSettings.shellPath)
+						: undefined,
+			errors: [
+				...(profileLoad.error ? [{ scope: "global" as const, error: profileLoad.error }] : []),
+				...(projectLoad.error ? [{ scope: "project" as const, error: projectLoad.error }] : []),
+			],
+		};
+	}
+
+	async writeHookSettingsLayer(scope: HookSettingsWriteScope, layer: HookSettingsLayer): Promise<void> {
+		const storageScope: SettingsScope = scope === "profile" ? "global" : "project";
+		if (storageScope === "project") this.assertProjectTrustedForWrite();
+
+		const operation = this.writeQueue.then(() => {
+			if (storageScope === "project") this.assertProjectTrustedForWrite();
+			this.storage.withLock(storageScope, (current) => {
+				const settings = current
+					? SettingsManager.migrateSettings(JSON.parse(current) as Record<string, unknown>)
+					: {};
+				for (const field of ["hooks", "disableAllHooks", "shellPath"] as const) {
+					const value = layer[field];
+					if (value === undefined) delete settings[field];
+					else (settings as Record<string, unknown>)[field] = structuredClone(value);
+				}
+				return JSON.stringify(settings, null, 2);
+			});
+
+			const target = storageScope === "global" ? this.globalSettings : this.projectSettings;
+			for (const field of ["hooks", "disableAllHooks", "shellPath"] as const) {
+				const value = layer[field];
+				if (value === undefined) delete target[field];
+				else (target as Record<string, unknown>)[field] = structuredClone(value);
+			}
+			if (storageScope === "global") this.globalSettingsLoadError = null;
+			else this.projectSettingsLoadError = null;
+			this.settings = this.mergeSettingsLayers();
+		});
+		this.writeQueue = operation.catch((error) => this.recordError(storageScope, error));
+		await operation;
 	}
 
 	isProjectTrusted(): boolean {
