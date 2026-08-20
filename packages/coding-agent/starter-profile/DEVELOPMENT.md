@@ -78,6 +78,11 @@ packages/coding-agent/starter-profile/
 
 直接修改部署副本只适合本机诊断；后续 `meldra setup` 可能用 Starter 权威源码重新恢复它。最终修复必须回到仓库源码。
 
+升级时，Setup 会识别旧默认资源 `packages/provider-manager`。该旧包只读取历史 `METAPI_PROFILE_NAME`，在
+Meldra 环境中会把共享模型目录误判为 Profile-local `models.json`。Setup 保留旧包目录和 settings 条目，但将其改为
+`autoload: false`，并启用 Starter 当前维护的 `extensions/provider-manager.ts`。此迁移不删除模型、凭据、插件配置或
+其他 Profile packages；用户安装在其他路径的 Provider Manager 不属于该已知旧默认资源。
+
 ### 2.3 Extension 生命周期
 
 Starter Extension factory 在 Runtime 加载时执行并注册命令、工具、事件和配置。`/reload` 会销毁旧 Session Runtime、

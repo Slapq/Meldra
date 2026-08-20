@@ -7,6 +7,7 @@ import { MeldraSettingsStorage } from "./user-assets.ts";
 
 export const STARTER_PROFILE_PACKAGE_ENTRY = "packages/meldra-starter";
 export const LEGACY_STARTER_PROFILE_PACKAGE_ENTRY = "packages/metapi-starter";
+const LEGACY_PROVIDER_MANAGER_PACKAGE_ENTRY = "packages/provider-manager";
 
 export interface StarterProfileSetupResult {
 	source: string;
@@ -51,6 +52,16 @@ function isStarterPackageEntry(entry: PackageSource): boolean {
 	return source === STARTER_PROFILE_PACKAGE_ENTRY || source === LEGACY_STARTER_PROFILE_PACKAGE_ENTRY;
 }
 
+function disableLegacyProviderManager(agentDir: string, entry: PackageSource): PackageSource {
+	if (
+		normalizedSource(entry) !== LEGACY_PROVIDER_MANAGER_PACKAGE_ENTRY ||
+		!existsSync(resolve(agentDir, packageSource(entry)))
+	) {
+		return entry;
+	}
+	return { source: packageSource(entry), autoload: false };
+}
+
 function hasPackage(agentDir: string, packages: PackageSource[], name: string): boolean {
 	return packages.some((entry) => {
 		const source = normalizedSource(entry);
@@ -66,9 +77,7 @@ function desiredStarterPackage(
 	entry: PackageSource;
 	enabledExtensions: string[];
 } {
-	const providerPresent =
-		hasPackage(agentDir, packages, "provider-manager") ||
-		existsSync(join(agentDir, "extensions", "provider-manager.ts"));
+	const providerPresent = existsSync(join(agentDir, "extensions", "provider-manager.ts"));
 	const scoutPresent = existsSync(join(agentDir, "extensions", "scout.ts"));
 	const workflowsPresent =
 		hasPackage(agentDir, packages, "meldra-workflows") ||
@@ -131,16 +140,19 @@ export async function setupStarterProfile(
 		projectTrusted: false,
 	});
 	const packages = settingsManager.getPackages();
-	const desired = desiredStarterPackage(agentDir, packages);
-	const starterIndices = packages.flatMap((entry, index) => (isStarterPackageEntry(entry) ? [index] : []));
+	const migratedPackages = packages.map((entry) => disableLegacyProviderManager(agentDir, entry));
+	const legacyProviderUpdated = JSON.stringify(migratedPackages) !== JSON.stringify(packages);
+	const desired = desiredStarterPackage(agentDir, migratedPackages);
+	const starterIndices = migratedPackages.flatMap((entry, index) => (isStarterPackageEntry(entry) ? [index] : []));
 	const packageAdded = starterIndices.length === 0;
 	const packageUpdated =
+		legacyProviderUpdated ||
 		starterIndices.length !== 1 ||
 		(starterIndices[0] !== undefined &&
-			JSON.stringify(packages[starterIndices[0]]) !== JSON.stringify(desired.entry));
+			JSON.stringify(migratedPackages[starterIndices[0]]) !== JSON.stringify(desired.entry));
 	if (packageAdded || packageUpdated) {
-		const insertionIndex = starterIndices[0] ?? packages.length;
-		const nextPackages = packages.filter((entry) => !isStarterPackageEntry(entry));
+		const insertionIndex = starterIndices[0] ?? migratedPackages.length;
+		const nextPackages = migratedPackages.filter((entry) => !isStarterPackageEntry(entry));
 		nextPackages.splice(Math.min(insertionIndex, nextPackages.length), 0, desired.entry);
 		settingsManager.setPackages(nextPackages);
 		await settingsManager.flush();

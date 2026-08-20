@@ -107,29 +107,35 @@ describe("Meldra Starter Profile setup", () => {
 		expect(settings.packages).toEqual(["packages/existing", STARTER_PROFILE_PACKAGE_ENTRY]);
 	});
 
-	test("filters Starter extensions that are already supplied by legacy default resources", async () => {
+	test("disables the legacy Provider Manager package and enables the maintained Starter extension", async () => {
 		const agentDir = getProfileAgentDir("default");
 		const settingsPath = join(agentDir, "settings.json");
 		writeJson(settingsPath, {
-			packages: ["packages/provider-manager", "packages/metapi-workflows"],
+			packages: ["packages/existing", "packages/provider-manager", "packages/metapi-workflows"],
 		});
 		writeJson(join(agentDir, "packages", "provider-manager", "package.json"), { name: "provider-manager" });
+		write(join(agentDir, "packages", "provider-manager", "kept.txt"), "legacy package kept\n");
 		writeJson(join(agentDir, "packages", "metapi-workflows", "package.json"), { name: "metapi-workflows" });
 		write(join(agentDir, "extensions", "scout.ts"), "export default () => {};\n");
 
 		const result = await setupStarterProfile(join(temporaryHome, "work"));
 		const settings = JSON.parse(readFileSync(settingsPath, "utf8"));
 
-		expect(result.enabledExtensions).toEqual(["extensions/setup.ts"]);
+		expect(result).toMatchObject({ packageUpdated: true });
+		expect(result.enabledExtensions).toEqual(["extensions/provider-manager.ts", "extensions/setup.ts"]);
 		expect(settings.packages).toEqual([
-			"packages/provider-manager",
+			"packages/existing",
+			{ source: "packages/provider-manager", autoload: false },
 			"packages/metapi-workflows",
 			{
 				source: STARTER_PROFILE_PACKAGE_ENTRY,
 				autoload: false,
-				extensions: ["extensions/setup.ts"],
+				extensions: ["extensions/provider-manager.ts", "extensions/setup.ts"],
 			},
 		]);
+		expect(readFileSync(join(agentDir, "packages", "provider-manager", "kept.txt"), "utf8")).toBe(
+			"legacy package kept\n",
+		);
 	});
 
 	test("does not treat missing legacy package paths as active Starter resources", async () => {
