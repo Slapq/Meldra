@@ -3,15 +3,40 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const harnessSdk = vi.hoisted(() => ({
-	close: vi.fn(async () => undefined),
-	request: vi.fn(),
-	start: vi.fn(async () => undefined),
-}));
+const harnessSdk = vi.hoisted(() => {
+	let resolveNext: ((notification: { method: string; params: Record<string, unknown> }) => void) | undefined;
+	let rejectNext: ((error: Error) => void) | undefined;
+	return {
+		close: vi.fn(async () => undefined),
+		request: vi.fn(),
+		start: vi.fn(async () => undefined),
+		subscribe: vi.fn(() => ({
+			next: () =>
+				new Promise<{ method: string; params: Record<string, unknown> }>((resolve, reject) => {
+					resolveNext = resolve;
+					rejectNext = reject;
+				}),
+			close: () => {
+				rejectNext?.(new Error("notification subscription closed"));
+				resolveNext = undefined;
+				rejectNext = undefined;
+			},
+		})),
+		emitNotification(notification: { method: string; params: Record<string, unknown> }) {
+			resolveNext?.(notification);
+			resolveNext = undefined;
+			rejectNext = undefined;
+		},
+		resetNotifications() {
+			resolveNext = undefined;
+			rejectNext = undefined;
+		},
+	};
+});
 
 vi.mock("@deepseek-ai/dsh-sdk-client", () => ({
 	DeepSeekHarness: class {
-		readonly client = { request: harnessSdk.request };
+		readonly client = { request: harnessSdk.request, subscribe: harnessSdk.subscribe };
 		readonly start = harnessSdk.start;
 		readonly close = harnessSdk.close;
 	},
@@ -155,6 +180,8 @@ describe("DSH Profile Runtime cancellation lifecycle", () => {
 		harnessSdk.request.mockReset();
 		harnessSdk.start.mockReset();
 		harnessSdk.start.mockResolvedValue(undefined);
+		harnessSdk.subscribe.mockClear();
+		harnessSdk.resetNotifications();
 	});
 
 	it.each([
@@ -298,6 +325,36 @@ describe("DSH Profile Runtime cancellation lifecycle", () => {
 			method: "session.create",
 			payload: { sessionId: "meldra-pi-session", cwd },
 		});
+		await runtime.dispose();
+	});
+
+	it("forwards Hook diagnostics from the worker notification channel", async () => {
+		const cwd = mkdtempSync(join(tmpdir(), "meldra-dsh-hook-diagnostic-"));
+		cleanupPaths.push(cwd);
+		harnessSdk.request.mockImplementation(async (method: string, params?: Record<string, unknown>) => {
+			if (method === "meldra/api.events.open") return { cursorId: `${String(params?.stream)}-cursor` };
+			if (method === "meldra/api.events.next") return { done: true };
+			if (method === "meldra/api.events.close") return {};
+			if (method === "meldra/api.call") return { result: { ok: true, value: {} } };
+			if (method === "meldra/plugin-inventory.list") return { entries: [] };
+			throw new Error(`unexpected request: ${method}`);
+		});
+		const runtime = createRuntime(cwd);
+		const events: Array<{ payload: Record<string, unknown> }> = [];
+		runtime.subscribe((event) => events.push(event));
+
+		await runtime.plugins();
+		harnessSdk.emitNotification({
+			method: "meldra/hooks.diagnostic",
+			params: { message: "profile hook failed" },
+		});
+
+		await vi.waitFor(() =>
+			expect(events).toContainEqual({
+				rpcId: expect.any(String),
+				payload: { type: "meldra/hooks-diagnostic", message: "profile hook failed" },
+			}),
+		);
 		await runtime.dispose();
 	});
 

@@ -1,5 +1,5 @@
-import { spawn } from "node:child_process";
-import { waitForChildProcess } from "../utils/child-process.ts";
+import { StringDecoder } from "node:string_decoder";
+import { spawnProcess, waitForChildProcess } from "../utils/child-process.ts";
 import {
 	getShellConfig,
 	getShellEnv,
@@ -13,8 +13,8 @@ const DEFAULT_TIMEOUT_SECONDS = 600;
 const MAX_TIMEOUT_MS = 2_147_483_647;
 const MAX_OUTPUT_CHARS = 200_000;
 
-function collect(current: string, chunk: Buffer): string {
-	const next = current + chunk.toString("utf8");
+function collect(current: string, chunk: string): string {
+	const next = current + chunk;
 	return next.length <= MAX_OUTPUT_CHARS ? next : `[output truncated]\n${next.slice(-MAX_OUTPUT_CHARS)}`;
 }
 
@@ -84,6 +84,25 @@ export async function runMeldraCommandHook(options: {
 		};
 	}
 
+	let child: ReturnType<typeof spawnProcess>;
+	try {
+		child = spawnProcess(spec.command, spec.args, {
+			cwd,
+			detached: process.platform !== "win32",
+			env: { ...getShellEnv(), CLAUDE_PROJECT_DIR: cwd, MELDRA_PROJECT_DIR: cwd },
+			stdio: ["pipe", "pipe", "pipe"],
+			windowsHide: true,
+		});
+	} catch (error) {
+		return {
+			hook,
+			status: "error",
+			code: 1,
+			stdout: "",
+			stderr: error instanceof Error ? error.message : String(error),
+		};
+	}
+
 	return await new Promise((resolve) => {
 		let stdout = "";
 		let stderr = "";
@@ -91,13 +110,8 @@ export async function runMeldraCommandHook(options: {
 		let aborted = false;
 		let settled = false;
 		const timeoutMs = Math.min((hook.timeout ?? DEFAULT_TIMEOUT_SECONDS) * 1000, MAX_TIMEOUT_MS);
-		const child = spawn(spec.command, spec.args, {
-			cwd,
-			detached: process.platform !== "win32",
-			env: { ...getShellEnv(), CLAUDE_PROJECT_DIR: cwd, MELDRA_PROJECT_DIR: cwd },
-			stdio: ["pipe", "pipe", "pipe"],
-			windowsHide: true,
-		});
+		const stdoutDecoder = new StringDecoder("utf8");
+		const stderrDecoder = new StringDecoder("utf8");
 		if (child.pid) trackDetachedChildPid(child.pid);
 		const stop = () => {
 			if (child.pid) killProcessTree(child.pid);
@@ -113,10 +127,16 @@ export async function runMeldraCommandHook(options: {
 		if (signal) signal.addEventListener("abort", onAbort, { once: true });
 
 		child.stdout?.on("data", (chunk: Buffer) => {
-			stdout = collect(stdout, chunk);
+			stdout = collect(stdout, stdoutDecoder.write(chunk));
 		});
 		child.stderr?.on("data", (chunk: Buffer) => {
-			stderr = collect(stderr, chunk);
+			stderr = collect(stderr, stderrDecoder.write(chunk));
+		});
+		child.stdout?.once("end", () => {
+			stdout = collect(stdout, stdoutDecoder.end());
+		});
+		child.stderr?.once("end", () => {
+			stderr = collect(stderr, stderrDecoder.end());
 		});
 		child.stdin?.on("error", () => {});
 		child.stdin?.end(JSON.stringify(input));
@@ -139,7 +159,7 @@ export async function runMeldraCommandHook(options: {
 			resolve({ hook, status, code, stdout, stderr, ...(code === 0 ? { output: parseOutput(stdout) } : {}) });
 		};
 		child.once("error", (error) => {
-			stderr = collect(stderr, Buffer.from(error.message));
+			stderr = collect(stderr, error.message);
 			finish(1);
 		});
 		waitForChildProcess(child)

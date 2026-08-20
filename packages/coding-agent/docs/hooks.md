@@ -56,9 +56,9 @@ A command handler supports:
 | `timeout` | number | Positive timeout in seconds; default 600 |
 | `shell` | `"bash"` or `"powershell"` | Optional shell-form override |
 
-When `args` is present, Meldra spawns `command` directly. Without `args`, Meldra uses the configured Pi shell, or PowerShell when explicitly selected. `${CLAUDE_PROJECT_DIR}` and `${MELDRA_PROJECT_DIR}` are replaced in exec-form command/arguments and exported to every Hook process.
+When `args` is present, Meldra spawns `command` directly, including Windows command shims such as `.cmd` files. Without `args`, Meldra uses the configured Pi shell, or PowerShell when explicitly selected. `${CLAUDE_PROJECT_DIR}` and `${MELDRA_PROJECT_DIR}` are replaced in exec-form command/arguments and exported to every Hook process.
 
-Meldra writes one JSON object to stdin. Stdout and stderr are each bounded to 200,000 characters. Timeout, turn cancellation, Session shutdown, and process exit terminate the Hook process tree.
+Meldra writes one JSON object to stdin and decodes command output as a UTF-8 stream, preserving characters split across process output chunks. Stdout and stderr are each bounded to 200,000 characters. Timeout, turn cancellation, Session shutdown, and process exit terminate the Hook process tree.
 
 ## Matchers
 
@@ -77,6 +77,7 @@ Built-in tool names use Claude-compatible matcher names where there is a direct 
 | `write` | `Write` |
 | `grep` | `Grep` |
 | `find` | `Glob` |
+| `ls` | `LS` |
 
 Custom and MCP tool names are preserved.
 
@@ -92,7 +93,7 @@ Custom and MCP tool names are preserved.
 | `Stop` | none | Protected follow-up continuation | Native `agent/turn-stopping` steering |
 | `SessionEnd` | shutdown reason | Awaited `session_shutdown` | Approximate `agent/disposed` notification |
 
-DSH owns its tool and Agent loops. Its tool arguments are frozen before `tools/pre-execute`; an `updatedInput` returned for DSH is ignored with an explicit diagnostic. Meldra does not mutate DSH logs behind the Runtime's back.
+DSH owns its tool and Agent loops. Its tool arguments are frozen before `tools/pre-execute`; an `updatedInput` returned for DSH is ignored with an explicit interactive warning. A Hook `ask` decision is combined with later DSH pre-execute decisions, guards, sandbox policy, and tool-owned approval checks; it does not replace a stronger denial. Meldra does not mutate DSH logs behind the Runtime's back.
 
 ## Input
 
@@ -124,7 +125,7 @@ A Native Pi Session includes `transcript_path` when it has a persistent Session 
 
 - Exit `0`: success. Plain stdout supplies additional context for `SessionStart` and `UserPromptSubmit`. A JSON object is interpreted as structured output.
 - Exit `2`: block where the event can block. Stderr is the preferred reason, then stdout.
-- Other exit codes: non-blocking Hook errors. Interactive mode shows a warning.
+- Other exit codes: non-blocking Hook errors. Interactive mode shows a warning in both Native Pi and DSH Profiles; DSH transports the diagnostic over its runtime bridge without adding it to model context or the Pi Session.
 
 `PreToolUse` accepts Claude-style structured output:
 
@@ -143,6 +144,8 @@ Native Pi also accepts `hookSpecificOutput.updatedInput`. DSH reports it as unsu
 Context-producing events accept `hookSpecificOutput.additionalContext` or top-level `additionalContext`. Post-tool and Stop events accept top-level `decision: "block"` plus `reason`.
 
 All matching command handlers run to completion in parallel. Any blocking result wins. One handler's block does not prevent sibling Hook commands from running.
+
+Native Pi awaits `SessionEnd` during `session_shutdown`. DSH's `agent/disposed` notification remains approximate, but graceful Runtime shutdown drains Hook commands that have already started before exiting. Forced worker teardown terminates every tracked Hook process tree.
 
 ## Inspect Hooks
 

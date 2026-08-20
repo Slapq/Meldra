@@ -500,6 +500,22 @@ describe("DSH Profile TUI renderer", () => {
 		vi.unstubAllEnvs();
 	});
 
+	it("shows DSH Hook diagnostics as interactive warnings", async () => {
+		const fake = fakeRuntime();
+		const state = setup("dsh", fake.runtime);
+		state.handlers.get("session_start")?.({ type: "session_start", reason: "startup" }, state.ctx);
+
+		fake.emit({
+			rpcId: "hook-diagnostic",
+			payload: { type: "meldra/hooks-diagnostic", message: "profile hook timed out" },
+		});
+
+		await vi.waitFor(() =>
+			expect(state.ctx.ui.notify).toHaveBeenCalledWith("Meldra Hook：profile hook timed out", "warning"),
+		);
+		vi.unstubAllEnvs();
+	});
+
 	it("shows the authoritative Harness model route without a Profile preference", async () => {
 		const fake = fakeRuntime();
 		const state = setup("dsh", fake.runtime);

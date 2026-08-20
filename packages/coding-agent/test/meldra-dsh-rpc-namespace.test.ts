@@ -3,15 +3,25 @@ import { describe, expect, it, vi } from "vitest";
 const transportMocks = vi.hoisted(() => ({
 	onRequest: vi.fn(),
 	flush: vi.fn(async () => undefined),
+	notify: vi.fn(),
+}));
+
+const sdkMocks = vi.hoisted(() => ({
+	handleRequest: vi.fn(async () => ({ ok: true })),
+	shutdown: vi.fn(async () => undefined),
 }));
 
 vi.mock("@deepseek-ai/dsh-sdk-jsonrpc-server", () => ({
-	HarnessSdkJsonRpcServer: class {},
+	HarnessSdkJsonRpcServer: class {
+		handleRequest = sdkMocks.handleRequest;
+		shutdown = sdkMocks.shutdown;
+	},
 }));
 vi.mock("@deepseek-ai/dsh-sdk-protocol", () => ({
 	JsonRpcLineTransport: class {
 		onRequest = transportMocks.onRequest;
 		flush = transportMocks.flush;
+		notify = transportMocks.notify;
 	},
 }));
 
@@ -47,11 +57,23 @@ describe("Meldra DSH RPC namespace", () => {
 			result: { kind: "success", text: "Plan mode off." },
 		}));
 		const configure = vi.fn();
+		let reportDiagnostic: ((diagnostic: { message: string }) => void) | undefined;
+		const unsubscribeDiagnostics = vi.fn();
+		const shutdown = vi.fn(async () => undefined);
+		const drain = vi.fn(async () => undefined);
 		apply(
 			{
 				root: { fiber: { dispose: vi.fn(async () => undefined) } },
 				effect: vi.fn(),
-				get: vi.fn(() => ({ configure })),
+				get: vi.fn(() => ({
+					configure,
+					subscribeDiagnostics: (listener: (diagnostic: { message: string }) => void) => {
+						reportDiagnostic = listener;
+						return unsubscribeDiagnostics;
+					},
+					shutdown,
+					drain,
+				})),
 				apiProxy: {},
 				agents: { get: vi.fn(() => agent) },
 				commands: { execute },
@@ -73,6 +95,46 @@ describe("Meldra DSH RPC namespace", () => {
 		const config = { cwd: "C:/workspace", hooks: { disabled: false, events: {}, diagnostics: [] } };
 		await expect(handler?.("meldra/hooks.configure", { config })).resolves.toEqual({ configured: true });
 		expect(configure).toHaveBeenCalledWith(config);
+		reportDiagnostic?.({ message: "hook timed out" });
+		expect(transportMocks.notify).toHaveBeenCalledWith("meldra/hooks.diagnostic", {
+			message: "hook timed out",
+		});
+	});
+
+	it("drains Hook processes before shutdown exits", async () => {
+		transportMocks.onRequest.mockClear();
+		const rootDispose = vi.fn(async () => undefined);
+		const shutdown = vi.fn(async () => undefined);
+		const drain = vi.fn(async () => undefined);
+		const exit = vi.fn();
+		apply(
+			{
+				root: { fiber: { dispose: rootDispose } },
+				effect: vi.fn(),
+				get: vi.fn(() => ({
+					configure: vi.fn(),
+					subscribeDiagnostics: () => vi.fn(),
+					shutdown,
+					drain,
+				})),
+				apiProxy: {},
+				agents: { get: vi.fn() },
+				commands: {},
+				messageFeedback: {},
+				pluginInventory: {},
+			} as never,
+			{ exit },
+		);
+		const handler = transportMocks.onRequest.mock.calls.at(-1)?.[0];
+
+		await expect(handler?.("shutdown", {})).resolves.toEqual({ ok: true });
+		await vi.waitFor(() => expect(exit).toHaveBeenCalledWith(0));
+		expect(shutdown).toHaveBeenCalledOnce();
+		expect(rootDispose).toHaveBeenCalledOnce();
+		expect(drain).toHaveBeenCalledOnce();
+		expect(shutdown.mock.invocationCallOrder[0]).toBeLessThan(rootDispose.mock.invocationCallOrder[0]);
+		expect(rootDispose.mock.invocationCallOrder[0]).toBeLessThan(drain.mock.invocationCallOrder[0]);
+		expect(drain.mock.invocationCallOrder[0]).toBeLessThan(exit.mock.invocationCallOrder[0]);
 	});
 
 	it("leaves Harness-native methods unchanged", () => {

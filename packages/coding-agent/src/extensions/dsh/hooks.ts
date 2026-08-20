@@ -15,8 +15,15 @@ import {
 export const name = "meldra-command-hooks";
 export const inject = ["agents", "tools"];
 
+export interface MeldraDshHookDiagnostic {
+	message: string;
+}
+
 export interface MeldraDshHooksService {
 	configure(config: MeldraHooksRuntimeConfig): void;
+	subscribeDiagnostics(listener: (diagnostic: MeldraDshHookDiagnostic) => void): () => void;
+	shutdown(): Promise<void>;
+	drain(): Promise<void>;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -57,6 +64,14 @@ function contexts(results: MeldraHookRunResult[]): string[] {
 	});
 }
 
+function diagnostics(results: MeldraHookRunResult[]): string[] {
+	return results.flatMap((result) =>
+		result.status === "error" || result.status === "timeout"
+			? [`${result.hook.source} ${result.hook.command}: ${result.stderr.trim() || result.status}`]
+			: [],
+	);
+}
+
 function message(text: string, summary: string): UserMessage {
 	return createUserMessage({
 		content: [{ type: "text", text }],
@@ -94,15 +109,75 @@ export function apply(ctx: Context): void {
 	let config: MeldraHooksRuntimeConfig | undefined;
 	const startSources = new WeakMap<Agent, string>();
 	const initialized = new WeakSet<Agent>();
+	const liveAgents = new Set<Agent>();
+	const endedAgents = new WeakSet<Agent>();
 	const stopHookActive = new WeakSet<Agent>();
+	const diagnosticListeners = new Set<(diagnostic: MeldraDshHookDiagnostic) => void>();
+	const pendingRuns = new Set<Promise<unknown>>();
+	const report = (message: string): void => {
+		for (const listener of diagnosticListeners) {
+			try {
+				listener({ message });
+			} catch {
+				// Diagnostics must not change Hook decisions.
+			}
+		}
+	};
+	const invoke = (
+		active: MeldraHooksRuntimeConfig,
+		event: MeldraHookEventName,
+		matcher: string,
+		input: MeldraHookInput,
+		signal?: AbortSignal,
+	): Promise<MeldraHookRunResult[]> => {
+		const task = run(active, event, matcher, input, signal).then((results) => {
+			for (const diagnostic of diagnostics(results)) report(diagnostic);
+			return results;
+		});
+		pendingRuns.add(task);
+		void task.then(
+			() => pendingRuns.delete(task),
+			() => pendingRuns.delete(task),
+		);
+		return task;
+	};
+	const endAgent = async (agent: Agent): Promise<void> => {
+		if (endedAgents.has(agent)) return;
+		endedAgents.add(agent);
+		liveAgents.delete(agent);
+		const active = config;
+		if (!active || active.hooks.disabled) return;
+		try {
+			await invoke(active, "SessionEnd", "other", {
+				...common(active, "SessionEnd", agent),
+				reason: "other",
+			});
+		} catch (error) {
+			report(`SessionEnd hook failed: ${String(error)}`);
+		}
+	};
+	let shutdownTask: Promise<void> | undefined;
 	const service: MeldraDshHooksService = {
 		configure(value) {
 			config = structuredClone(value);
+			for (const diagnostic of config.hooks.diagnostics) report(diagnostic);
+		},
+		subscribeDiagnostics(listener) {
+			diagnosticListeners.add(listener);
+			return () => diagnosticListeners.delete(listener);
+		},
+		shutdown() {
+			shutdownTask ??= Promise.allSettled([...liveAgents].map(endAgent)).then(() => undefined);
+			return shutdownTask;
+		},
+		async drain() {
+			while (pendingRuns.size > 0) await Promise.allSettled([...pendingRuns]);
 		},
 	};
 	ctx.provide("meldraHooks", service);
 
 	ctx.on("agent/session-start", ({ agent, source }) => {
+		liveAgents.add(agent);
 		startSources.set(agent, source);
 	});
 
@@ -113,7 +188,7 @@ export function apply(ctx: Context): void {
 		if (!initialized.has(agent)) {
 			initialized.add(agent);
 			const source = startSources.get(agent) ?? "startup";
-			const results = await run(
+			const results = await invoke(
 				active,
 				"SessionStart",
 				source,
@@ -124,7 +199,7 @@ export function apply(ctx: Context): void {
 		}
 		const userMessages = messages.filter((entry) => entry.source.kind === "user");
 		if (userMessages.length > 0) {
-			const results = await run(
+			const results = await invoke(
 				active,
 				"UserPromptSubmit",
 				"",
@@ -143,7 +218,7 @@ export function apply(ctx: Context): void {
 		const active = config;
 		if (!active || !exec.agent || active.hooks.disabled) return await next();
 		const toolName = canonicalHookToolName(exec.name);
-		const results = await run(
+		const results = await invoke(
 			active,
 			"PreToolUse",
 			toolName,
@@ -155,17 +230,18 @@ export function apply(ctx: Context): void {
 			},
 			exec.signal,
 		);
+		for (const result of results) {
+			if (specific(result)?.updatedInput !== undefined) {
+				report("DSH does not support PreToolUse updatedInput; immutable arguments were preserved");
+				break;
+			}
+		}
 		const denied = blockReason(results);
 		if (denied) return { kind: "deny", reason: denied };
 		const ask = permissionRequest(results);
-		if (ask) return { kind: "ask", ...ask };
-		for (const result of results) {
-			if (specific(result)?.updatedInput !== undefined) {
-				console.error(
-					"[meldra-hooks] DSH does not support PreToolUse updatedInput; immutable arguments were preserved",
-				);
-				break;
-			}
+		if (ask) {
+			const downstream = await next();
+			return downstream.kind === "allow" ? { kind: "ask", ...ask } : downstream;
 		}
 		return await next();
 	});
@@ -178,7 +254,7 @@ export function apply(ctx: Context): void {
 			if (!active || !exec.agent || active.hooks.disabled) return downstream;
 			const event = result.isError ? "PostToolUseFailure" : "PostToolUse";
 			const toolName = canonicalHookToolName(exec.name);
-			const results = await run(
+			const results = await invoke(
 				active,
 				event,
 				toolName,
@@ -207,7 +283,7 @@ export function apply(ctx: Context): void {
 		const active = config;
 		if (!active || active.hooks.disabled) return;
 		const wasActive = stopHookActive.has(agent);
-		const results = await run(
+		const results = await invoke(
 			active,
 			"Stop",
 			"",
@@ -224,10 +300,6 @@ export function apply(ctx: Context): void {
 	});
 
 	ctx.on("agent/disposed", ({ agent }) => {
-		const active = config;
-		if (!active || active.hooks.disabled) return;
-		void run(active, "SessionEnd", "other", { ...common(active, "SessionEnd", agent), reason: "other" }).catch(
-			(error) => console.error("[meldra-hooks] SessionEnd hook failed", error),
-		);
+		void endAgent(agent);
 	});
 }

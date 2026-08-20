@@ -48,6 +48,39 @@ process.stdin.on("end", () => process.stdout.write(JSON.stringify({ seen: JSON.p
 		expect(result.output).toEqual({ argv: `${cwd}/target.txt` });
 	});
 
+	it("preserves UTF-8 characters split across output chunks", async () => {
+		const { cwd, hook } = fixture(`
+const payload = Buffer.from(JSON.stringify({ additionalContext: "你" }));
+const split = payload.indexOf(Buffer.from("你")) + 1;
+process.stdout.write(payload.subarray(0, split));
+setTimeout(() => process.stdout.write(payload.subarray(split)), 20);
+`);
+		const result = await runMeldraCommandHook({ hook, input, cwd });
+		expect(result.stdout).toBe('{"additionalContext":"你"}');
+		expect(result.output).toEqual({ additionalContext: "你" });
+	});
+
+	it.runIf(process.platform === "win32")("executes Windows command shims in exec form", async () => {
+		const { cwd, hook } = fixture("");
+		const command = join(cwd, "hook.cmd");
+		writeFileSync(command, '@echo off\r\necho {"additionalContext":"cmd"}\r\n', "utf8");
+		hook.command = command;
+		hook.args = ["literal-argument"];
+		const result = await runMeldraCommandHook({ hook, input, cwd });
+		expect(result.status).toBe("success");
+		expect(result.output).toEqual({ additionalContext: "cmd" });
+	});
+
+	it("normalizes synchronous spawn failures", async () => {
+		const { cwd, hook } = fixture("");
+		hook.command = "invalid\\0command";
+		hook.args = [];
+		await expect(runMeldraCommandHook({ hook, input, cwd })).resolves.toMatchObject({
+			status: "error",
+			code: 1,
+		});
+	});
+
 	it("maps exit code 2 to a blocking result", async () => {
 		const { cwd, hook } = fixture(`process.stderr.write("blocked by policy"); process.exit(2);`);
 		const result = await runMeldraCommandHook({ hook, input, cwd });

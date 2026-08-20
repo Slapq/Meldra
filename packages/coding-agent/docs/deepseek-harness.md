@@ -456,7 +456,9 @@ corrects an incomplete transient projection after reconnect or dropped chunks.
 
 A DSH Profile executes Meldra command Hooks through the injected `meldra-command-hooks` Cordis plugin. The host sends the resolved Profile/project Hook snapshot through the in-memory `meldra/hooks.configure` RPC before creating the Harness Session; the snapshot is not written to Harness Settings or credentials.
 
-The plugin maps `PreToolUse`, post-tool events, prompt preflight, Stop, and Session lifecycle to DSH rc.8's native `tools/*` and `agent/*` seams. DSH owns those decisions. In particular, `PreToolUse` can allow, ask, or deny, but cannot apply Claude-style `updatedInput` because Harness freezes and logs tool arguments before policy dispatch. See [Meldra Hooks](hooks.md) for the event matrix and configuration.
+The plugin maps `PreToolUse`, post-tool events, prompt preflight, Stop, and Session lifecycle to DSH rc.8's native `tools/*` and `agent/*` seams. DSH owns those decisions. In particular, `PreToolUse` can allow, ask, or deny, but cannot apply Claude-style `updatedInput` because Harness freezes and logs tool arguments before policy dispatch. An `ask` remains subject to later DSH pre-execute decisions, guards, sandbox policy, and tool-owned approval checks. Non-blocking Hook errors, timeouts, and unsupported `updatedInput` results travel over a dedicated Runtime notification and appear as Pi TUI warnings without entering either Runtime's model context or durable Session state.
+
+DSH `SessionEnd` remains an approximate `agent/disposed` notification. Graceful worker shutdown drains Hook commands that have already started; EOF follows that drain path, while handled termination signals kill every tracked Hook process tree before the worker exits. See [Meldra Hooks](hooks.md) for the event matrix and configuration.
 
 ## Ownership and storage
 

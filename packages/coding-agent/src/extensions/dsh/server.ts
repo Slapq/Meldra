@@ -10,7 +10,8 @@ import { HarnessSdkJsonRpcServer } from "@deepseek-ai/dsh-sdk-jsonrpc-server";
 import { JsonRpcLineTransport } from "@deepseek-ai/dsh-sdk-protocol";
 import Schema from "@deepseek-ai/schemastery";
 import type { MeldraHooksRuntimeConfig } from "../../hooks/types.ts";
-import type { MeldraDshHooksService } from "./hooks.ts";
+import { killTrackedDetachedChildren } from "../../utils/shell.ts";
+import type { MeldraDshHookDiagnostic, MeldraDshHooksService } from "./hooks.ts";
 
 const LEGACY_METAPI_RPC_PREFIX = "metapi/";
 const MELDRA_RPC_PREFIX = "meldra/";
@@ -94,6 +95,9 @@ export function apply(ctx: Context, config: BridgeConfig): void {
 	const meldraHooks = ctx.get("meldraHooks") as MeldraDshHooksService;
 	const cursors = new Map<string, EventCursor>();
 	let exitTask: Promise<void> | undefined;
+	const unsubscribeHookDiagnostics = meldraHooks.subscribeDiagnostics((diagnostic: MeldraDshHookDiagnostic) => {
+		transport.notify("meldra/hooks.diagnostic", diagnostic);
+	});
 
 	const closeCursor = async (id: string): Promise<boolean> => {
 		const cursor = cursors.get(id);
@@ -108,9 +112,16 @@ export function apply(ctx: Context, config: BridgeConfig): void {
 	};
 	const disposeAndExit = (): Promise<void> => {
 		exitTask ??= (async () => {
-			await Promise.allSettled([transport.flush()]);
-			await Promise.allSettled([rootFiber.dispose()]);
-			exit(0);
+			try {
+				await Promise.allSettled([transport.flush()]);
+				await Promise.allSettled([meldraHooks.shutdown()]);
+				await Promise.allSettled([transport.flush()]);
+				await Promise.allSettled([rootFiber.dispose()]);
+				await Promise.allSettled([meldraHooks.drain()]);
+			} finally {
+				killTrackedDetachedChildren();
+				exit(0);
+			}
 		})();
 		return exitTask;
 	};
@@ -233,6 +244,7 @@ export function apply(ctx: Context, config: BridgeConfig): void {
 		return async () => {
 			await closeCursors();
 			await sdk.shutdown();
+			unsubscribeHookDiagnostics();
 			transport.close();
 		};
 	}, "meldra.tui-jsonrpc.serve");

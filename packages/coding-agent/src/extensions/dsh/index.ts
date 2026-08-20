@@ -2921,6 +2921,10 @@ export default function dshExtension(pi: ExtensionAPI): void {
 			const handleEvent = async (): Promise<void> => {
 				if (generation !== interactionGeneration) return;
 				const payload = event.payload;
+				if (payload.type === "meldra/hooks-diagnostic") {
+					if (typeof payload.message === "string") ctx.ui.notify(`Meldra Hook：${payload.message}`, "warning");
+					return;
+				}
 				if (payload.type === "host/remote-event" && payload.event === "commands/change") {
 					invalidateCommandCatalog();
 					return;

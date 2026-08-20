@@ -4,7 +4,9 @@ import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { boot, installFailLoud } from "@deepseek-ai/dsh-app-boot";
+import { killTrackedDetachedChildren } from "../../utils/shell.ts";
 import { prepareDshComposition } from "./composition.ts";
+import type { MeldraDshHooksService } from "./hooks.ts";
 
 const NAME = "meldra-dsh-tui";
 const require = createRequire(import.meta.url);
@@ -33,15 +35,27 @@ const composition = prepareDshComposition({
 	sandboxEscalationCompatPath,
 });
 const ctx = await boot(NAME, composition.rootPath, composition.patches);
+const meldraHooks = ctx.get("meldraHooks") as MeldraDshHooksService;
 
 let disposing = false;
 const dispose = async (code: number): Promise<void> => {
 	if (disposing) return;
 	disposing = true;
-	await ctx.fiber.dispose();
-	process.exit(code);
+	try {
+		await meldraHooks.shutdown();
+		await ctx.fiber.dispose();
+		await meldraHooks.drain();
+	} finally {
+		killTrackedDetachedChildren();
+		process.exit(code);
+	}
+};
+
+const terminate = (code: number): void => {
+	killTrackedDetachedChildren();
+	void dispose(code);
 };
 
 process.stdin.on("end", () => void dispose(0));
-process.on("SIGTERM", () => void dispose(0));
-process.on("SIGINT", () => void dispose(130));
+process.on("SIGTERM", () => terminate(0));
+process.on("SIGINT", () => terminate(130));

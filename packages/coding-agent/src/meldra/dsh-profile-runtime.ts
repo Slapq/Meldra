@@ -49,8 +49,17 @@ export const LEGACY_METAPI_DSH_MESSAGE_ENTRY = "metapi-dsh-message";
 /** @deprecated Use MELDRA_DSH_MESSAGE_ENTRY. Retained for source compatibility. */
 export const DSH_MESSAGE_ENTRY = MELDRA_DSH_MESSAGE_ENTRY;
 
+interface HarnessNotification {
+	method: string;
+	params: Record<string, unknown>;
+}
+interface HarnessNotificationSubscription {
+	next(): Promise<HarnessNotification>;
+	close(): void;
+}
 interface HarnessClient {
 	request(method: string, params?: object): Promise<unknown>;
+	subscribe(filter?: (notification: HarnessNotification) => boolean): HarnessNotificationSubscription;
 }
 interface Harness {
 	readonly client: HarnessClient;
@@ -62,6 +71,7 @@ interface RuntimeState {
 	sessionId: string;
 	eventCursors: Map<"mux" | "host", string>;
 	eventTasks: Promise<void>[];
+	hookDiagnostics?: HarnessNotificationSubscription;
 }
 
 interface ActiveTurn {
@@ -1105,6 +1115,27 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 		for (const listener of this.listeners) listener(event);
 	}
 
+	private startHookDiagnosticPump(active: RuntimeState): void {
+		const subscription = active.harness.client.subscribe(
+			(notification) => notification.method === "meldra/hooks.diagnostic",
+		);
+		active.hookDiagnostics = subscription;
+		const task = (async () => {
+			while (this.runtime === undefined || this.runtime === active) {
+				const notification = await subscription.next();
+				if (typeof notification.params.message !== "string") continue;
+				const event: DshProfileEvent = {
+					rpcId: randomUUID(),
+					payload: { type: "meldra/hooks-diagnostic", message: notification.params.message },
+				};
+				for (const listener of this.listeners) listener(event);
+			}
+		})().catch((error) => {
+			if (this.runtime === active) this.append("error", `DSH Hook 诊断流中断：${String(error)}`);
+		});
+		active.eventTasks.push(task);
+	}
+
 	private async startEventPump(active: RuntimeState, stream: "mux" | "host"): Promise<void> {
 		const opened = await active.harness.client.request("meldra/api.events.open", { stream });
 		if (!isRecord(opened) || typeof opened.cursorId !== "string") throw new Error("DSH 未返回事件 cursor。");
@@ -1168,6 +1199,7 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 			try {
 				await harness.start();
 				if (lifecycleVersion !== this.lifecycleVersion) throw new Error("DSH Runtime 已关闭。");
+				this.startHookDiagnosticPump(active);
 				if (this.hooksConfig) {
 					await harness.client.request("meldra/hooks.configure", { config: this.hooksConfig });
 				}
@@ -1274,6 +1306,8 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 	}
 
 	private async disposeRuntimeState(current: RuntimeState): Promise<void> {
+		current.hookDiagnostics?.close();
+		current.hookDiagnostics = undefined;
 		await settleBounded(
 			Promise.allSettled(
 				[...current.eventCursors.values()].map((cursorId) =>
