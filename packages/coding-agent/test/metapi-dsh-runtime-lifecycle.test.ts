@@ -26,6 +26,7 @@ import type { ModelRuntime } from "../src/core/model-runtime.ts";
 import { createAgentSession } from "../src/core/sdk.ts";
 import { SessionManager } from "../src/core/session-manager.ts";
 import { SettingsManager } from "../src/core/settings-manager.ts";
+import { resolveMeldraHooks } from "../src/hooks/config.ts";
 import { DSH_MESSAGE_ENTRY, DshProfileRuntime } from "../src/meldra/dsh-profile-runtime.ts";
 
 interface ProbeRuntimeState {
@@ -297,6 +298,30 @@ describe("DSH Profile Runtime cancellation lifecycle", () => {
 			method: "session.create",
 			payload: { sessionId: "meldra-pi-session", cwd },
 		});
+		await runtime.dispose();
+	});
+
+	it("configures command hooks before creating the Harness Session", async () => {
+		const cwd = mkdtempSync(join(tmpdir(), "meldra-dsh-hooks-config-"));
+		cleanupPaths.push(cwd);
+		harnessSdk.request.mockImplementation(async (method: string, params?: Record<string, unknown>) => {
+			if (method === "meldra/hooks.configure") return { configured: true };
+			if (method === "meldra/api.events.open") return { cursorId: `${String(params?.stream)}-cursor` };
+			if (method === "meldra/api.events.next") return { done: true };
+			if (method === "meldra/api.events.close") return {};
+			if (method === "meldra/api.call") return { result: { ok: true, value: {} } };
+			if (method === "meldra/plugin-inventory.list") return { entries: [] };
+			throw new Error(`unexpected request: ${method}`);
+		});
+		const runtime = createRuntime(cwd);
+		const config = { cwd, hooks: resolveMeldraHooks([]) };
+		await runtime.configureHooks(config);
+
+		await expect(runtime.plugins()).resolves.toEqual([]);
+		const methods = harnessSdk.request.mock.calls.map(([method]) => method);
+		expect(methods.indexOf("meldra/hooks.configure")).toBeGreaterThanOrEqual(0);
+		expect(methods.indexOf("meldra/hooks.configure")).toBeLessThan(methods.indexOf("meldra/api.call"));
+		expect(harnessSdk.request).toHaveBeenCalledWith("meldra/hooks.configure", { config });
 		await runtime.dispose();
 	});
 

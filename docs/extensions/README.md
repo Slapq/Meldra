@@ -28,11 +28,11 @@ Sources: [`packages/coding-agent/docs/extensions.md`](../../packages/coding-agen
 
 | Set | Count | Loaded by default? | Catalog |
 |---|---:|---:|---|
-| Product built-in Extensions | 5 | Yes, as hidden inline factories; DSH activates only for a matching Runtime | [Built-in and local](built-in-and-local.md#product-built-in-extensions) |
+| Product inline Extensions | 6 | Yes; 5 static built-ins plus the ordinary-Profile `meldra-hooks` factory | [Built-in and local](built-in-and-local.md#product-built-in-extensions) |
 | Pi official Extension examples | 78 | No | [Official examples](official-examples.md) |
 | Current original-Pi user Extensions | 5 | In the original Pi user scope | [Built-in and local](built-in-and-local.md#current-machine-inventory) |
 | Current Meldra repository project Extensions | 4 | When this project is trusted | [Built-in and local](built-in-and-local.md#current-machine-inventory) |
-| **Indexed runtime entries** | **92** | Mixed | 5 built-ins + 78 official examples + 9 current-machine entries |
+| **Indexed runtime entries** | **93** | Mixed | 6 product inline Extensions + 78 official examples + 9 current-machine entries |
 | Test-only Extension factories | Multiple | No; test harness only | [Test fixtures](built-in-and-local.md#test-only-extension-fixtures) |
 
 The 78 official examples are source examples, not a recommended all-at-once plugin set. Sixty-eight appear in the
@@ -40,7 +40,7 @@ example README category tables; ten exist in the directory but are not listed in
 
 ## Documents
 
-- [Built-in and current-machine Extensions](built-in-and-local.md) — the five product Extensions and the nine currently
+- [Built-in and current-machine Extensions](built-in-and-local.md) — the six product inline Extensions and the nine currently
   configured or discovered Extension entries.
 - [Official example catalog](official-examples.md) — every one of the 78 official examples, including entry points, user
   surface, state, dependencies, and direct relationships.

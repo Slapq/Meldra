@@ -376,7 +376,7 @@ DSH 运行时规则：
 - Harness 保持 Agent loop、队列、实际模型 route、Preset、工具、Settings 和 ledger 权威；
 - `/model` 使用 Pi 原生选择器读取当前 Meldra Profile 的 Provider 与模型；只有确认选择后，Meldra 才把该单个模型注册到 DSH `llm-pi-ai` Settings、通过 credential reference 提供凭据，并请求 Harness 切换；取消选择不会写入；
 - `/dsh model` 继续查看和选择 Harness 原生 catalog；
-- 当前 rc.7 可桥接 `openai-completions`、`openai-responses` 和 `anthropic-messages`；Anthropic endpoint 使用 Pi 原生约定的服务根地址，由 SDK 追加 `/v1/messages`；其他 API 会在写入 DSH Settings 前明确拒绝，不会猜测转换协议；
+- 当前 rc.8 Meldra bridge 可桥接 `openai-completions`、`openai-responses` 和 `anthropic-messages`；Anthropic endpoint 使用 Pi 原生约定的服务根地址，由 SDK 追加 `/v1/messages`；其他 API 会在写入 DSH Settings 前明确拒绝，不会猜测转换协议；
 - `/tree`、`/clone`、`/scoped-models`、`/import`、`/login`、`/logout` 等不符合 DSH 状态域的 Pi 命令会隐藏或拒绝；
 - `/copy` 使用当前 DSH Runtime 的最终 assistant 文本；
 - DSH `/resume` 与 `/sessions` 使用同一个 Pi-native cursor Session browser 和 Harness `session.list` 数据；

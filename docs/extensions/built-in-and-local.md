@@ -5,7 +5,7 @@ are not part of the immutable upstream inventory.
 
 ## Product built-in Extensions
 
-Meldra-owned built-ins are named inline factories with `hidden: true`. Hidden does **not** mean inactive: the loaded
+Meldra owns six product inline Extensions. Five are static named factories in `builtInExtensions`; `meldra-hooks` is created per ordinary Profile after effective, trust-gated Settings exist. All are hidden. Hidden does **not** mean inactive: the loaded
 Extension still registers commands, providers, or lifecycle guidance. It means the resource is marked hidden in loader
 metadata.
 
@@ -26,6 +26,20 @@ protocol. It does not add a native Config API, reinterpret Meldra settings, or m
 The registration object, supported fields, event payloads, persistence scope, and compatibility rules are the normative
 [Profile Config Registration Protocol](profile-config-protocol.en.md); Meldra Profile plugins use that contract for
 ordinary scalar configuration so configuration surfaces retain one style.
+
+### `meldra-hooks`
+
+| Field | Value |
+|---|---|
+| Entry | `packages/coding-agent/src/extensions/meldra-hooks/index.ts` |
+| Built-in name | `meldra-hooks` |
+| User entry | `/hooks` |
+| Configuration | Profile `settings.json` plus trusted project `.pi/settings.json` |
+| Runtime adapters | Native Pi Extension events; DSH `meldra-command-hooks` Cordis plugin |
+| State | Effective in-memory Hook snapshot; no separate persistence |
+| Compatibility | Not registered in the reserved `pi` Profile |
+
+**Responsibility.** It parses the declarative Meldra command-Hook protocol, executes Native Pi lifecycle Hooks, exposes the read-only Hook browser, and transfers the same resolved snapshot to an attached Runtime adapter. It does not execute host-side tool gates for DSH or reproduce Harness lifecycle behavior. See [Meldra Hooks](../../packages/coding-agent/docs/hooks.md).
 
 ### `llama.cpp`
 

@@ -22,6 +22,7 @@ export interface DshComposition {
 }
 
 const SERVER_PLACEHOLDER = "__MELDRA_DSH_SERVER_PATH__";
+const HOOKS_PLACEHOLDER = "__MELDRA_DSH_HOOKS_PATH__";
 const SANDBOX_ESCALATION_COMPAT_PLACEHOLDER = "__MELDRA_DSH_SANDBOX_ESCALATION_COMPAT_PATH__";
 
 function bindModulePaths(value: unknown, paths: ReadonlyMap<string, string>): void {
@@ -49,6 +50,7 @@ export function prepareDshComposition(options: {
 	installAnchor: string;
 	surfacePath: string;
 	serverPath: string;
+	hooksPath: string;
 	sandboxEscalationCompatPath: string;
 }): DshComposition {
 	migrateLegacyDshProfile(options.home);
@@ -63,6 +65,7 @@ export function prepareDshComposition(options: {
 	const surfacePatches = loadOverlayPatches(options.binName, options.surfacePath);
 	const modulePaths = new Map([
 		[SERVER_PLACEHOLDER, options.serverPath],
+		[HOOKS_PLACEHOLDER, options.hooksPath],
 		[SANDBOX_ESCALATION_COMPAT_PLACEHOLDER, options.sandboxEscalationCompatPath],
 	]);
 	for (const patch of surfacePatches) bindModulePaths(patch, modulePaths);

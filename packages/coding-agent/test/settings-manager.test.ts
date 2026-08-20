@@ -235,13 +235,29 @@ describe("SettingsManager", () => {
 	describe("project trust", () => {
 		it("should skip project settings when project is not trusted", () => {
 			writeFileSync(join(agentDir, "settings.json"), JSON.stringify({ theme: "global" }));
-			writeFileSync(join(projectDir, ".pi", "settings.json"), JSON.stringify({ theme: "project" }));
+			writeFileSync(
+				join(projectDir, ".pi", "settings.json"),
+				JSON.stringify({
+					theme: "project",
+					hooks: { PreToolUse: [{ hooks: [{ type: "command", command: "project-hook" }] }] },
+				}),
+			);
 
 			const manager = SettingsManager.create(projectDir, agentDir, { projectTrusted: false });
 
 			expect(manager.isProjectTrusted()).toBe(false);
 			expect(manager.getTheme()).toBe("global");
 			expect(manager.getProjectSettings()).toEqual({});
+		});
+
+		it("should expose project hooks only after trust changes to true", () => {
+			const hooks = { PreToolUse: [{ hooks: [{ type: "command", command: "project-hook" }] }] };
+			writeFileSync(join(projectDir, ".pi", "settings.json"), JSON.stringify({ hooks }));
+			const manager = SettingsManager.create(projectDir, agentDir, { projectTrusted: false });
+
+			expect(manager.getProjectSettings().hooks).toBeUndefined();
+			manager.setProjectTrusted(true);
+			expect(manager.getProjectSettings().hooks).toEqual(hooks);
 		});
 
 		it("should reload project settings after trust changes to true", () => {

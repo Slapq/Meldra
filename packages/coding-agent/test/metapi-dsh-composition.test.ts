@@ -27,6 +27,7 @@ function prepare(home: string) {
 		installAnchor: require.resolve("@deepseek-ai/dsh/package.json"),
 		surfacePath: join(import.meta.dirname, "../src/extensions/dsh/surface.patch.yml"),
 		serverPath: pathToFileURL(join(import.meta.dirname, "../src/extensions/dsh/server.ts")).href,
+		hooksPath: pathToFileURL(join(import.meta.dirname, "../src/extensions/dsh/hooks.ts")).href,
 		sandboxEscalationCompatPath: pathToFileURL(
 			join(import.meta.dirname, "../src/extensions/dsh/sandbox-escalation-compat.ts"),
 		).href,
@@ -57,6 +58,7 @@ describe("DSH Profile composition", () => {
 			expect(composition.patches.some((patch) => containsEntryId(patch, "meldra-sandbox-escalation-compat"))).toBe(
 				true,
 			);
+			expect(composition.patches.some((patch) => containsEntryId(patch, "meldra-command-hooks"))).toBe(true);
 			expect(composition.patches.some((patch) => containsEntryId(patch, "meldra-tui-jsonrpc-server"))).toBe(true);
 		},
 		DSH_COMPOSITION_TEST_TIMEOUT_MS,

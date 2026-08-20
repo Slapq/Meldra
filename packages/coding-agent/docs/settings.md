@@ -230,6 +230,32 @@ Windows paths in JSON must use forward slashes or escaped backslashes:
 
 An empty array starts with no built-in tools while preserving extension and SDK custom tools. `--tools` replaces this behavior with a strict allowlist for all tools, `--no-tools` disables all tools, and `--no-builtin-tools` disables the built-in defaults. `--exclude-tools` filters the resulting list. A project `defaultTools` array replaces the global array.
 
+### Hooks
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `hooks` | object | `{}` | Meldra command Hooks keyed by supported lifecycle event |
+| `disableAllHooks` | boolean | `false` | Disable effective Profile and project Hooks |
+
+Hooks are executable configuration. Profile Hooks live in `<agentDir>/settings.json`; project Hooks live in trusted `.pi/settings.json`. Matching Profile and project handlers append rather than replacing each other. Run `/reload` after editing and use `/hooks` to inspect the effective read-only catalog.
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "command": "npm run format", "timeout": 60 }
+        ]
+      }
+    ]
+  }
+}
+```
+
+See [Meldra Hooks](hooks.md) for the command protocol, event inputs, decisions, and Native Pi/DSH compatibility matrix.
+
 ### Sessions
 
 | Setting | Type | Default | Description |

@@ -12,7 +12,7 @@ Meldra organizes models, Providers, packages, Sessions, WorkSpaces, and external
   <img alt="Development" src="https://img.shields.io/badge/status-development-f59e0b?style=flat-square">
   <img alt="Node.js 22.19 or newer" src="https://img.shields.io/badge/Node.js-%E2%89%A522.19-339933?style=flat-square&logo=nodedotjs&logoColor=white">
   <img alt="Pi baseline 0.84.2" src="https://img.shields.io/badge/Pi_baseline-v0.84.2-4f46e5?style=flat-square">
-  <img alt="DeepSeek Harness 0.1.0 rc.7" src="https://img.shields.io/badge/DSH-0.1.0--rc.7-0ea5e9?style=flat-square">
+  <img alt="DeepSeek Harness 0.1.0 rc.8" src="https://img.shields.io/badge/DSH-0.1.0--rc.8-0ea5e9?style=flat-square">
   <img alt="Windows macOS Linux" src="https://img.shields.io/badge/Windows_%7C_macOS_%7C_Linux-334155?style=flat-square">
   <img alt="MIT License" src="https://img.shields.io/badge/license-MIT-22c55e?style=flat-square">
 </p>
@@ -215,7 +215,7 @@ remain compatible by default. Runtime changes require evidence, scoped approval,
 > [!WARNING]
 > - Meldra and Pi use the launching user's filesystem, process, and network permissions; there is **no built-in sandbox**.
 > - Third-party Packages and Runtime plugins may access the network or execute lifecycle scripts. Inspect their source.
-> - DeepSeek Harness is pinned to `0.1.0-rc.7`; its release-candidate protocol may change.
+> - DeepSeek Harness is pinned to `0.1.0-rc.8`; its release-candidate protocol may change.
 > - Full Windows tests have recorded platform differences; focused tests do not replace real TUI/Runtime acceptance.
 
 ## 🌱 Upstream and License

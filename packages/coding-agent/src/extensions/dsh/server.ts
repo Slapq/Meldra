@@ -9,6 +9,8 @@ import type { MessageFeedbackService } from "@deepseek-ai/dsh-message-feedback";
 import { HarnessSdkJsonRpcServer } from "@deepseek-ai/dsh-sdk-jsonrpc-server";
 import { JsonRpcLineTransport } from "@deepseek-ai/dsh-sdk-protocol";
 import Schema from "@deepseek-ai/schemastery";
+import type { MeldraHooksRuntimeConfig } from "../../hooks/types.ts";
+import type { MeldraDshHooksService } from "./hooks.ts";
 
 const LEGACY_METAPI_RPC_PREFIX = "metapi/";
 const MELDRA_RPC_PREFIX = "meldra/";
@@ -74,7 +76,7 @@ interface EventCursor {
 }
 
 export const name = "meldra-tui-jsonrpc-server";
-export const inject = ["apiProxy", "agents", "commands", "messageFeedback", "pluginInventory"];
+export const inject = ["apiProxy", "agents", "commands", "meldraHooks", "messageFeedback", "pluginInventory"];
 export const Config = Schema.object({
 	maxTokensAsSuccess: Schema.boolean().default(false),
 });
@@ -89,6 +91,7 @@ export function apply(ctx: Context, config: BridgeConfig): void {
 		maxTokensAsSuccess: config.maxTokensAsSuccess,
 	});
 	const api = ctx.apiProxy;
+	const meldraHooks = ctx.get("meldraHooks") as MeldraDshHooksService;
 	const cursors = new Map<string, EventCursor>();
 	let exitTask: Promise<void> | undefined;
 
@@ -179,6 +182,14 @@ export function apply(ctx: Context, config: BridgeConfig): void {
 	transport.onRequest(async (method, params) => {
 		const rpcMethod = canonicalMeldraDshRpcMethod(method);
 		switch (rpcMethod) {
+			case "meldra/hooks.configure": {
+				const config = params?.config;
+				if (!config || typeof config !== "object" || Array.isArray(config)) {
+					throw new TypeError("meldra/hooks.configure requires an object config");
+				}
+				meldraHooks.configure(config as unknown as MeldraHooksRuntimeConfig);
+				return { configured: true };
+			}
 			case "meldra/api.call":
 				return apiCall(params);
 			case "meldra/api.respond":

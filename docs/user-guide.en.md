@@ -285,7 +285,7 @@ model does Meldra register that one route in DSH `llm-pi-ai` Settings, supply it
 reference, and ask Harness to select it. Cancelling the selector performs no DSH write. `/dsh model` remains the
 explicit Harness-native catalog selector.
 
-The bundled rc.7 bridge supports `openai-completions`, `openai-responses`, and `anthropic-messages`. Anthropic endpoints
+The bundled rc.8 bridge supports `openai-completions`, `openai-responses`, and `anthropic-messages`. Anthropic endpoints
 use Pi's native service-root convention; the SDK appends `/v1/messages`. Other APIs are rejected before DSH Settings are
 written rather than being guessed as another wire protocol.
 

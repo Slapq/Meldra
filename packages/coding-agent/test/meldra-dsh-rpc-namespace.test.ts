@@ -27,6 +27,7 @@ const RPC_METHOD_SUFFIXES = [
 	"api.events.open",
 	"api.events.next",
 	"api.events.close",
+	"hooks.configure",
 ] as const;
 
 describe("Meldra DSH RPC namespace", () => {
@@ -45,10 +46,12 @@ describe("Meldra DSH RPC namespace", () => {
 			commandId: "command-1",
 			result: { kind: "success", text: "Plan mode off." },
 		}));
+		const configure = vi.fn();
 		apply(
 			{
 				root: { fiber: { dispose: vi.fn(async () => undefined) } },
 				effect: vi.fn(),
+				get: vi.fn(() => ({ configure })),
 				apiProxy: {},
 				agents: { get: vi.fn(() => agent) },
 				commands: { execute },
@@ -59,14 +62,17 @@ describe("Meldra DSH RPC namespace", () => {
 		);
 		const handler = transportMocks.onRequest.mock.calls.at(-1)?.[0];
 
-		await expect(handler?.("meldra/commands.execute", { sessionId: "session-1", line: "/plan off" })).resolves.toEqual(
-			{
-				accepted: true,
-				commandId: "command-1",
-				command: { kind: "success", text: "Plan mode off." },
-			},
-		);
+		await expect(
+			handler?.("meldra/commands.execute", { sessionId: "session-1", line: "/plan off" }),
+		).resolves.toEqual({
+			accepted: true,
+			commandId: "command-1",
+			command: { kind: "success", text: "Plan mode off." },
+		});
 		expect(execute).toHaveBeenCalledWith(agent, "/plan off", [], expect.any(AbortSignal));
+		const config = { cwd: "C:/workspace", hooks: { disabled: false, events: {}, diagnostics: [] } };
+		await expect(handler?.("meldra/hooks.configure", { config })).resolves.toEqual({ configured: true });
+		expect(configure).toHaveBeenCalledWith(config);
 	});
 
 	it("leaves Harness-native methods unchanged", () => {

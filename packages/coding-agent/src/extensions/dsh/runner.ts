@@ -12,6 +12,7 @@ const surfacePath = fileURLToPath(new URL("./surface.patch.yml", import.meta.url
 const installAnchor = require.resolve("@deepseek-ai/dsh/package.json");
 const dshHome = process.env.DSH_HOME;
 const serverPath = pathToFileURL(fileURLToPath(new URL("./server.js", import.meta.url))).href;
+const hooksPath = pathToFileURL(fileURLToPath(new URL("./hooks.js", import.meta.url))).href;
 const sandboxEscalationCompatPath = pathToFileURL(
 	fileURLToPath(new URL("./sandbox-escalation-compat.js", import.meta.url)),
 ).href;
@@ -28,6 +29,7 @@ const composition = prepareDshComposition({
 	installAnchor,
 	surfacePath,
 	serverPath,
+	hooksPath,
 	sandboxEscalationCompatPath,
 });
 const ctx = await boot(NAME, composition.rootPath, composition.patches);

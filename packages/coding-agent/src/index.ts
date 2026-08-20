@@ -329,6 +329,24 @@ export {
 	type ProjectTrustStoreEntry,
 	type ProjectTrustUpdate,
 } from "./core/trust-manager.ts";
+export {
+	canonicalHookToolName,
+	hooksForEvent,
+	MELDRA_HOOK_EVENTS,
+	type MeldraCommandHook,
+	type MeldraHookEventName,
+	type MeldraHookInput,
+	type MeldraHookMatcherGroup,
+	type MeldraHookRunResult,
+	type MeldraHooksRuntimeConfig,
+	type MeldraHooksSettings,
+	matchesMeldraHook,
+	type ResolvedMeldraCommandHook,
+	type ResolvedMeldraHooks,
+	resolveMeldraHooks,
+	runMeldraCommandHook,
+	runMeldraCommandHooks,
+} from "./hooks/index.ts";
 // Main entry point
 export { type MainOptions, main } from "./main.ts";
 // Run modes for programmatic SDK usage

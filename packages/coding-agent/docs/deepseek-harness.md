@@ -63,7 +63,7 @@ another Meldra turn tracker or replace the foreground task awaited by cancel, Se
 Harness's `session/queue` snapshot remains authoritative for pending work.
 
 Meldra initializes and loads Harness's native `$DSH_HOME/profiles/meldra` profile tree. Its default
-`dsh.profile.bundles` roster is the published `@deepseek-ai/dsh-base` plus `@deepseek-ai/dsh-web-app` rc.7 layers,
+`dsh.profile.bundles` roster is the published `@deepseek-ai/dsh-base` plus `@deepseek-ai/dsh-web-app` rc.8 layers,
 preserving the previous zero-configuration composition.
 
 The profile manifest, profile-local dependencies, installed bundle layers, and `cordis.patch.yml` are resolved by
@@ -245,15 +245,14 @@ forces the current Pi footer to render the new provider/model immediately rather
 status listens to the committed Pi `model_select` event, re-reads `session.models`, and labels the Pi active model
 separately from the authoritative Harness native route instead of presenting either value as a generic Profile preference.
 Opening or cancelling `/model` performs no DSH write, and Meldra does not bulk-copy its model catalog or auth files. The
-bundled rc.7 `llm-pi-ai` configuration supports
+bundled rc.8 `llm-pi-ai` configuration supports
 `openai-completions`, `openai-responses`, and
 `anthropic-messages`. Anthropic routes preserve the selected model's endpoint, credential reference, headers, reasoning
 metadata, and capacities; use the same endpoint root required by Pi's native Anthropic provider (for example
-`https://api.anthropic.com`, with the SDK appending `/v1/messages`). Completion-only `thinkingFormat` and
-`supportsReasoningEffort` switches are serialized only for `openai-completions`.
+`https://api.anthropic.com`, with the SDK appending `/v1/messages`). Completion-only `thinkingFormat`, `supportsReasoningEffort`, and `supportsDeveloperRole` switches are serialized only for `openai-completions`.
 
-Other Meldra APIs remain visible in Pi's catalog but are rejected before any Harness Settings write because rc.7 cannot
-express their required transport/auth configuration: `bedrock-converse-stream`, `azure-openai-responses`,
+Other Meldra APIs remain visible in Pi's catalog but are rejected before any Harness Settings write because the current
+Meldra bridge does not declare their transport/auth mapping: `bedrock-converse-stream`, `azure-openai-responses`,
 `openai-codex-responses`, `google-generative-ai`, `google-vertex`, and `mistral-conversations`. The error names the
 selected API and the currently bridgeable set; Meldra does not guess a different wire protocol. Route collisions,
 read-only Settings, revision conflicts, and native selection errors also remain explicit and leave the Pi selection
@@ -320,13 +319,13 @@ interrupt.
 The catalog's parent-availability field remains a hint and is not treated as local authorization. The Jobs menu consumes
 the latest authoritative `session/jobs` snapshot and shows lifecycle, labels, details, and elapsed time.
 
-It is read-only because rc.7 exposes no `jobs.*` unary control or output API; background output remains available
+It is read-only because the current Harness API exposes no `jobs.*` unary control or output API; background output remains available
 through Harness's native `job_output` tool. The Goal menu reads the native `goal` projection from the history-tail
 baseline and live projection frames, then sends create/edit/pause/resume/complete/clear through native `goal.*` methods
 with the exact projected CAS revision.
 
 The Plan menu reads the native `plan` projection and executes Harness's `/plan` or `/plan off` through native
-`CommandRuntime.execute`; it does not reproduce plan policy. The Todo menu is read-only because rc.7 exposes
+`CommandRuntime.execute`; it does not reproduce plan policy. The Todo menu is read-only because the current Harness API exposes
 Todo writes only to the Harness tool/event path; it displays the whole `todos` projection, which Harness retires at the
 next turn start.
 
@@ -453,6 +452,12 @@ Native assistant chunks are projected into Pi's existing streaming Markdown/reas
 tool-result events use Pi's existing live tool component. Final `assistant/message` content is authoritative and
 corrects an incomplete transient projection after reconnect or dropped chunks.
 
+## Meldra Hooks
+
+A DSH Profile executes Meldra command Hooks through the injected `meldra-command-hooks` Cordis plugin. The host sends the resolved Profile/project Hook snapshot through the in-memory `meldra/hooks.configure` RPC before creating the Harness Session; the snapshot is not written to Harness Settings or credentials.
+
+The plugin maps `PreToolUse`, post-tool events, prompt preflight, Stop, and Session lifecycle to DSH rc.8's native `tools/*` and `agent/*` seams. DSH owns those decisions. In particular, `PreToolUse` can allow, ask, or deny, but cannot apply Claude-style `updatedInput` because Harness freezes and logs tool arguments before policy dispatch. See [Meldra Hooks](hooks.md) for the event matrix and configuration.
+
 ## Ownership and storage
 
 - `main.ts` uses only the generic provider selection interface. The DSH provider module owns DSH Profile matching and
@@ -469,8 +474,8 @@ corrects an incomplete transient projection after reconnect or dropped chunks.
 - DSH state is not added to Pi's Session format. Pi and DSH Session discovery remain separate. Pi stores only
   provider-owned display snapshots for transcript restoration; live projected events are transient and never enter Pi
   model context.
-- Meldra's injected DSH JSON-RPC bridge uses `meldra/*` for all new client requests. The nine bridge methods are
-  `api.call`, `api.respond`, `commands.list`, `commands.execute`, `message-feedback.call`, `plugin-inventory.list`,
+- Meldra's injected DSH JSON-RPC bridge uses `meldra/*` for all new client requests. The ten bridge methods are
+  `api.call`, `api.respond`, `commands.list`, `commands.execute`, `hooks.configure`, `message-feedback.call`, `plugin-inventory.list`,
   `api.events.open`, `api.events.next`, and `api.events.close`; the server accepts the historical `metapi/*` aliases
   and routes them to the same handlers. Harness-native `initialize`, `session/prompt`, and `shutdown` methods remain
   unchanged.
@@ -534,7 +539,7 @@ Still being migrated from the native Harness and Web client:
 - richer Trajectory visual timeline presentation beyond the selector-based waterfall;
 - richer field-specific provider/model forms beyond the validated JSON-array editor;
 - additional dynamic Loader enable/disable controls beyond native profile package mutation and Session Cordis tools;
-- dedicated Session ZIP export/download surface (rc.7 exposes this as an HTTP streaming route, not a stdio binary RPC);
+- dedicated Session ZIP export/download surface (the current Harness exposes this as an HTTP streaming route, not a stdio binary RPC);
 - trajectory view, projection details, context breakdown, deliverables, and message feedback.
 
-DSH remains pinned to `0.1.0-rc.7`; its release-candidate protocol and event shapes may change.
+DSH remains pinned to `0.1.0-rc.8`; its release-candidate protocol and event shapes may change.

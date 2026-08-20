@@ -23,6 +23,7 @@ import type {
 	ProfileRuntimePackageRequest,
 	ProfileToolPresentation,
 } from "../core/profile-agent-runtime.ts";
+import type { MeldraHooksRuntimeConfig } from "../hooks/types.ts";
 import { collectDshContextEvidence, type DshContextEvidence } from "./dsh-context-evidence.ts";
 import { dshProfilePackageManager } from "./dsh-profile-packages.ts";
 
@@ -355,6 +356,7 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 	private activeTurn?: ActiveTurn;
 	private assistant?: AssistantProjection;
 	private lastAssistantText?: string;
+	private hooksConfig?: MeldraHooksRuntimeConfig;
 	private readonly toolStartedAt = new Map<string, number>();
 	private readonly toolCallViews = new Map<string, Record<string, unknown>>();
 	private readonly listeners = new Set<(event: DshProfileEvent) => void>();
@@ -379,6 +381,13 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 
 	get sessionId(): string | undefined {
 		return this.runtime?.sessionId;
+	}
+
+	async configureHooks(config: MeldraHooksRuntimeConfig): Promise<void> {
+		this.hooksConfig = structuredClone(config);
+		if (this.runtime) {
+			await this.runtime.harness.client.request("meldra/hooks.configure", { config: this.hooksConfig });
+		}
 	}
 
 	async listSessions(): Promise<Record<string, unknown>[]> {
@@ -1159,6 +1168,9 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 			try {
 				await harness.start();
 				if (lifecycleVersion !== this.lifecycleVersion) throw new Error("DSH Runtime 已关闭。");
+				if (this.hooksConfig) {
+					await harness.client.request("meldra/hooks.configure", { config: this.hooksConfig });
+				}
 				await Promise.all([this.startEventPump(active, "mux"), this.startEventPump(active, "host")]);
 				apiValue(
 					await harness.client.request("meldra/api.call", {

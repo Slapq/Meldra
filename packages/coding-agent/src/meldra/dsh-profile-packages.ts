@@ -10,11 +10,7 @@ import type {
 	ProfileRuntimePackageRequest,
 	ProfileRuntimePackageResult,
 } from "../core/profile-agent-runtime.ts";
-import {
-	LEGACY_METAPI_DSH_PROFILE,
-	MELDRA_DSH_PROFILE,
-	prepareDshComposition,
-} from "../extensions/dsh/composition.ts";
+import { LEGACY_METAPI_DSH_PROFILE, MELDRA_DSH_PROFILE, prepareDshComposition } from "../extensions/dsh/composition.ts";
 
 const COREPACK_PNPM_VERSION = "10.34.4";
 const MAX_OUTPUT_CHARS = 200_000;
@@ -212,6 +208,7 @@ export const dshProfilePackageManager: ProfileRuntimePackageManager = {
 			installAnchor: manifestPath,
 			surfacePath: fileURLToPath(new URL("../extensions/dsh/surface.patch.yml", import.meta.url)),
 			serverPath: pathToFileURL(fileURLToPath(new URL("../extensions/dsh/server.js", import.meta.url))).href,
+			hooksPath: pathToFileURL(fileURLToPath(new URL("../extensions/dsh/hooks.js", import.meta.url))).href,
 			sandboxEscalationCompatPath: pathToFileURL(
 				fileURLToPath(new URL("../extensions/dsh/sandbox-escalation-compat.js", import.meta.url)),
 			).href,

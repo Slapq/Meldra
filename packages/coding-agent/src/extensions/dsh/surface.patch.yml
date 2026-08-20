@@ -134,6 +134,10 @@
       name: '__MELDRA_DSH_SANDBOX_ESCALATION_COMPAT_PATH__'
 
 - insert:
+    - id: meldra-command-hooks
+      name: '__MELDRA_DSH_HOOKS_PATH__'
+
+- insert:
     - id: meldra-tui-jsonrpc-server
       name: '__MELDRA_DSH_SERVER_PATH__'
       config:

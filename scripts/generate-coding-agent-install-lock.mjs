@@ -15,8 +15,8 @@ const internalPackagePrefix = "@earendil-works/pi-";
 const installPackageName = "@earendil-works/pi-coding-agent-install";
 const allowedInstallScriptPackages = new Map([
 	[
-		"@deepseek-ai/dsh-subprocess-local@0.1.0-rc.7",
-		"postinstall installs the packaged local subprocess spawn helper",
+		"@deepseek-ai/dsh-subprocess-local@0.1.0-rc.8",
+		"postinstall only restores the bundled POSIX spawn-helper executable bit",
 	],
 	["@google/genai@1.52.0", "preinstall is a no-op in the published package"],
 	["koffi@3.1.5", "install resolves or builds the package's native Koffi binary"],

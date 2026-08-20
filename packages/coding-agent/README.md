@@ -8,7 +8,7 @@
   <img alt="Development" src="https://img.shields.io/badge/status-development-f59e0b?style=flat-square">
   <img alt="Node.js 22.19 or newer" src="https://img.shields.io/badge/Node.js-%E2%89%A522.19-339933?style=flat-square&logo=nodedotjs&logoColor=white">
   <img alt="Pi baseline 0.84.2" src="https://img.shields.io/badge/Pi_baseline-v0.84.2-4f46e5?style=flat-square">
-  <img alt="DeepSeek Harness 0.1.0 rc.7" src="https://img.shields.io/badge/DSH-0.1.0--rc.7-0ea5e9?style=flat-square">
+  <img alt="DeepSeek Harness 0.1.0 rc.8" src="https://img.shields.io/badge/DSH-0.1.0--rc.8-0ea5e9?style=flat-square">
   <img alt="MIT License" src="https://img.shields.io/badge/license-MIT-22c55e?style=flat-square">
 </p>
 
@@ -148,6 +148,7 @@ meldra --profile research-harness
 - [Pi 文档索引](docs/index.md)
 - [Profile Runtime providers](docs/profile-runtimes.md)
 - [DeepSeek Harness](docs/deepseek-harness.md)
+- [Meldra Hooks](docs/hooks.md)
 - [Extension 开发](docs/extensions.md)
 - [Pi Packages](docs/packages.md)
 - [Windows](docs/windows.md)

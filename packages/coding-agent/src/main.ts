@@ -71,6 +71,7 @@ import { SettingsManager } from "./core/settings-manager.ts";
 import { printTimings, resetTimings, time } from "./core/timings.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "./core/trust-manager.ts";
 import { builtInExtensions } from "./extensions/index.ts";
+import { createMeldraHooksExtension, resolveHooksRuntimeConfig } from "./extensions/meldra-hooks/index.ts";
 import { readProfileRecord } from "./meldra/profile-bundle.ts";
 import { handleMeldraInitCommand, handleProfileCommand } from "./meldra/profile-cli.ts";
 import { applyProfileEnvironment, captureProfileEnvironment } from "./meldra/profile-environment.ts";
@@ -1105,6 +1106,19 @@ export async function main(args: string[], options?: MainOptions) {
 			projectTrusted,
 			baseSettings: profileBaseSettings,
 		});
+		const runtimeExtensionFactories = runtimeProfileState.profile.compatibility
+			? extensionFactories
+			: [
+					...extensionFactories,
+					createMeldraHooksExtension(() =>
+						resolveHooksRuntimeConfig(
+							runtimeSettingsManager.getEffectiveGlobalSettings(),
+							runtimeSettingsManager.getProjectSettings(),
+							cwd,
+							runtimeSettingsManager.getShellPath(),
+						),
+					),
+				];
 		const services = await createAgentSessionServices({
 			cwd,
 			agentDir,
@@ -1150,7 +1164,7 @@ export async function main(args: string[], options?: MainOptions) {
 				noContextFiles: parsed.noContextFiles,
 				systemPrompt: parsed.systemPrompt,
 				appendSystemPrompt: parsed.appendSystemPrompt,
-				extensionFactories,
+				extensionFactories: runtimeExtensionFactories,
 			},
 		});
 		const { settingsManager, modelRuntime, resourceLoader } = services;
