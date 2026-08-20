@@ -143,7 +143,7 @@ export function apply(ctx: Context, config: BridgeConfig): void {
 		const agent = ctx.agents.get(sessionId as Parameters<typeof ctx.agents.get>[0]);
 		if (!agent) throw new Error(`unknown DSH Session Agent: ${sessionId}`);
 		const commands: CommandRuntime = ctx.commands;
-		const result = await commands.execute(agent, line, new AbortController().signal);
+		const result = await commands.execute(agent, line, [], new AbortController().signal);
 		if (!result) throw new Error(`unknown DSH command: ${line}`);
 		return { accepted: true, commandId: result.commandId, command: result.result };
 	};

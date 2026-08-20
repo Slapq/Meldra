@@ -28,7 +28,7 @@ const selectedModel: Model<"openai-completions"> = {
 	contextWindow: 32_768,
 	maxTokens: 4_096,
 	headers: { "X-Model-Header": "configured" },
-	compat: { thinkingFormat: "deepseek", supportsReasoningEffort: true },
+	compat: { thinkingFormat: "deepseek", supportsReasoningEffort: true, supportsDeveloperRole: false },
 };
 
 const responsesModel = {
@@ -136,7 +136,11 @@ describe("DSH Meldra model bridge", () => {
 									medium: "medium",
 									high: "high",
 								},
-								compat: { thinkingFormat: "deepseek", supportsReasoningEffort: true },
+								compat: {
+									thinkingFormat: "deepseek",
+									supportsReasoningEffort: true,
+									supportsDeveloperRole: false,
+								},
 							},
 						],
 					},

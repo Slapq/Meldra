@@ -109,6 +109,9 @@ function dshModelCompat(model: Model<any>): Record<string, unknown> | undefined 
 		...(typeof model.compat.supportsReasoningEffort === "boolean"
 			? { supportsReasoningEffort: model.compat.supportsReasoningEffort }
 			: {}),
+		...(typeof model.compat.supportsDeveloperRole === "boolean"
+			? { supportsDeveloperRole: model.compat.supportsDeveloperRole }
+			: {}),
 	};
 	return Object.keys(compat).length > 0 ? compat : undefined;
 }
