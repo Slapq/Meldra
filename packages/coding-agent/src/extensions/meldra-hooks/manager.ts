@@ -19,6 +19,7 @@ import {
 	setMeldraHookEventDisabled,
 	toggleMeldraHookEntry,
 	validateMeldraHookSettingsLayer,
+	type MeldraCommandHook,
 	type MeldraHookEntry,
 	type MeldraHookEventName,
 } from "../../hooks/index.ts";
@@ -66,6 +67,15 @@ function readErrorForScope(
 	const storageScope = scope === "profile" ? "global" : "project";
 	const error = snapshot.errors.find((entry) => entry.scope === storageScope);
 	return error ? t.settingsCannotEdit(scopeLabel(scope, t), error.error.message) : undefined;
+}
+
+export function hookCommandPreview(hook: MeldraCommandHook): string {
+	if (hook.args === undefined) return hook.command;
+	const compactPath = (part: string): string => {
+		const separator = Math.max(part.lastIndexOf("/"), part.lastIndexOf("\\"));
+		return separator >= 0 ? `…/${part.slice(separator + 1)}` : part;
+	};
+	return [hook.command, ...hook.args].map(compactPath).join(" ");
 }
 
 function hookDraftJson(entry?: MeldraHookEntry): string {
@@ -251,7 +261,7 @@ async function manageHandler(
 		return;
 	}
 	if (selected === t.deleteHandler) {
-		const confirmed = await ctx.ui.confirm(t.deleteTitle, t.deleteConfirm(entry.hook.command, scopeLabel(scope, t)));
+		const confirmed = await ctx.ui.confirm(t.deleteTitle, t.deleteConfirm(hookCommandPreview(entry.hook), scopeLabel(scope, t)));
 		if (confirmed) await writeLayer(ctx, options, scope, removeMeldraHookEntry(current, entry), t);
 	}
 }
@@ -303,7 +313,7 @@ async function showEvent(
 			{ value: "__actions__", label: t.eventActions, description: t.eventActionsDescription },
 			...entries.map((entry, index) => ({
 				value: `handler:${index}`,
-				label: entry.hook.command,
+				label: hookCommandPreview(entry.hook),
 				description: `${entry.hook.disabled === true ? t.stateDisabled : t.stateEnabled} · ${t.matcher}: ${entry.matcher || "*"}${
 					entry.hook.if ? ` · ${t.condition}: ${entry.hook.if}` : ""
 				}`,

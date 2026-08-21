@@ -6,7 +6,10 @@ import { visibleWidth } from "@earendil-works/pi-tui";
 import { describe, expect, it, vi } from "vitest";
 import type { ExtensionCommandContext } from "../src/core/extensions/types.ts";
 import type { HookSettingsLayer, HookSettingsSnapshot } from "../src/core/settings-manager.ts";
-import { showMeldraHooksManager } from "../src/extensions/meldra-hooks/manager.ts";
+import {
+	hookCommandPreview,
+	showMeldraHooksManager,
+} from "../src/extensions/meldra-hooks/manager.ts";
 import {
 	loadHooksManagerLanguage,
 	saveHooksManagerLanguage,
@@ -151,6 +154,17 @@ describe("Meldra Hooks management", () => {
 		expect(lines.length).toBeGreaterThan(5);
 		expect(lines.every((line) => visibleWidth(line) <= width)).toBe(true);
 		expect(stripVTControlCharacters(lines.join("\n"))).toContain("Agent 事件");
+	});
+
+	it("shows exec-form arguments in a compact handler title", () => {
+		expect(
+			hookCommandPreview({
+				type: "command",
+				command: "node",
+				args: ["C:/Users/test/.meldra/hooks/rickroll-on-agent-end.mjs"],
+			}),
+		).toBe("node …/rickroll-on-agent-end.mjs");
+		expect(hookCommandPreview({ type: "command", command: "notify" })).toBe("notify");
 	});
 
 	it("reads schema-invalid raw settings as an empty event list for JSON recovery", () => {
