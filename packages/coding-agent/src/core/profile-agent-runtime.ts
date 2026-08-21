@@ -1,5 +1,6 @@
 import type { ImageContent, Model } from "@earendil-works/pi-ai";
 import type { AgentSessionEvent } from "./agent-session.ts";
+import type { ContextUsage } from "./extensions/types.ts";
 import type { ModelRuntime } from "./model-runtime.ts";
 
 export type ProfileToolPresentation =
@@ -269,6 +270,14 @@ export interface ProfileAgentRuntime {
 	selectModel?(model: Model<any>): Promise<void>;
 	/** Latest finalized assistant text owned by this Runtime, when it does not use Pi agent state. */
 	getLastAssistantText?(): string | undefined;
+	/** Current context occupancy owned by this Runtime, or undefined until the Runtime has an authoritative value. */
+	getContextUsage?(): ContextUsage | undefined;
+	/** Clear any pending steering and follow-up prompts queued in this Runtime and return them. */
+	clearQueue?(): { steering: string[]; followUp: string[] };
+	/** Get pending steering messages (read-only) */
+	getSteeringMessages?(): readonly string[];
+	/** Get pending follow-up messages (read-only) */
+	getFollowUpMessages?(): readonly string[];
 	attach(host: ProfileAgentRuntimeHost): void;
 	prompt(input: ProfileAgentPrompt): Promise<void>;
 	abort(): Promise<void>;

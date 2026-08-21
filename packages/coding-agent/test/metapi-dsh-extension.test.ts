@@ -27,6 +27,9 @@ function fakeRuntime() {
 			{ sessionId: "session-2", running: false, blank: true },
 		]),
 		switchSession: vi.fn(),
+		restoreSessionHistory: vi.fn(async (sessionId: string) => {
+			runtime.switchSession(sessionId);
+		}),
 		presets: vi.fn(async () => [
 			{ id: "standard", name: "Standard", trust: "system", isDefault: true },
 			{ id: "minimal", name: "Minimal", trust: "system", isDefault: false },

@@ -63,7 +63,7 @@ another Meldra turn tracker or replace the foreground task awaited by cancel, Se
 Harness's `session/queue` snapshot remains authoritative for pending work.
 
 Meldra initializes and loads Harness's native `$DSH_HOME/profiles/meldra` profile tree. Its default
-`dsh.profile.bundles` roster is the published `@deepseek-ai/dsh-base` plus `@deepseek-ai/dsh-web-app` rc.8 layers,
+`dsh.profile.bundles` roster is the published `@deepseek-ai/dsh-base` plus `@deepseek-ai/dsh-web-app` rc.1 layers,
 preserving the previous zero-configuration composition.
 
 The profile manifest, profile-local dependencies, installed bundle layers, and `cordis.patch.yml` are resolved by
@@ -245,7 +245,7 @@ forces the current Pi footer to render the new provider/model immediately rather
 status listens to the committed Pi `model_select` event, re-reads `session.models`, and labels the Pi active model
 separately from the authoritative Harness native route instead of presenting either value as a generic Profile preference.
 Opening or cancelling `/model` performs no DSH write, and Meldra does not bulk-copy its model catalog or auth files. The
-bundled rc.8 `llm-pi-ai` configuration supports
+bundled rc.1 `llm-pi-ai` configuration supports
 `openai-completions`, `openai-responses`, and
 `anthropic-messages`. Anthropic routes preserve the selected model's endpoint, credential reference, headers, reasoning
 metadata, and capacities; use the same endpoint root required by Pi's native Anthropic provider (for example
@@ -342,7 +342,9 @@ most 20 native history pages or 500 distinct events and reports only durable evi
 Its result includes scan counts and an explicit truncation fact; it does not assemble or claim the not-yet-created next
 request context. The Session history browser pages older native messages by the Host-provided `hasMore` fact and the
 current page's minimum event seq, and renders text plus retrieved image blocks in their native message order inside a
-temporary themed surface; it does not accumulate the full history or synthesize Pi transcript messages.
+temporary themed surface. Selecting a Session replaces the visible DSH transcript through the Runtime-owned transient
+transcript projection; it does not append synthetic entries to the containing Pi Session or enter the restored content
+into Pi model context.
 
 `/dsh rewind`, `/rewind`, and double Escape with an enabled `doubleEscapeAction` share Pi's cursor-driven user-message
 selector. The adapter scans at most 50 native history pages or 1,000 events and supplies only user messages whose one leading text
@@ -396,7 +398,8 @@ and batch-described through Harness `credentials.describe`.
 Writable references support masked set and confirmed unset through the native credential service; environment-shadowed
 references remain read-only, and credential values are never displayed, persisted in Pi, or returned by the service. The
 Context view and compact metrics consume Harness's whole-log `sessionStats`, `tokenUsage`, `contextPressure`, and
-`contextBreakdown` projections.
+`contextBreakdown` projections. The generic Pi footer also consumes DSH `contextPressure` through the Profile Runtime
+contract, using `projectedTokens` and `contextWindow` for occupancy.
 
 Context occupancy uses `projectedTokens` with the provider sample fallback and is a reference value, not billing or
 admission input; the system/tools/messages breakdown is explicitly heuristic. The Commands menu resolves the active
@@ -456,7 +459,7 @@ corrects an incomplete transient projection after reconnect or dropped chunks.
 
 A DSH Profile executes Meldra command Hooks through the injected `meldra-command-hooks` Cordis plugin. The host sends the resolved Profile/project Hook snapshot through the in-memory `meldra/hooks.configure` RPC before creating the Harness Session; the snapshot is not written to Harness Settings or credentials. Valid Profile or trusted-project Hook settings changes are watched and sent through the same RPC, so the next DSH lifecycle event uses the new snapshot without restarting Harness. Invalid changes retain the last-known-good snapshot. Handlers marked `disabled: true` remain in the shared inspection snapshot but are filtered before any DSH Hook process starts.
 
-The plugin maps `PreToolUse`, post-tool observation, prompt preflight, Stop, and Session lifecycle to DSH rc.8's native `tools/*` and `agent/*` seams. `AgentStart` and `AgentEnd` are approximate `agent/status` running/idle notifications. Meldra `TurnStart` and `TurnEnd` map to Harness `step/start` and `step/end`, because one Harness step is one model call plus the tools it requested; Harness's broader turn can contain multiple such steps. These four events are notification-only and run in source order per Agent. DSH owns those decisions. In particular, `PreToolUse` can allow, ask, or deny, but cannot apply Claude-style `updatedInput` because Harness freezes and logs tool arguments before policy dispatch. An `ask` remains subject to later DSH pre-execute decisions, guards, sandbox policy, and tool-owned approval checks. Post-tool Hooks cannot add context or feedback to the completed result. A Stop continuation uses Meldra's fixed Runtime-owned `Continue the current task.` control through the public `agent.steer()` seam; Handler output is never interpolated into that message. Non-blocking Hook errors, raw reasons, ignored `additionalContext`, timeouts, and unsupported `updatedInput` results travel over a dedicated Runtime notification and appear as Pi TUI diagnostics without entering either Runtime's model context or durable Pi Session state.
+The plugin maps `PreToolUse`, post-tool observation, prompt preflight, Stop, and Session lifecycle to DSH rc.1's native `tools/*` and `agent/*` seams. `AgentStart` and `AgentEnd` are approximate `agent/status` running/idle notifications. Meldra `TurnStart` and `TurnEnd` map to Harness `step/start` and `step/end`, because one Harness step is one model call plus the tools it requested; Harness's broader turn can contain multiple such steps. These four events are notification-only and run in source order per Agent. DSH owns those decisions. In particular, `PreToolUse` can allow, ask, or deny, but cannot apply Claude-style `updatedInput` because Harness freezes and logs tool arguments before policy dispatch. An `ask` remains subject to later DSH pre-execute decisions, guards, sandbox policy, and tool-owned approval checks. Post-tool Hooks cannot add context or feedback to the completed result. A Stop continuation uses Meldra's fixed Runtime-owned `Continue the current task.` control through the public `agent.steer()` seam; Handler output is never interpolated into that message. Non-blocking Hook errors, raw reasons, ignored `additionalContext`, timeouts, and unsupported `updatedInput` results travel over a dedicated Runtime notification and appear as Pi TUI diagnostics without entering either Runtime's model context or durable Pi Session state.
 
 DSH `SessionEnd` remains an approximate `agent/disposed` notification. Graceful worker shutdown drains Hook commands that have already started; EOF follows that drain path, while handled termination signals kill every tracked Hook process tree before the worker exits. See [Meldra Hooks](hooks.md) for the event matrix and configuration.
 
@@ -532,8 +535,7 @@ Available in the TUI now:
 - native background Job snapshots, active count, lifecycle/detail inspection, and elapsed time;
 - native direct-Subagent catalog, diagnostic rows, history, continuable follow-up, and interrupt;
 - FIFO approval and structured-question interaction with stale-Runtime response suppression;
-- active-Session native pending queue widget plus text edit, removal, and strict steer through authoritative
-  `session/queue`/`session.updateQueue`;
+- `session/queue` is the authoritative pending-work snapshot. Pi's Escape restoration reads its text-only `queued` and `steering` rows and asks Harness to remove each row through native `session.updateQueue`; Pi does not maintain a second prompt queue.
 - queued-work status.
 
 Still being migrated from the native Harness and Web client:
@@ -544,4 +546,4 @@ Still being migrated from the native Harness and Web client:
 - dedicated Session ZIP export/download surface (the current Harness exposes this as an HTTP streaming route, not a stdio binary RPC);
 - trajectory view, projection details, context breakdown, deliverables, and message feedback.
 
-DSH remains pinned to `0.1.0-rc.8`; its release-candidate protocol and event shapes may change.
+DSH remains pinned to `0.1.1-rc.1`; its release-candidate protocol, event shapes, and Session storage format may change.

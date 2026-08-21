@@ -14,6 +14,7 @@ import {
 	type Usage,
 } from "@earendil-works/pi-ai";
 import type { ModelRuntime } from "../core/model-runtime.ts";
+import type { ContextUsage } from "../core/extensions/types.ts";
 import type {
 	ProfileAgentPrompt,
 	ProfileAgentRuntime,
@@ -24,6 +25,7 @@ import type {
 	ProfileToolPresentation,
 } from "../core/profile-agent-runtime.ts";
 import type { MeldraHooksRuntimeConfig } from "../hooks/types.ts";
+import type { SessionEntry } from "../core/session-manager.ts";
 import { collectDshContextEvidence, type DshContextEvidence } from "./dsh-context-evidence.ts";
 import { dshProfilePackageManager } from "./dsh-profile-packages.ts";
 
@@ -79,6 +81,24 @@ interface ActiveTurn {
 	sawRunning: boolean;
 	resolve(): void;
 	reject(error: Error): void;
+}
+
+interface DshQueueItem {
+	id: string;
+	placement: "queued" | "steering" | "context";
+	text?: string;
+}
+
+function dshQueueItem(value: unknown): DshQueueItem | undefined {
+	if (!isRecord(value) || typeof value.id !== "string") return undefined;
+	if (value.placement !== "queued" && value.placement !== "steering" && value.placement !== "context") return undefined;
+	const message = isRecord(value.message) ? value.message : undefined;
+	const content = records(message?.content);
+	const text =
+		content.length > 0 && content.every((block) => block.type === "text" && typeof block.text === "string")
+			? content.map((block) => block.text as string).join("")
+			: undefined;
+	return { id: value.id, placement: value.placement, ...(text === undefined ? {} : { text }) };
 }
 
 interface AssistantProjection {
@@ -150,6 +170,23 @@ function dshModelProfile(model: Model<any>): Record<string, unknown> {
 	};
 }
 
+function dshContextUsage(values: Record<string, unknown>): ContextUsage | undefined {
+	const pressure = isRecord(values.contextPressure) ? values.contextPressure : undefined;
+	if (!pressure) return undefined;
+	const contextWindow = typeof pressure.contextWindow === "number" ? pressure.contextWindow : undefined;
+	const tokens =
+		typeof pressure.projectedTokens === "number"
+			? pressure.projectedTokens
+			: typeof pressure.pressureTokens === "number"
+				? pressure.pressureTokens
+				: undefined;
+	if (contextWindow === undefined) return undefined;
+	return {
+		tokens: tokens ?? null,
+		contextWindow,
+		percent: tokens === undefined ? null : Math.min(100, (tokens / contextWindow) * 100),
+	};
+}
 function userMessageSnapshot(event: Record<string, unknown>): string | undefined {
 	if (!isRecord(event.data) || !isRecord(event.data.source) || event.data.source.kind !== "user") return undefined;
 	const content = records(event.data.content);
@@ -366,10 +403,12 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 	private activeTurn?: ActiveTurn;
 	private assistant?: AssistantProjection;
 	private lastAssistantText?: string;
+	private contextUsage?: ContextUsage;
 	private hooksConfig?: MeldraHooksRuntimeConfig;
 	private readonly toolStartedAt = new Map<string, number>();
 	private readonly toolCallViews = new Map<string, Record<string, unknown>>();
 	private readonly listeners = new Set<(event: DshProfileEvent) => void>();
+	private queueItems: DshQueueItem[] = [];
 
 	private readonly options: {
 		cwd: string;
@@ -416,9 +455,103 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 		return value.sessionId;
 	}
 
+	clearQueue(): { steering: string[]; followUp: string[] } {
+		const pending = this.queueItems.filter((item) => item.placement === "queued" || item.placement === "steering");
+		for (const item of pending) {
+			void this.updateQueue(item.id, { kind: "remove" }).catch((error) => {
+				this.append("error", `DSH 队列撤回失败：${error instanceof Error ? error.message : String(error)}`);
+			});
+		}
+		return {
+			steering: pending.flatMap((item) => (item.placement === "steering" && item.text !== undefined ? [item.text] : [])),
+			followUp: pending.flatMap((item) => (item.placement === "queued" && item.text !== undefined ? [item.text] : [])),
+		};
+	}
+
+	getSteeringMessages(): readonly string[] {
+		return this.queueItems
+			.filter((item) => item.placement === "steering" && item.text !== undefined)
+			.map((item) => item.text as string);
+	}
+
+	getFollowUpMessages(): readonly string[] {
+		return this.queueItems
+			.filter((item) => item.placement === "queued" && item.text !== undefined)
+			.map((item) => item.text as string);
+	}
+
+	async restoreSessionHistory(sessionId: string): Promise<void> {
+		this.switchSession(sessionId);
+		const entries = new Map<number, Record<string, unknown>>();
+		let beforeSeq: number | undefined;
+		let pages = 0;
+		while (pages < 50 && entries.size < 1000) {
+			const page = await this.history(beforeSeq);
+			if (!isRecord(page)) break;
+			const pageEntries = records(page.events);
+			for (const entry of pageEntries) {
+				const event = isRecord(entry.event) ? entry.event : undefined;
+				if (typeof event?.seq === "number") entries.set(event.seq, entry);
+				if (entries.size === 1000) break;
+			}
+			pages += 1;
+			if (page.hasMore !== true || pageEntries.length === 0) break;
+			const seqs = pageEntries.flatMap((entry) => {
+				const event = isRecord(entry.event) ? entry.event : undefined;
+				return typeof event?.seq === "number" ? [event.seq] : [];
+			});
+			if (seqs.length === 0) break;
+			const nextBeforeSeq = Math.min(...seqs);
+			if (nextBeforeSeq === beforeSeq) break;
+			beforeSeq = nextBeforeSeq;
+		}
+
+		const restored: Array<Extract<SessionEntry, { type: "custom" }>> = [];
+		let parentId: string | null = null;
+		const ordered = [...entries.values()].sort((left, right) => {
+			const leftEvent = isRecord(left.event) ? left.event : {};
+			const rightEvent = isRecord(right.event) ? right.event : {};
+			return Number(leftEvent.seq) - Number(rightEvent.seq);
+		});
+		for (const entry of ordered) {
+			const event = isRecord(entry.event) ? entry.event : {};
+			let kind: "user" | "assistant" | "tool" | undefined;
+			let text: string | undefined;
+			if (event.type === "user/message") {
+				kind = "user";
+				text = userMessageSnapshot(event);
+			} else if (event.type === "assistant/message") {
+				const data = isRecord(event.data) ? event.data : undefined;
+				const message = isRecord(data?.message) ? data.message : data;
+				text = records(message?.content)
+					.flatMap((block) => (block.type === "text" && typeof block.text === "string" ? [block.text] : []))
+					.join("");
+				kind = text.trim() ? "assistant" : undefined;
+			} else if (event.type === "tool/result") {
+				const view = isRecord(entry.view) ? entry.view : undefined;
+				text = typeof view?.summary === "string" ? view.summary : undefined;
+				kind = text ? "tool" : undefined;
+			}
+			if (!kind || !text) continue;
+			const restoredEntry: SessionEntry = {
+				type: "custom" as const,
+				customType: MELDRA_DSH_MESSAGE_ENTRY,
+				data: { kind, text },
+				id: randomUUID(),
+				parentId,
+				timestamp: new Date(typeof event.time === "number" ? event.time : Date.now()).toISOString(),
+			};
+			restored.push(restoredEntry);
+			parentId = restoredEntry.id;
+		}
+		this.host?.emit({ type: "transcript_replaced", entries: restored });
+	}
+
 	switchSession(sessionId: string): void {
 		if (!this.runtime) throw new Error("DSH Runtime 尚未启动。");
 		this.runtime.sessionId = sessionId;
+		this.queueItems = [];
+		this.setContextUsage(undefined);
 		this.assistant = undefined;
 		this.lastAssistantText = undefined;
 		this.toolStartedAt.clear();
@@ -489,8 +622,13 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 				maxMessages: 1,
 			}),
 		);
-		if (!isRecord(value) || !isRecord(value.projections)) return {};
-		return isRecord(value.projections.values) ? value.projections.values : {};
+		if (!isRecord(value) || !isRecord(value.projections)) {
+			this.setContextUsage(undefined);
+			return {};
+		}
+		const values = isRecord(value.projections.values) ? value.projections.values : {};
+		this.setContextUsage(dshContextUsage(values));
+		return values;
 	}
 
 	async fork(atSeq?: number): Promise<string> {
@@ -885,6 +1023,21 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 		return this.lastAssistantText;
 	}
 
+	getContextUsage(): ContextUsage | undefined {
+		return this.contextUsage;
+	}
+
+	private setContextUsage(usage: ContextUsage | undefined): void {
+		if (
+			usage?.tokens === this.contextUsage?.tokens &&
+			usage?.contextWindow === this.contextUsage?.contextWindow &&
+			usage?.percent === this.contextUsage?.percent
+		)
+			return;
+		this.contextUsage = usage;
+		this.host?.emit({ type: "context_usage_changed", usage });
+	}
+
 	async respond(response: Record<string, unknown>): Promise<unknown> {
 		const active = await this.start();
 		return active.harness.client.request("meldra/api.respond", { response });
@@ -1075,6 +1228,24 @@ export class DshProfileRuntime implements ProfileAgentRuntime {
 
 	private handleRuntimeFrame(active: RuntimeState, payload: Record<string, unknown>): void {
 		if (payload.sessionId !== active.sessionId) return;
+		if (payload.type === "session/projection" && typeof payload.key === "string") {
+			if (payload.key === "contextPressure") {
+				this.setContextUsage(dshContextUsage({ contextPressure: payload.value }));
+			}
+			return;
+		}
+		if (payload.type === "session/queue" && payload.sessionId === active.sessionId) {
+			this.queueItems = records(payload.items).flatMap((item) => {
+				const parsed = dshQueueItem(item);
+				return parsed ? [parsed] : [];
+			});
+			this.host?.emit({
+				type: "queue_update",
+				steering: this.getSteeringMessages(),
+				followUp: this.getFollowUpMessages(),
+			});
+			return;
+		}
 		if (payload.type === "host/session-status" && typeof payload.running === "boolean") {
 			const turn = this.activeTurn;
 			if (!turn || turn.sessionId !== payload.sessionId) return;

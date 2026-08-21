@@ -3280,6 +3280,19 @@ export class InteractiveMode {
 				}
 				break;
 
+			case "transcript_replaced":
+				this.chatContainer.clear();
+				this.pendingTools.clear();
+				this.streamingComponent = undefined;
+				this.streamingMessage = undefined;
+				this.renderSessionEntries([...event.entries]);
+				this.ui.requestRender();
+				break;
+
+			case "context_usage_changed":
+				this.ui.requestRender();
+				break;
+
 			case "session_info_changed":
 				this.updateTerminalTitle();
 				this.footer.invalidate();

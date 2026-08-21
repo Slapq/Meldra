@@ -91,9 +91,10 @@ The host provides:
 
 - the active working directory and containing Pi session ID;
 - `appendEntry()` for provider-specific transcript entries rendered by an extension; providers can set `notify: false` when a transient UI event already rendered the same durable snapshot;
-- `emit()` for transient generic `AgentSessionEvent` delivery when a provider can represent its live updates through the shared event model.
+- `emit()` for transient generic `AgentSessionEvent` delivery when a provider can represent its live updates through the shared event model;
+- `transcript_replaced` for a provider-owned Session switch. Its entries replace the visible active TUI transcript only and are never appended to the containing Pi Session.
 
-`emit()` updates current host subscribers only. It does not persist a Pi Session message and does not add external-runtime content to Pi's model context. The provider remains responsible for durable upstream state. If it also keeps a Pi-side display snapshot, it uses `appendEntry()` and avoids notifying twice.
+`emit()` updates current host subscribers only. It does not persist a Pi Session message and does not add external-runtime content to Pi's model context. The provider remains responsible for durable upstream state. If it also keeps a Pi-side display snapshot, it uses `appendEntry()` and avoids notifying twice. A `context_usage_changed` event refreshes the generic host presentation without changing Pi Session persistence or model context.
 
 Providers may attach generic presentation metadata to a tool result's open `details` object. `profilePresentation` uses product-independent `terminal`, `diff`, `read`, `search`, `web-search`, or `web-fetch` data; the provider translates its upstream protocol at the boundary, while Pi's fallback renderer owns theme-aware layout, folding, and expansion. Unknown or malformed presentation data falls back to the ordinary raw arguments/result surface. `durationMs`, when present, is a finite non-negative elapsed duration in milliseconds derived from the provider's authoritative lifecycle timestamps. Neither field changes native Pi tool definitions, extension renderers, execution, persistence, or model context.
 
@@ -109,6 +110,7 @@ The runtime implements:
 - active-Session HTML export may reuse registered product-neutral custom-entry TUI renderers; standalone export has no extension runtime and keeps those entries hidden;
 - optional `selectModel(model)` for applying a user-confirmed Pi model before the containing `AgentSession` commits its model-change entry and Profile preference;
 - optional `getLastAssistantText()` for copy surfaces when finalized provider messages do not live in Pi agent state;
+- optional `getContextUsage()` for authoritative external context occupancy; when present, Pi's generic context surface uses this value instead of estimating from the native Pi Agent message list;
 - `dispose()` for subprocesses, cursors, listeners, and other owned resources.
 
 The command-surface declaration contains only generic command names. Pi honors a preferred name only when an extension command with that exact invocation name is registered; otherwise the built-in command remains authoritative. A preferred extension command replaces the same-name built-in only in autocomplete, built-in-conflict diagnostics, and interactive dispatch for the attached Runtime. A hidden built-in is omitted from autocomplete and produces an explicit unavailable warning when typed; it is not forwarded to the external agent as prompt text. The extension still owns preferred-command execution and errors. `getLastAssistantText()` supplies only transient finalized text for the active provider Session and does not alter Pi transcript or model context. Runtimes that omit these declarations, including ordinary Pi sessions, retain the existing built-in command list, copy source, and dispatch behavior.

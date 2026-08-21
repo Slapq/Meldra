@@ -1213,7 +1213,7 @@ export default function dshExtension(pi: ExtensionAPI): void {
 			if (action === "sessions") {
 				const sessionId = await selectDshSession(ctx, runtime);
 				if (sessionId) {
-					runtime.switchSession(sessionId);
+					await runtime.restoreSessionHistory(sessionId);
 					clearQueueSurface(ctx);
 					projections = await runtime.projections();
 				}

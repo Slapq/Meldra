@@ -107,6 +107,19 @@ describe("Profile Runtime providers", () => {
 });
 
 describe("ProfileAgentRuntime", () => {
+	it("uses provider-owned context usage for the host context surface", async () => {
+		class ContextRuntime extends FakeProfileRuntime {
+			getContextUsage = () => ({ tokens: 6_500, contextWindow: 100_000, percent: 6.5 });
+		}
+		const { session } = await createAgentSession({
+			cwd: "/tmp/profile-runtime-context",
+			sessionManager: SessionManager.inMemory("/tmp/profile-runtime-context"),
+			settingsManager: SettingsManager.inMemory(),
+			profileRuntime: new ContextRuntime(),
+		});
+
+		expect(session.getContextUsage()).toEqual({ tokens: 6_500, contextWindow: 100_000, percent: 6.5 });
+	});
 	it("uses provider-owned finalized assistant text for copy surfaces", async () => {
 		class LastTextRuntime extends FakeProfileRuntime {
 			getLastAssistantText = () => "provider answer";

@@ -155,6 +155,8 @@ export type AgentSessionEvent =
 	  }
 	| { type: "compaction_start"; reason: "manual" | "threshold" | "overflow" }
 	| { type: "entry_appended"; entry: SessionEntry }
+	| { type: "context_usage_changed"; usage: ContextUsage | undefined }
+	| { type: "transcript_replaced"; entries: readonly SessionEntry[] }
 	| { type: "session_info_changed"; name: string | undefined }
 	| { type: "thinking_level_changed"; level: ThinkingLevel }
 	| {
@@ -1549,12 +1551,13 @@ export class AgentSession {
 		});
 	}
 
-	/**
-	 * Clear all queued messages and return them.
-	 * Useful for restoring to editor when user aborts.
-	 * @returns Object with steering and followUp arrays
-	 */
+	/** Clear all queued messages and return them. */
 	clearQueue(): { steering: string[]; followUp: string[] } {
+		if (this._profileRuntime?.clearQueue) {
+			const runtimeQueues = this._profileRuntime.clearQueue();
+			this._emitQueueUpdate();
+			return runtimeQueues;
+		}
 		const steering = [...this._steeringMessages];
 		const followUp = [...this._followUpMessages];
 		this._steeringMessages = [];
@@ -1566,16 +1569,25 @@ export class AgentSession {
 
 	/** Number of pending messages (includes both steering and follow-up) */
 	get pendingMessageCount(): number {
+		if (this._profileRuntime?.getSteeringMessages && this._profileRuntime?.getFollowUpMessages) {
+			return this._profileRuntime.getSteeringMessages().length + this._profileRuntime.getFollowUpMessages().length;
+		}
 		return this._steeringMessages.length + this._followUpMessages.length;
 	}
 
 	/** Get pending steering messages (read-only) */
 	getSteeringMessages(): readonly string[] {
+		if (this._profileRuntime?.getSteeringMessages) {
+			return this._profileRuntime.getSteeringMessages();
+		}
 		return this._steeringMessages;
 	}
 
 	/** Get pending follow-up messages (read-only) */
 	getFollowUpMessages(): readonly string[] {
+		if (this._profileRuntime?.getFollowUpMessages) {
+			return this._profileRuntime.getFollowUpMessages();
+		}
 		return this._followUpMessages;
 	}
 
@@ -3221,6 +3233,10 @@ export class AgentSession {
 	}
 
 	getContextUsage(): ContextUsage | undefined {
+		if (this._profileRuntime?.getContextUsage) {
+			return this._profileRuntime.getContextUsage();
+		}
+
 		const model = this.model;
 		if (!model) return undefined;
 

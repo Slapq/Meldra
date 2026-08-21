@@ -536,4 +536,172 @@ describe("DSH Profile Runtime cancellation lifecycle", () => {
 		expect(cancel).toHaveBeenCalledTimes(1);
 		await runtimeHost.dispose();
 	});
+
+	it("uses the authoritative DSH queue snapshot for ESC restoration and removal", async () => {
+		const cwd = mkdtempSync(join(tmpdir(), "metapi-dsh-queue-inspect-"));
+		cleanupPaths.push(cwd);
+		const runtime = createRuntime(cwd);
+		const { request } = armBusyRuntime(runtime);
+		const internals = runtime as unknown as DshRuntimeInternals;
+		internals.handleRuntimeFrame(internals.runtime!, {
+			type: "session/queue",
+			sessionId: "busy-session",
+			items: [
+				{
+					id: "steer-1",
+					placement: "steering",
+					message: { content: [{ type: "text", text: "steer message" }] },
+				},
+				{
+					id: "queue-1",
+					placement: "queued",
+					message: { content: [{ type: "text", text: "follow-up message" }] },
+				},
+			],
+		});
+
+		expect(runtime.getSteeringMessages()).toEqual(["steer message"]);
+		expect(runtime.getFollowUpMessages()).toEqual(["follow-up message"]);
+		expect(runtime.clearQueue()).toEqual({
+			steering: ["steer message"],
+			followUp: ["follow-up message"],
+		});
+		await vi.waitFor(() => {
+			expect(request).toHaveBeenCalledWith("meldra/api.call", {
+				method: "session.updateQueue",
+				payload: { sessionId: "busy-session", itemId: "steer-1", action: { kind: "remove" } },
+			});
+			expect(request).toHaveBeenCalledWith("meldra/api.call", {
+				method: "session.updateQueue",
+				payload: { sessionId: "busy-session", itemId: "queue-1", action: { kind: "remove" } },
+			});
+		});
+		await runtime.dispose();
+	});
+
+	it("projects Harness context pressure into the generic context usage contract", async () => {
+		const cwd = mkdtempSync(join(tmpdir(), "metapi-dsh-context-usage-"));
+		cleanupPaths.push(cwd);
+		const runtime = createRuntime(cwd);
+		const emitted: Array<Record<string, unknown>> = [];
+		runtime.attach({
+			cwd,
+			sessionId: "initial-session",
+			appendEntry: () => {},
+			emit: (event) => emitted.push(event as unknown as Record<string, unknown>),
+		});
+		const request = vi.fn(async (method: string, params?: Record<string, unknown>) => {
+			if (method === "meldra/api.call" && params?.method === "session.history") {
+				return {
+					result: {
+						ok: true,
+						value: {
+							projections: {
+								values: {
+									contextPressure: {
+										projectedTokens: 6_500,
+										contextWindow: 100_000,
+									},
+								},
+							},
+						},
+					},
+				};
+			}
+			return { result: { ok: true, value: {} } };
+		});
+		const internals = runtime as unknown as DshRuntimeInternals;
+		internals.runtime = {
+			harness: { client: { request }, close: vi.fn(async () => undefined) },
+			sessionId: "initial-session",
+			eventCursors: new Map(),
+			eventTasks: [],
+		};
+
+		await runtime.projections();
+		expect(runtime.getContextUsage()).toEqual({ tokens: 6_500, contextWindow: 100_000, percent: 6.5 });
+		expect(emitted).toContainEqual({
+			type: "context_usage_changed",
+			usage: { tokens: 6_500, contextWindow: 100_000, percent: 6.5 },
+		});
+
+		internals.handleRuntimeFrame(internals.runtime, {
+			type: "session/projection",
+			sessionId: "initial-session",
+			key: "contextPressure",
+			value: { pressureTokens: 8_000, contextWindow: 100_000 },
+		});
+		expect(runtime.getContextUsage()).toEqual({ tokens: 8_000, contextWindow: 100_000, percent: 8 });
+		await runtime.dispose();
+	});
+
+	it("replaces the transient transcript from DSH history without appending Pi entries", async () => {
+		const cwd = mkdtempSync(join(tmpdir(), "metapi-dsh-history-restore-"));
+		cleanupPaths.push(cwd);
+		const runtime = createRuntime(cwd);
+		const emitted: Array<Record<string, unknown>> = [];
+		runtime.attach({
+			cwd,
+			sessionId: "initial-session",
+			appendEntry: () => {
+				throw new Error("history restore must not append to Pi Session");
+			},
+			emit: (event) => emitted.push(event as unknown as Record<string, unknown>),
+		});
+
+		const request = vi.fn(async (method: string, params?: Record<string, unknown>) => {
+			if (method === "meldra/api.call" && params?.method === "session.history") {
+				return {
+					result: {
+						ok: true,
+						value: {
+							events: [
+								{
+									event: {
+										seq: 2,
+										type: "assistant/message",
+										data: { message: { content: [{ type: "text", text: "I can help with that." }] } },
+									},
+								},
+								{
+									event: {
+										seq: 1,
+										type: "user/message",
+										data: {
+											source: { kind: "user" },
+											content: [{ type: "text", text: "How do I write tests?" }],
+										},
+									},
+								},
+							],
+							hasMore: false,
+						},
+					},
+				};
+			}
+			return { result: { ok: true, value: {} } };
+		});
+
+		const internals = runtime as unknown as DshRuntimeInternals;
+		internals.runtime = {
+			harness: { client: { request }, close: vi.fn(async () => undefined) },
+			sessionId: "initial-session",
+			eventCursors: new Map(),
+			eventTasks: [],
+		};
+
+		await runtime.restoreSessionHistory("history-session-123");
+
+		expect(emitted).toHaveLength(1);
+		expect(emitted[0]).toMatchObject({ type: "transcript_replaced" });
+		expect(emitted[0].entries).toEqual([
+			expect.objectContaining({ data: { kind: "user", text: "How do I write tests?" } }),
+			expect.objectContaining({ data: { kind: "assistant", text: "I can help with that." } }),
+		]);
+		expect(request).toHaveBeenCalledWith("meldra/api.call", {
+			method: "session.history",
+			payload: { sessionId: "history-session-123" },
+		});
+		await runtime.dispose();
+	});
 });
