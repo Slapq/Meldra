@@ -76,8 +76,8 @@ Portable Profiles use a Pi-compatible `package.json`. Another user receives the 
 | Installation entry | Status | Meaning |
 |---|---|---|
 | Run from source | `SUPPORTED` | Development and audit entry |
-| [`Meldra-Setup.exe`](https://github.com/Slapq/Meldra/releases/tag/v0.1.1-fix) | `SUPPORTED` | Windows x64; includes Node.js and portable Windows Terminal |
-| [`Meldra-Setup-NodeJS.exe`](https://github.com/Slapq/Meldra/releases/tag/v0.1.1-fix) | `SUPPORTED` | Windows x64; uses existing Node.js and warns without blocking installation when it is absent or old |
+| [`Meldra-Setup.exe`](https://github.com/Slapq/Meldra/releases/tag/v0.2.2) | `SUPPORTED` | Windows x64; includes Node.js and portable Windows Terminal |
+| [`Meldra-Setup-NodeJS.exe`](https://github.com/Slapq/Meldra/releases/tag/v0.2.2) | `SUPPORTED` | Windows x64; uses existing Node.js and warns without blocking installation when it is absent or old |
 | Scoped npm Bootstrap | `PLANNED` | The Meldra organization and package name are unconfirmed; no fake command is provided |
 | Starter Bundle + onboarding | `SUPPORTED` | `meldra setup` installs or restores the Bundle; `/setup` in `default` guides Provider, model, Scout, and thinking-level configuration and can be skipped |
 | Windows desktop shortcut | `SUPPORTED` | Launches `meldra --profile default --workspace` in the bundled Windows Terminal |

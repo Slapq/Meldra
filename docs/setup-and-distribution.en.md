@@ -13,7 +13,7 @@
 | Linux x64 standalone Bun archive | `PARTIAL` | Default/ordinary Profiles work; DeepSeek Harness is explicitly `UNSUPPORTED`, so use the Node.js source distribution |
 | Portable Profile import/export | `SUPPORTED` | `meldra profile import` / `export` |
 | Redacted Profile export audit | `SUPPORTED` | Each export writes `MELDRA_PROFILE_EXPORT_AUDIT.md` |
-| Dual Windows x64 installers | `SUPPORTED` | [`v0.2.1`](https://github.com/Slapq/Meldra/releases/tag/v0.2.1) provides bundled-Node and system-Node variants |
+| Dual Windows x64 installers | `SUPPORTED` | [`v0.2.2`](https://github.com/Slapq/Meldra/releases/tag/v0.2.2) provides bundled-Node and system-Node variants |
 | Scoped npm Bootstrap | `PLANNED` | The organization and package name are unconfirmed; no placeholder command is published |
 | Starter Profile Bundle Setup | `SUPPORTED` | A clean first Meldra initialization provisions it automatically; existing users run `meldra setup` to install or restore it |
 | Provider, model, and Scout onboarding | `SUPPORTED` | Run `/setup` in `default`; it points to `/login`, `/model`, `/scout`, or `/config` |
@@ -29,7 +29,7 @@ Meldra provides a Windows installer and retains a planned npm Bootstrap as the t
 
 ### Linux source distribution
 
-Linux x64 has been validated in a real Alpine 3.24.1 WSL2 environment across build, Setup, TUI, Bash, and DSH Runtime startup. Source installation keeps the default dependency boundary with `--ignore-scripts`, then runs `npm run prepare:native-runtime` to execute only the reviewed and recorded native install scripts for `@deepseek-ai/dsh-subprocess-local`, `koffi`, and `node-pty`. Windows and Linux Node release staging install the complete platform-matched DSH rc.8 Runtime graph from the root lock; `dsh-client-schema-form` and `dsh-client-web-react`, for which upstream has not published rc.8, remain on rc.7 within the compatibility ranges declared by rc.8 and must not be mixed with other old DSH Runtime packages. Linux requires Python 3, Make, and a C++ toolchain; Alpine also requires Linux headers.
+Linux x64 has been validated in a real Alpine 3.24.1 WSL2 environment across build, Setup, TUI, Bash, and DSH Runtime startup. Source installation keeps the default dependency boundary with `--ignore-scripts`, then runs `npm run prepare:native-runtime` to execute only the reviewed and recorded native install scripts for `@deepseek-ai/dsh-subprocess-local`, `koffi`, and `node-pty`. Windows and Linux Node release staging install the complete platform-matched DSH rc.1 Runtime graph from the root lock. Linux requires Python 3, Make, and a C++ toolchain; Alpine also requires Linux headers.
 
 The standalone Linux Bun archive includes the Starter Bundle and supports the default and ordinary Profiles. It does not carry Harness's dynamic Node dependencies, so DeepSeek Harness is explicitly `UNSUPPORTED` instead of reporting false compatibility. Use the Node.js source distribution when DSH is required. Linux ARM64 and glibc distributions remain unverified and are not inferred from the x64 musl result.
 

@@ -15,7 +15,7 @@
 - 可用的终端
 - Windows 上可用的 Bash，推荐 Git for Windows
 
-Windows x64 用户可以从 [`v0.2.1`](https://github.com/Slapq/Meldra/releases/tag/v0.2.1) 下载双安装器：`Meldra-Setup.exe` 内置 Node.js，`Meldra-Setup-NodeJS.exe` 使用系统 Node.js。两版都内置 portable Windows Terminal，桌面快捷方式默认使用它；安装器把 `meldra` 加入当前用户 PATH，`metapi` 继续作为兼容别名，因此任意新开的 PowerShell、cmd、Git Bash、Windows Terminal 或 VS Code terminal 都能运行 Meldra。安装器当前未签名，Windows 可能显示 Unknown publisher 或 SmartScreen 提示。
+Windows x64 用户可以从 [`v0.2.2`](https://github.com/Slapq/Meldra/releases/tag/v0.2.2) 下载双安装器：`Meldra-Setup.exe` 内置 Node.js，`Meldra-Setup-NodeJS.exe` 使用系统 Node.js。两版都内置 portable Windows Terminal，桌面快捷方式默认使用它；安装器把 `meldra` 加入当前用户 PATH，`metapi` 继续作为兼容别名，因此任意新开的 PowerShell、cmd、Git Bash、Windows Terminal 或 VS Code terminal 都能运行 Meldra。安装器当前未签名，Windows 可能显示 Unknown publisher 或 SmartScreen 提示。
 
 scoped npm Bootstrap 尚未发布；不要使用官方 Pi 包代替 Meldra。`meldra update --self` 仍禁用。Starter Bundle Setup 与 Provider/模型/Scout 配置向导已经支持。完整产品边界见 [Setup 与发行合同](setup-and-distribution.md)。
 
@@ -376,7 +376,7 @@ DSH 运行时规则：
 - Harness 保持 Agent loop、队列、实际模型 route、Preset、工具、Settings 和 ledger 权威；
 - `/model` 使用 Pi 原生选择器读取当前 Meldra Profile 的 Provider 与模型；只有确认选择后，Meldra 才把该单个模型注册到 DSH `llm-pi-ai` Settings、通过 credential reference 提供凭据，并请求 Harness 切换；取消选择不会写入；
 - `/dsh model` 继续查看和选择 Harness 原生 catalog；
-- 当前 rc.8 Meldra bridge 可桥接 `openai-completions`、`openai-responses` 和 `anthropic-messages`；Anthropic endpoint 使用 Pi 原生约定的服务根地址，由 SDK 追加 `/v1/messages`；其他 API 会在写入 DSH Settings 前明确拒绝，不会猜测转换协议；
+- 当前 rc.1 Meldra bridge 可桥接 `openai-completions`、`openai-responses` 和 `anthropic-messages`；Anthropic endpoint 使用 Pi 原生约定的服务根地址，由 SDK 追加 `/v1/messages`；其他 API 会在写入 DSH Settings 前明确拒绝，不会猜测转换协议；
 - `/tree`、`/clone`、`/scoped-models`、`/import`、`/login`、`/logout` 等不符合 DSH 状态域的 Pi 命令会隐藏或拒绝；
 - `/copy` 使用当前 DSH Runtime 的最终 assistant 文本；
 - DSH `/resume` 与 `/sessions` 使用同一个 Pi-native cursor Session browser 和 Harness `session.list` 数据；

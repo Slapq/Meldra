@@ -75,8 +75,8 @@ Portable Profile 使用 Pi-compatible `package.json`。其他用户导入后即�
 | 安装入口 | 状态 | 说明 |
 |---|---|---|
 | 从源码运行 | `SUPPORTED` | 开发与审计入口 |
-| [`Meldra-Setup.exe`](https://github.com/Slapq/Meldra/releases/tag/v0.1.1-fix) | `SUPPORTED` | Windows x64；内置 Node.js 与 portable Windows Terminal，无需预装 Node.js |
-| [`Meldra-Setup-NodeJS.exe`](https://github.com/Slapq/Meldra/releases/tag/v0.1.1-fix) | `SUPPORTED` | Windows x64；使用已有 Node.js，缺失或版本较低时提示但不阻止安装 |
+| [`Meldra-Setup.exe`](https://github.com/Slapq/Meldra/releases/tag/v0.2.2) | `SUPPORTED` | Windows x64；内置 Node.js 与 portable Windows Terminal，无需预装 Node.js |
+| [`Meldra-Setup-NodeJS.exe`](https://github.com/Slapq/Meldra/releases/tag/v0.2.2) | `SUPPORTED` | Windows x64；使用已有 Node.js，缺失或版本较低时提示但不阻止安装 |
 | scoped npm Bootstrap | `PLANNED` | Meldra organization 与包名尚未确认，不提供假命令 |
 | Starter Bundle + 配置向导 | `SUPPORTED` | `meldra setup` 安装或恢复 Bundle；进入 default 后用 `/setup` 完成 Provider、模型、Scout 与 thinking level 引导，可随时跳过 |
 | Windows 桌面快捷方式 | `SUPPORTED` | 使用安装器内置 Windows Terminal 启动 `meldra --profile default --workspace` |

@@ -200,7 +200,7 @@ built-in 特例；不要为它另建 provision、package-copy 或源码 hot-relo
 
 ## 7. DSH 开发边界
 
-DSH 固定为 `0.1.0-rc.8`。开发时以当前安装包类型、Harness 源码、ApiProxy、事件和真实 runtime probe 为依据。
+DSH 固定为 `0.1.1-rc.1`。开发时以当前安装包类型、Harness 源码、ApiProxy、事件和真实 runtime probe 为依据。
 
 必须保持：
 

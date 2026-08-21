@@ -13,7 +13,7 @@
 | Linux x64 standalone Bun 归档 | `PARTIAL` | default/普通 Profile 可用；DeepSeek Harness 明确 `UNSUPPORTED`，应使用 Node.js 源码发行 |
 | Portable Profile 导入/导出 | `SUPPORTED` | `meldra profile import` / `export` |
 | Profile export 脱敏审计 | `SUPPORTED` | 导出时自动生成 `MELDRA_PROFILE_EXPORT_AUDIT.md` |
-| Windows x64 双安装器 | `SUPPORTED` | [`v0.2.1`](https://github.com/Slapq/Meldra/releases/tag/v0.2.1) 提供内置 Node 和使用系统 Node 两版 |
+| Windows x64 双安装器 | `SUPPORTED` | [`v0.2.2`](https://github.com/Slapq/Meldra/releases/tag/v0.2.2) 提供内置 Node 和使用系统 Node 两版 |
 | scoped npm Bootstrap | `PLANNED` | organization 和包名尚未确认，不提供假命令 |
 | Starter Profile Bundle Setup | `SUPPORTED` | 干净的首次 Meldra 初始化自动 provision；已有用户运行 `meldra setup` 安装或恢复 |
 | Provider、模型和 Scout 引导 | `SUPPORTED` | default Profile 中运行 `/setup`；分别转到 `/login`、`/model`、`/scout` 或 `/config` |
@@ -29,7 +29,7 @@ Meldra 提供 Windows 安装器和计划中的 npm Bootstrap 两类首次安装�
 
 ### Linux 源码发行
 
-Linux x64 已通过 Alpine 3.24.1 WSL2 的真实 build、Setup、TUI、Bash 和 DSH Runtime 验证。源码安装先以 `--ignore-scripts` 保持默认依赖安装边界，再显式运行 `npm run prepare:native-runtime`，只执行项目已审查并记录的 `@deepseek-ai/dsh-subprocess-local`、`koffi` 和 `node-pty` native install scripts。Windows 与 Linux 的 Node release staging 都从根 lock 安装完整、平台匹配的 DSH rc.8 Runtime graph；上游未发布 rc.8 的 `dsh-client-schema-form` 和 `dsh-client-web-react` 按 rc.8 声明的兼容范围保留 rc.7，不能与其他旧 DSH Runtime 包混用。Linux 需要 Python 3、Make 和 C++ toolchain；Alpine 还需要 Linux headers。
+Linux x64 已通过 Alpine 3.24.1 WSL2 的真实 build、Setup、TUI、Bash 和 DSH Runtime 验证。源码安装先以 `--ignore-scripts` 保持默认依赖安装边界，再显式运行 `npm run prepare:native-runtime`，只执行项目已审查并记录的 `@deepseek-ai/dsh-subprocess-local`、`koffi` 和 `node-pty` native install scripts。Windows 与 Linux 的 Node release staging 都从根 lock 安装完整、平台匹配的 DSH rc.1 Runtime graph；Linux 需要 Python 3、Make 和 C++ toolchain；Alpine 还需要 Linux headers。
 
 standalone Bun Linux 归档携带 Starter Bundle，可运行 default 和普通 Profile，但不携带 Harness 的 Node 动态依赖，因此 DeepSeek Harness 明确为 `UNSUPPORTED`，不会返回伪兼容结果。需要 DSH 时必须使用 Node.js 源码发行。Linux ARM64 和 glibc 发行版仍待真实验证，不能从 x64 musl 结果推断为已验收。
 

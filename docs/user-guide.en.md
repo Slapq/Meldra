@@ -15,7 +15,7 @@ Requirements:
 - A supported terminal
 - Bash on Windows; Git for Windows is recommended
 
-Windows x64 users can download the dual installers from [`v0.2.1`](https://github.com/Slapq/Meldra/releases/tag/v0.2.1): `Meldra-Setup.exe` bundles Node.js, while `Meldra-Setup-NodeJS.exe` uses the system Node.js. Both include portable Windows Terminal for the desktop shortcut. The installer adds `meldra` to the current-user PATH and retains `metapi` as a compatibility alias, so any newly opened PowerShell, cmd, Git Bash, Windows Terminal, or VS Code terminal can run Meldra. The installers are currently unsigned, so Windows may show Unknown publisher or SmartScreen warnings.
+Windows x64 users can download the dual installers from [`v0.2.2`](https://github.com/Slapq/Meldra/releases/tag/v0.2.2): `Meldra-Setup.exe` bundles Node.js, while `Meldra-Setup-NodeJS.exe` uses the system Node.js. Both include portable Windows Terminal for the desktop shortcut. The installer adds `meldra` to the current-user PATH and retains `metapi` as a compatibility alias, so any newly opened PowerShell, cmd, Git Bash, Windows Terminal, or VS Code terminal can run Meldra. The installers are currently unsigned, so Windows may show Unknown publisher or SmartScreen warnings.
 
 The scoped npm Bootstrap remains unpublished; do not substitute the official Pi package for Meldra. `meldra update --self` remains disabled. Starter Bundle Setup and Provider/model/Scout onboarding are supported. See the [Setup and Distribution Contract](setup-and-distribution.en.md) for the full boundary.
 
@@ -285,7 +285,7 @@ model does Meldra register that one route in DSH `llm-pi-ai` Settings, supply it
 reference, and ask Harness to select it. Cancelling the selector performs no DSH write. `/dsh model` remains the
 explicit Harness-native catalog selector.
 
-The bundled rc.8 bridge supports `openai-completions`, `openai-responses`, and `anthropic-messages`. Anthropic endpoints
+The bundled rc.1 bridge supports `openai-completions`, `openai-responses`, and `anthropic-messages`. Anthropic endpoints
 use Pi's native service-root convention; the SDK appends `/v1/messages`. Other APIs are rejected before DSH Settings are
 written rather than being guessed as another wire protocol.
 

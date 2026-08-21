@@ -190,7 +190,7 @@ preserve Pi defaults.
 
 ## 7. DSH Boundary
 
-DSH is pinned to `0.1.0-rc.8`. Use current package types, Harness source, ApiProxy, events, and real Runtime probes as
+DSH is pinned to `0.1.1-rc.1`. Use current package types, Harness source, ApiProxy, events, and real Runtime probes as
 evidence.
 
 Preserve these boundaries:
