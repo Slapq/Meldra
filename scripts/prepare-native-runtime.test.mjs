@@ -51,26 +51,26 @@ test("dry run requires every native runtime package and does not execute npm", (
 	}
 });
 
-test("release lock preserves the reviewed DSH rc.7 runtime versions", () => {
+test("release lock preserves the reviewed DSH rc.1 runtime versions", () => {
 	const repoRoot = new URL("../", import.meta.url);
 	const root = fileURLToPath(repoRoot);
 	const overrides = runtimeOverrides(root);
-	assert.equal(overrides["@deepseek-ai/dsh"], "0.1.0-rc.7");
-	assert.equal(overrides["@deepseek-ai/dsh-subprocess-local"], "0.1.0-rc.7");
+	assert.equal(overrides["@deepseek-ai/dsh"], "0.1.1-rc.1");
+	assert.equal(overrides["@deepseek-ai/dsh-subprocess-local"], "0.1.1-rc.1");
 	assert.equal(overrides["node-pty"], "1.2.0-beta.15");
-	assert.equal(overrides.koffi, "3.1.5");
+	assert.equal(overrides.koffi, "3.1.6");
 	const linuxSpecs = runtimeInstallSpecs(root, { platform: "linux", arch: "x64", libc: "musl" });
 	assert.ok(linuxSpecs.length > 170);
-	assert.ok(linuxSpecs.includes("@deepseek-ai/dsh-scope@0.1.0-rc.7"));
-	assert.ok(linuxSpecs.includes("@deepseek-ai/dsh-timeout@0.1.0-rc.7"));
+	assert.ok(linuxSpecs.includes("@deepseek-ai/dsh-scope@0.1.1-rc.1"));
+	assert.ok(linuxSpecs.includes("@deepseek-ai/dsh-timeout@0.1.1-rc.1"));
 	assert.ok(linuxSpecs.includes("@deepseek-ai/cordis-plugin-group@1.0.1"));
 	assert.ok(linuxSpecs.includes("@deepseek-ai/node-addon-landlock-run-linux-x64@0.1.1"));
 	assert.ok(!linuxSpecs.includes("@deepseek-ai/node-addon-landlock-run-linux-arm64@0.1.1"));
 	const windowsDependencies = runtimeInstallDependencies(root, { platform: "win32", arch: "x64", libc: undefined });
-	assert.equal(windowsDependencies["@deepseek-ai/dsh"], "0.1.0-rc.7");
-	assert.equal(windowsDependencies["@deepseek-ai/dsh-scope"], "0.1.0-rc.7");
+	assert.equal(windowsDependencies["@deepseek-ai/dsh"], "0.1.1-rc.1");
+	assert.equal(windowsDependencies["@deepseek-ai/dsh-scope"], "0.1.1-rc.1");
 	const windowsSpecs = runtimeInstallSpecs(root, { platform: "win32", arch: "x64", libc: undefined });
-	assert.ok(windowsSpecs.includes("@deepseek-ai/dsh-scope@0.1.0-rc.7"));
+	assert.ok(windowsSpecs.includes("@deepseek-ai/dsh-scope@0.1.1-rc.1"));
 	assert.ok(!windowsSpecs.some((spec) => spec.includes("landlock-run-linux")));
 });
 

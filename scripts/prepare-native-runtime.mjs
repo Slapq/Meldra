@@ -29,8 +29,8 @@ export function runtimeOverrides(repoRoot) {
 		}
 		overrides[name] = entry.version;
 	}
-	if (overrides["@deepseek-ai/dsh"] !== "0.1.0-rc.7" || overrides["node-pty"] !== "1.2.0-beta.15") {
-		throw new Error("Release lock does not preserve the reviewed DSH rc.7 native runtime.");
+	if (overrides["@deepseek-ai/dsh"] !== "0.1.1-rc.1" || overrides["node-pty"] !== "1.2.0-beta.15") {
+		throw new Error("Release lock does not preserve the reviewed DSH rc.1 native runtime.");
 	}
 	return overrides;
 }

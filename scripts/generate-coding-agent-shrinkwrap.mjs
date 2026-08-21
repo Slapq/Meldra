@@ -11,9 +11,9 @@ const rootLockfilePath = join(repoRoot, "package-lock.json");
 const shrinkwrapPath = join(codingAgentDir, "npm-shrinkwrap.json");
 const internalPackagePrefix = "@earendil-works/pi-";
 const allowedInstallScriptPackages = new Map([
-	["@deepseek-ai/dsh-subprocess-local@0.1.0-rc.8", "postinstall only restores the bundled POSIX spawn-helper executable bit"],
+	["@deepseek-ai/dsh-subprocess-local@0.1.1-rc.1", "postinstall only restores the bundled POSIX spawn-helper executable bit"],
 	["@google/genai@1.52.0", "preinstall is a no-op in the published package"],
-	["koffi@3.1.5", "install selects or builds the native FFI binding used by DSH filesystem and JSONL plugins"],
+	["koffi@3.1.6", "install selects or builds the native FFI binding used by DSH filesystem and JSONL plugins"],
 	["node-pty@1.2.0-beta.15", "install selects the bundled platform prebuild or builds the DSH subprocess PTY binding"],
 	["protobufjs@7.6.5", "postinstall only warns about protobufjs version scheme mismatches"],
 ]);
