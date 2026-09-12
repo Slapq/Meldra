@@ -261,7 +261,7 @@ export class TuiAltScreen extends TuiBase implements ViewportTUI {
 		const capabilities = getCapabilities();
 		this.imageProtocol = capabilities.images;
 		this.uploadedKittyImages.clear();
-		if (capabilities.images === "iterm2") {
+		if (capabilities.images === "iterm2" || capabilities.images === "sixel") {
 			this.savedCapabilities = capabilities;
 			setCapabilities({ ...capabilities, images: null });
 			this.invalidate();

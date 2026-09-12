@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Added Sixel image support for terminals that implement it without the Kitty graphics protocol, notably Windows Terminal 1.22+ (`WT_SESSION` detection). Sixel rendering decodes PNG input to raw pixels (8/16-bit gray, RGB, palette, gray+alpha, RGBA; non-interlaced), rescales it to the target cell geometry with a box filter, quantizes it via median cut to at most 256 colors, and emits a palette-indexed DCS sequence (`PI_TUI_IMAGE_PROTOCOL=none|sixel|kitty|iterm2` overrides detection). Like iTerm2 inline images, Sixel placements are disabled in the fullscreen alt screen and restored on exit. Non-PNG images are converted to PNG ahead of rendering by the coding agent, mirroring the existing Kitty pipeline.
+
 ## [0.84.2] - 2026-08-14
 
 ### Added

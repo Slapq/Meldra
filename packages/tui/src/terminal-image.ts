@@ -2,8 +2,9 @@ import { execSync } from "node:child_process";
 import { homedir } from "node:os";
 import { isAbsolute } from "node:path";
 import { pathToFileURL } from "node:url";
+import { encodeSixelFromPngBase64 } from "./sixel.ts";
 
-export type ImageProtocol = "kitty" | "iterm2" | null;
+export type ImageProtocol = "kitty" | "iterm2" | "sixel" | null;
 
 export interface TerminalCapabilities {
 	images: ImageProtocol;
@@ -73,6 +74,16 @@ export function detectCapabilities(tmuxForwardsHyperlink: () => boolean = probeT
 	const hasTrueColorHint = colorTerm === "truecolor" || colorTerm === "24bit";
 	const isWindowsConsole = process.platform === "win32";
 
+	// Explicit user override wins over all detection. Useful for terminals
+	// whose image support we cannot detect (or misdetect), e.g. older Windows
+	// Terminal versions without Sixel support (added in WT 1.22/1.23).
+	const protocolOverride = process.env.PI_TUI_IMAGE_PROTOCOL?.toLowerCase().trim();
+	if (protocolOverride === "sixel") return { images: "sixel", trueColor: true, hyperlinks: true };
+	if (protocolOverride === "kitty") return { images: "kitty", trueColor: true, hyperlinks: true };
+	if (protocolOverride === "iterm2") return { images: "iterm2", trueColor: true, hyperlinks: true };
+	if (protocolOverride === "none" || protocolOverride === "off")
+		return { images: null, trueColor: hasTrueColorHint, hyperlinks: false };
+
 	// Emit OSC 8 hyperlinks only when tmux confirms it forwards.
 	// Image protocols are unreliable under tmux, so leave `images: null`.
 	if (process.env.TMUX || term.startsWith("tmux")) {
@@ -106,7 +117,10 @@ export function detectCapabilities(tmuxForwardsHyperlink: () => boolean = probeT
 	}
 
 	if (process.env.WT_SESSION) {
-		return { images: null, trueColor: true, hyperlinks: true };
+		// Windows Terminal supports Sixel since 1.22 (preview) / 1.23 (stable).
+		// On older versions set PI_TUI_IMAGE_PROTOCOL=none to avoid garbage
+		// output from the uninterpreted DCS sequence.
+		return { images: "sixel", trueColor: true, hyperlinks: true };
 	}
 
 	if (termProgram === "vscode") {
@@ -153,14 +167,15 @@ export function setCapabilities(caps: TerminalCapabilities): void {
 
 const KITTY_PREFIX = "\x1b_G";
 const ITERM2_PREFIX = "\x1b]1337;File=";
+const SIXEL_PREFIX = "\x1bPq";
 
 export function isImageLine(line: string): boolean {
 	// Fast path: sequence at line start (single-row images)
-	if (line.startsWith(KITTY_PREFIX) || line.startsWith(ITERM2_PREFIX)) {
+	if (line.startsWith(KITTY_PREFIX) || line.startsWith(ITERM2_PREFIX) || line.startsWith(SIXEL_PREFIX)) {
 		return true;
 	}
 	// Slow path: sequence elsewhere (multi-row images have cursor-up prefix)
-	return line.includes(KITTY_PREFIX) || line.includes(ITERM2_PREFIX);
+	return line.includes(KITTY_PREFIX) || line.includes(ITERM2_PREFIX) || line.includes(SIXEL_PREFIX);
 }
 
 /**
@@ -607,6 +622,20 @@ export function renderImage(
 			height: "auto",
 			preserveAspectRatio: options.preserveAspectRatio ?? true,
 		});
+		return { sequence, columns: size.columns, rows: size.rows };
+	}
+
+	if (caps.images === "sixel") {
+		// Sixel needs raw pixels, so the input must be a PNG we can decode.
+		// Callers are expected to convert other formats to PNG first (the
+		// coding agent does this for the Kitty protocol as well).
+		const cellDimensions = getCellDimensions();
+		const sequence = encodeSixelFromPngBase64(
+			base64Data,
+			size.columns * cellDimensions.widthPx,
+			size.rows * cellDimensions.heightPx,
+		);
+		if (!sequence) return null;
 		return { sequence, columns: size.columns, rows: size.rows };
 	}
 

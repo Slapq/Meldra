@@ -74,6 +74,15 @@ export {
 } from "./keys.ts";
 // LaTeX rendering
 export { type RenderLatexOptions, renderLatex } from "./latex.ts";
+// Sixel graphics encoding
+export {
+	decodePngToRgba,
+	encodeSixel,
+	encodeSixelFromPngBase64,
+	quantizeRgba,
+	type RgbaImage,
+	resizeRgba,
+} from "./sixel.ts";
 // Input buffering for batch splitting
 export { StdinBuffer, type StdinBufferEventMap, type StdinBufferOptions } from "./stdin-buffer.ts";
 // Terminal interface and implementations

@@ -199,7 +199,9 @@ export class ToolExecutionComponent extends Container {
 
 	private maybeConvertImagesForKitty(): void {
 		const caps = getCapabilities();
-		if (caps.images !== "kitty") return;
+		// Sixel shares Kitty's requirement: the terminal renderer can only
+		// consume PNG input, so convert other formats ahead of time.
+		if (caps.images !== "kitty" && caps.images !== "sixel") return;
 		if (!this.result) return;
 
 		const imageBlocks = this.result.content.filter((c) => c.type === "image");
@@ -361,7 +363,7 @@ export class ToolExecutionComponent extends Container {
 					const converted = this.convertedImages.get(i);
 					const imageData = converted?.data ?? img.data;
 					const imageMimeType = converted?.mimeType ?? img.mimeType;
-					if (caps.images === "kitty" && imageMimeType !== "image/png") continue;
+					if ((caps.images === "kitty" || caps.images === "sixel") && imageMimeType !== "image/png") continue;
 
 					const spacer = new Spacer(1);
 					this.addChild(spacer);

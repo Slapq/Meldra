@@ -40,6 +40,7 @@ const ENV_KEYS = [
 	"ITERM_SESSION_ID",
 	"WT_SESSION",
 	"CMUX_WORKSPACE_ID",
+	"PI_TUI_IMAGE_PROTOCOL",
 	"WARP_SESSION_ID",
 	"WARP_TERMINAL_SESSION_UUID",
 ] as const;
@@ -339,11 +340,18 @@ describe("detectCapabilities", () => {
 		});
 	});
 
-	it("enables truecolor and hyperlinks for Windows Terminal outside multiplexers", () => {
+	it("enables Sixel, truecolor and hyperlinks for Windows Terminal outside multiplexers", () => {
 		withEnv({ WT_SESSION: "session", TERM: "xterm-256color" }, () => {
 			const caps = detectCapabilities();
 			assert.strictEqual(caps.trueColor, true);
 			assert.strictEqual(caps.hyperlinks, true);
+			assert.strictEqual(caps.images, "sixel");
+		});
+	});
+
+	it("keeps Windows Terminal imageless when PI_TUI_IMAGE_PROTOCOL=none", () => {
+		withEnv({ WT_SESSION: "session", TERM: "xterm-256color", PI_TUI_IMAGE_PROTOCOL: "none" }, () => {
+			const caps = detectCapabilities();
 			assert.strictEqual(caps.images, null);
 		});
 	});
