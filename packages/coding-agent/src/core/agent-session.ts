@@ -347,6 +347,7 @@ export class AgentSession {
 
 	// Extension system
 	private _extensionRunner!: ExtensionRunner;
+	private _profileRuntimeExtensionEventTail: Promise<void> = Promise.resolve();
 	private _turnIndex = 0;
 
 	private _resourceLoader: ResourceLoader;
@@ -402,7 +403,10 @@ export class AgentSession {
 			sessionId: this.sessionManager.getSessionId(),
 			appendEntry: (customType, data, options) =>
 				this._appendCustomEntry(customType, data, options?.notify !== false),
-			emit: (event) => this._emit(event),
+			emit: (event) => {
+				this._emit(event);
+				this._emitProfileRuntimeExtensionEvent(event);
+			},
 		});
 
 		// Always subscribe to agent events for internal handling
@@ -423,6 +427,39 @@ export class AgentSession {
 
 	get profileRuntime(): ProfileAgentRuntime | undefined {
 		return this._profileRuntime;
+	}
+
+	private _emitProfileRuntimeExtensionEvent(event: AgentSessionEvent): void {
+		if (!this._profileRuntime) return;
+		if (event.type !== "message_start" && event.type !== "message_update" && event.type !== "message_end") {
+			return;
+		}
+
+		// External runtimes need the read-only message lifecycle for compatible observers such as
+		// pi-tps-meter. Keep delivery ordered. Pi exposes message_end through its dedicated
+		// dispatch method, but any replacement returned by an Extension is intentionally ignored.
+		this._profileRuntimeExtensionEventTail = this._profileRuntimeExtensionEventTail
+			.then(async () => {
+				if (event.type === "message_start") {
+					await this._extensionRunner.emit({
+						type: "message_start",
+						message: structuredClone(event.message),
+					});
+				} else if (event.type === "message_update") {
+					await this._extensionRunner.emit({
+						type: "message_update",
+						message: structuredClone(event.message),
+						assistantMessageEvent: structuredClone(event.assistantMessageEvent),
+					});
+				} else {
+					await this._extensionRunner.emitMessageEnd({
+						type: "message_end",
+						message: structuredClone(event.message),
+					});
+				}
+			})
+			.then(() => undefined)
+			.catch(() => undefined);
 	}
 
 	private _appendCustomEntry(customType: string, data: unknown, notify = true): void {

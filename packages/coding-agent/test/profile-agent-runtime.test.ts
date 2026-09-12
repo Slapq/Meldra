@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ModelRuntime } from "../src/core/model-runtime.ts";
+import { DefaultResourceLoader } from "../src/core/resource-loader.ts";
 import {
 	createProfileRuntime,
 	type ProfileAgentRuntime,
@@ -107,6 +108,60 @@ describe("Profile Runtime providers", () => {
 });
 
 describe("ProfileAgentRuntime", () => {
+	it("forwards external assistant message lifecycle to compatible Pi extensions in order", async () => {
+		class EventRuntime extends FakeProfileRuntime {
+			emitAssistantLifecycle(): void {
+				const message = {
+					role: "assistant",
+					content: [],
+					api: "profile-runtime",
+					provider: "external",
+					model: "test",
+					usage: { input: 0, output: 1, cacheRead: 0, cacheWrite: 0, totalTokens: 1 },
+					stopReason: "stop",
+					timestamp: Date.now(),
+				} as never;
+				this.host?.emit({ type: "message_start", message });
+				this.host?.emit({
+					type: "message_update",
+					message,
+					assistantMessageEvent: {
+						type: "text_delta",
+						contentIndex: 0,
+						delta: "hello",
+						partial: message,
+					},
+				});
+				this.host?.emit({ type: "message_end", message });
+			}
+		}
+
+		const events: string[] = [];
+		const resourceLoader = new DefaultResourceLoader({
+			cwd: "/tmp/profile-runtime-events",
+			agentDir: "/tmp/profile-runtime-events/agent",
+			extensionFactories: [
+				(pi) => {
+					pi.on("message_start", () => events.push("start"));
+					pi.on("message_update", () => events.push("update"));
+					pi.on("message_end", () => events.push("end"));
+				},
+			],
+		});
+		await resourceLoader.reload();
+		const runtime = new EventRuntime();
+		await createAgentSession({
+			cwd: "/tmp/profile-runtime-events",
+			sessionManager: SessionManager.inMemory("/tmp/profile-runtime-events"),
+			settingsManager: SettingsManager.inMemory(),
+			resourceLoader,
+			profileRuntime: runtime,
+		});
+
+		runtime.emitAssistantLifecycle();
+		await vi.waitFor(() => expect(events).toEqual(["start", "update", "end"]));
+	});
+
 	it("uses provider-owned context usage for the host context surface", async () => {
 		class ContextRuntime extends FakeProfileRuntime {
 			getContextUsage = () => ({ tokens: 6_500, contextWindow: 100_000, percent: 6.5 });
