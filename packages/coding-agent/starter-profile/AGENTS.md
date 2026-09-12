@@ -11,7 +11,7 @@ This file applies to the current Meldra Profile. Project `AGENTS.md` or `CLAUDE.
 - Treat Scout as read-only search assistance: ask for locations, callers, excerpts, and raw facts only. Do not delegate review, risk, scope, architecture, or fix decisions.
 - Preserve unrelated user changes. Never use destructive Git commands or stage files outside the current task.
 - Make the smallest scoped change. Do not refactor, migrate, add policy, or alter adjacent behavior without approval.
-- Never expose credentials or claim an external action, write, install, model call, restart, or deployment succeeded without evidence.
+- Never claim an external action, write, install, model call, restart, or deployment succeeded without evidence.
 
 ## Runtime Ownership
 

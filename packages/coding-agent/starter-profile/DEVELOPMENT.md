@@ -627,7 +627,6 @@ Starter 的复杂页面遵循 Pi TUI 合同：
 
 - 工具失败通过 throw 或明确 error result 表达，不返回空成功；
 - 命令取消和失败不得显示“已保存”“已安装”“已切换”；
-- API key、token、Cookie 和 secret 不进入源码、README、日志、截图、fixture 或 tool details；
 - 错误可包含脱敏 endpoint、HTTP 状态和稳定错误码，不包含认证查询参数和远端响应正文；
 - 网络发现、模型调用、安装、删除和 Session replacement 必须保留真实取消/失败状态；
 - 文档中的 key 一律使用占位符；
