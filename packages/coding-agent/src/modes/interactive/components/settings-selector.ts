@@ -17,6 +17,7 @@ import { formatHttpIdleTimeoutMs, HTTP_IDLE_TIMEOUT_CHOICES } from "../../../cor
 import type {
 	DefaultProjectTrust,
 	FullscreenExitOutput,
+	MeldraLaunchPolicy,
 	MermaidRenderingMode,
 	TuiMode,
 	WarningSettings,
@@ -56,7 +57,24 @@ const DEFAULT_PROJECT_TRUST_BY_LABEL = new Map(
 	Object.entries(DEFAULT_PROJECT_TRUST_LABELS).map(([value, label]) => [label, value as DefaultProjectTrust]),
 );
 
+export interface SettingsSelectorLocalization {
+	label: string;
+	description: string;
+	/** Display text per raw value. Raw values still reach SettingsCallbacks. */
+	values?: Record<string, string>;
+	submenuTitle?: string;
+	submenuDescription?: string;
+}
+
+export interface SettingsSelectorOptions {
+	/** Keep only the items whose id passes this filter. */
+	filter?: (id: string) => boolean;
+	/** Replace labels, descriptions, and display values while preserving raw callback values. */
+	localize?: Record<string, SettingsSelectorLocalization>;
+}
+
 export interface SettingsConfig {
+	launchPolicy: MeldraLaunchPolicy;
 	autoCompact: boolean;
 	showImages: boolean;
 	imageWidthCells: number;
@@ -94,6 +112,7 @@ export interface SettingsConfig {
 }
 
 export interface SettingsCallbacks {
+	onLaunchPolicyChange: (policy: MeldraLaunchPolicy) => void;
 	onAutoCompactChange: (enabled: boolean) => void;
 	onShowImagesChange: (enabled: boolean) => void;
 	onImageWidthCellsChange: (width: number) => void;
@@ -136,7 +155,12 @@ class WarningSettingsSubmenu extends Container {
 	private settingsList: SettingsList;
 	private state: WarningSettings;
 
-	constructor(warnings: WarningSettings, onChange: (warnings: WarningSettings) => void, onCancel: () => void) {
+	constructor(
+		warnings: WarningSettings,
+		onChange: (warnings: WarningSettings) => void,
+		onCancel: () => void,
+		localization?: SettingsSelectorLocalization,
+	) {
 		super();
 
 		this.state = { ...warnings };
@@ -144,8 +168,9 @@ class WarningSettingsSubmenu extends Container {
 		const items: SettingItem[] = [
 			{
 				id: "anthropic-extra-usage",
-				label: "Anthropic extra usage",
-				description: "Warn when Anthropic subscription auth may use paid extra usage",
+				label: localization?.label ?? "Anthropic extra usage",
+				description:
+					localization?.description ?? "Warn when Anthropic subscription auth may use paid extra usage",
 				currentValue: (this.state.anthropicExtraUsage ?? true) ? "true" : "false",
 				values: ["true", "false"],
 			},
@@ -486,15 +511,24 @@ class ThemeSubmenu extends Container {
  */
 export class SettingsSelectorComponent extends Container {
 	private settingsList: SettingsList;
+	private readonly options: SettingsSelectorOptions;
 
-	constructor(config: SettingsConfig, callbacks: SettingsCallbacks) {
+	constructor(config: SettingsConfig, callbacks: SettingsCallbacks, options: SettingsSelectorOptions = {}) {
 		super();
+		this.options = options;
 
 		const supportsImages = getCapabilities().images;
 		const followUpKey = keyDisplayText("app.message.followUp");
 		let currentWarnings = { ...config.warnings };
 
 		const items: SettingItem[] = [
+			{
+				id: "launch-policy",
+				label: "Startup folder",
+				description: "Which folder new Meldra windows start in; shared by all Profiles",
+				currentValue: config.launchPolicy,
+				values: ["ask-dirty", "always-new", "current"],
+			},
 			{
 				id: "autocompact",
 				label: "Auto-compact",
@@ -608,6 +642,7 @@ export class SettingsSelectorComponent extends Container {
 							callbacks.onWarningsChange(warnings);
 						},
 						() => done(),
+						this.options.localize?.warnings,
 					),
 			},
 			{
@@ -617,11 +652,12 @@ export class SettingsSelectorComponent extends Container {
 				currentValue: config.thinkingLevel,
 				submenu: (currentValue, done) =>
 					new SelectSubmenu(
-						"Thinking Level",
-						"Select reasoning depth for thinking-capable models",
+						this.options.localize?.thinking?.submenuTitle ?? "Thinking Level",
+						this.options.localize?.thinking?.submenuDescription ??
+							"Select reasoning depth for thinking-capable models",
 						config.availableThinkingLevels.map((level) => ({
 							value: level,
-							label: level,
+							label: this.options.localize?.thinking?.values?.[level] ?? level,
 							description: THINKING_DESCRIPTIONS[level],
 						})),
 						currentValue,
@@ -771,6 +807,30 @@ export class SettingsSelectorComponent extends Container {
 			values: ["true", "false"],
 		});
 
+		if (this.options.filter) {
+			const kept = items.filter((item) => this.options.filter!(item.id));
+			items.length = 0;
+			items.push(...kept);
+		}
+		const valueReverse = new Map<string, Map<string, string>>();
+		if (this.options.localize) {
+			for (const item of items) {
+				const translation = this.options.localize[item.id];
+				if (!translation) continue;
+				item.label = translation.label;
+				item.description = translation.description;
+				if (!translation.values || !item.values) continue;
+				const reverse = new Map<string, string>();
+				item.values = item.values.map((value) => {
+					const display = translation.values?.[value] ?? value;
+					reverse.set(display, value);
+					return display;
+				});
+				item.currentValue = translation.values[item.currentValue] ?? item.currentValue;
+				valueReverse.set(item.id, reverse);
+			}
+		}
+
 		// Add borders
 		this.addChild(new DynamicBorder());
 
@@ -778,8 +838,13 @@ export class SettingsSelectorComponent extends Container {
 			items,
 			10,
 			getSettingsListTheme(),
-			(id, newValue) => {
+			(id, displayValue) => {
+				// Localized values are display-only; callbacks keep receiving raw values.
+				const newValue = valueReverse.get(id)?.get(displayValue) ?? displayValue;
 				switch (id) {
+					case "launch-policy":
+						callbacks.onLaunchPolicyChange(newValue as MeldraLaunchPolicy);
+						break;
 					case "autocompact":
 						callbacks.onAutoCompactChange(newValue === "true");
 						break;
@@ -885,6 +950,10 @@ export class SettingsSelectorComponent extends Container {
 
 		this.addChild(this.settingsList);
 		this.addChild(new DynamicBorder());
+	}
+
+	handleInput(data: string): void {
+		this.settingsList.handleInput(data);
 	}
 
 	getSettingsList(): SettingsList {

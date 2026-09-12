@@ -35,6 +35,7 @@ const USER_EXPERIENCE_FIELDS = [
 	"hideThinkingBlock",
 	"showCacheMissNotices",
 	"quietStartup",
+	"meldraLaunchPolicy",
 	"collapseChangelog",
 	"doubleEscapeAction",
 	"treeFilterMode",

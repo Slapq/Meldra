@@ -67,6 +67,8 @@ export interface WarningSettings {
 	anthropicExtraUsage?: boolean; // default: true
 }
 
+export type MeldraLaunchPolicy = "ask-dirty" | "always-new" | "current";
+
 export type DefaultProjectTrust = "ask" | "always" | "never";
 
 export type TransportSetting = Transport;
@@ -105,6 +107,7 @@ export interface Settings {
 	externalEditor?: string; // Command for Ctrl+G external editor; takes precedence over VISUAL/EDITOR
 	shellPath?: string; // Custom shell path (e.g., for Cygwin users on Windows); supports leading ~ expansion
 	quietStartup?: boolean;
+	meldraLaunchPolicy?: MeldraLaunchPolicy; // default: "ask-dirty"; user-level Meldra launch folder policy
 	defaultProjectTrust?: DefaultProjectTrust; // default: "ask"; global setting only
 	shellCommandPrefix?: string; // Prefix prepended to every bash command (e.g., "shopt -s expand_aliases" for alias support)
 	npmCommand?: string[]; // Command used for npm package lookup/install operations, argv-style (e.g., ["mise", "exec", "node@20", "--", "npm"])
@@ -1039,6 +1042,17 @@ export class SettingsManager {
 	setQuietStartup(quiet: boolean): void {
 		this.globalSettings.quietStartup = quiet;
 		this.markModified("quietStartup");
+		this.save();
+	}
+
+	getMeldraLaunchPolicy(): MeldraLaunchPolicy {
+		const value = this.globalSettings.meldraLaunchPolicy;
+		return value === "always-new" || value === "current" ? value : "ask-dirty";
+	}
+
+	setMeldraLaunchPolicy(policy: MeldraLaunchPolicy): void {
+		this.globalSettings.meldraLaunchPolicy = policy;
+		this.markModified("meldraLaunchPolicy");
 		this.save();
 	}
 

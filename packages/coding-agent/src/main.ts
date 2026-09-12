@@ -5,6 +5,7 @@
  * createAgentSession() options. The SDK does the heavy lifting.
  */
 
+import { homedir } from "node:os";
 import { join } from "node:path";
 import { createInterface } from "node:readline";
 import { type ImageContent, modelsAreEqual } from "@earendil-works/pi-ai";
@@ -720,6 +721,27 @@ async function promptForMissingSessionCwd(
 	]);
 }
 
+/**
+ * Directories where starting a coding session usually means the user is about to
+ * work on unrelated files: the home directory itself, the Desktop, and system
+ * locations. Meldra asks before using them as the session folder.
+ */
+export function isPollutedLaunchDirectory(cwd: string): boolean {
+	const normalized = normalizePath(cwd);
+	const home = normalizePath(homedir());
+	if (normalized === home || normalized === normalizePath(join(home, "Desktop"))) return true;
+	if (process.platform === "win32") {
+		const candidates = [
+			process.env.SystemRoot ?? "C:\\Windows",
+			process.env.ProgramFiles ?? "C:\\Program Files",
+			process.env["ProgramFiles(x86)"] ?? "C:\\Program Files (x86)",
+			`${process.env.SystemDrive ?? "C:"}\\`,
+		];
+		return candidates.some((candidate) => normalizePath(candidate) === normalized);
+	}
+	return ["/", "/usr", "/etc", "/var", "/tmp"].includes(normalized);
+}
+
 export interface MainOptions {
 	extensionFactories?: InlineExtension[];
 	packageAgentDir?: string;
@@ -1003,8 +1025,40 @@ export async function main(args: string[], options?: MainOptions) {
 	if (!getSessionProfile(sessionManager)) {
 		setSessionProfile(sessionManager, activeProfileName);
 	}
-	const workspaceRoot = parsed.workspace !== undefined ? resolveWorkspaceRoot(parsed.workspace, cwd) : undefined;
 	const isFreshSession = !parsed.session && !parsed.resume && !parsed.continue && !parsed.fork;
+	let workspaceRoot = parsed.noWorkspace
+		? undefined
+		: parsed.workspace !== undefined
+			? resolveWorkspaceRoot(parsed.workspace, cwd)
+			: undefined;
+	// Ordinary Meldra Profiles apply the user-level launch folder policy only when the
+	// user did not choose explicitly and a fresh session is starting. The desktop shortcut
+	// passes --workspace, and pi compatibility keeps the native Pi behavior.
+	if (
+		!parsed.noWorkspace &&
+		parsed.workspace === undefined &&
+		isFreshSession &&
+		appMode === "interactive" &&
+		!startupProfileState.profile.compatibility
+	) {
+		const policy = startupSettingsManager.getMeldraLaunchPolicy();
+		if (policy === "always-new") {
+			workspaceRoot = resolveWorkspaceRoot(undefined, cwd);
+		} else if (policy === "ask-dirty" && isPollutedLaunchDirectory(cwd)) {
+			const useNewFolder = await showStartupSelector(
+				startupSettingsManager,
+				`这里不适合当项目文件夹：${cwd}`,
+				[
+					{ label: "用一个新的空文件夹开始", value: true },
+					{ label: "就在这里开始", value: false },
+				],
+			);
+			if (useNewFolder === undefined) {
+				process.exit(0);
+			}
+			if (useNewFolder) workspaceRoot = resolveWorkspaceRoot(undefined, cwd);
+		}
+	}
 	if (workspaceRoot && isFreshSession && sessionManager.buildSessionContext().messages.length === 0) {
 		const workspace = createEmptyWorkspace(workspaceRoot, sessionManager.getSessionId());
 		const profileSessionDir = getProfileSessionDir(workspace.cwd, activeProfileName);

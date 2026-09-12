@@ -143,7 +143,8 @@ import {
 } from "./components/oauth-selector.ts";
 import { ScopedModelsSelectorComponent } from "./components/scoped-models-selector.ts";
 import { SessionSelectorComponent } from "./components/session-selector.ts";
-import { SettingsSelectorComponent } from "./components/settings-selector.ts";
+import { MeldraSettingsSelectorComponent } from "./components/meldra-settings-selector.ts";
+import { type SettingsCallbacks, type SettingsConfig, SettingsSelectorComponent } from "./components/settings-selector.ts";
 import { SkillInvocationMessageComponent } from "./components/skill-invocation-message.ts";
 import {
 	BranchSummaryStatusIndicator,
@@ -4645,11 +4646,12 @@ export class InteractiveMode {
 	}
 
 	private showSettingsSelector(): void {
+		const isOrdinaryProfile = process.env.MELDRA_PROFILE_NAME !== "pi";
 		this.showSelector((done) => {
-			let selector: SettingsSelectorComponent | undefined;
-			selector = new SettingsSelectorComponent(
-				{
-					autoCompact: this.session.autoCompactionEnabled,
+			let selector: SettingsSelectorComponent | MeldraSettingsSelectorComponent | undefined;
+			const settingsConfig: SettingsConfig = {
+				launchPolicy: this.settingsManager.getMeldraLaunchPolicy(),
+				autoCompact: this.session.autoCompactionEnabled,
 					showImages: this.settingsManager.getShowImages(),
 					imageWidthCells: this.settingsManager.getImageWidthCells(),
 					autoResizeImages: this.settingsManager.getImageAutoResize(),
@@ -4683,9 +4685,13 @@ export class InteractiveMode {
 					fullscreenExitOutput: this.settingsManager.getFullscreenExitOutput(),
 					fullscreenScrollbar: this.settingsManager.getFullscreenScrollbar(),
 					warnings: this.settingsManager.getWarnings(),
+				};
+			const settingsCallbacks: SettingsCallbacks = {
+				onLaunchPolicyChange: (policy) => {
+					this.settingsManager.setMeldraLaunchPolicy(policy);
+					this.showStatus("已更新打开时进哪个文件夹（所有 Profile 共用）");
 				},
-				{
-					onAutoCompactChange: (enabled) => {
+				onAutoCompactChange: (enabled) => {
 						this.session.setAutoCompactionEnabled(enabled);
 						this.footer.setAutoCompactEnabled(enabled);
 					},
@@ -4851,9 +4857,11 @@ export class InteractiveMode {
 						done();
 						this.ui.requestRender();
 					},
-				},
-			);
-			return { component: selector, focus: selector.getSettingsList() };
+				};
+			selector = isOrdinaryProfile
+				? new MeldraSettingsSelectorComponent(settingsConfig, settingsCallbacks)
+				: new SettingsSelectorComponent(settingsConfig, settingsCallbacks);
+			return { component: selector, focus: selector };
 		});
 	}
 

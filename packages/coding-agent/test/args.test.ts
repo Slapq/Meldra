@@ -60,6 +60,17 @@ describe("parseArgs", () => {
 		});
 	});
 
+	test("parses workspace overrides", () => {
+		expect(parseArgs(["--workspace"]).workspace).toBe("");
+		expect(parseArgs(["--workspace", "D:/work"]).workspace).toBe("D:/work");
+		expect(parseArgs(["--no-workspace"]).noWorkspace).toBe(true);
+	});
+
+	test("parses editor file without treating it as a prompt", () => {
+		const result = parseArgs(["--editor-file", "C:/tmp/handoff.txt"]);
+		expect(result.editorFile).toBe("C:/tmp/handoff.txt");
+		expect(result.messages).toEqual([]);
+	});
 	describe("--continue flag", () => {
 		test("parses --continue flag", () => {
 			const result = parseArgs(["--continue"]);

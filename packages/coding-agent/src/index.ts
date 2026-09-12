@@ -253,6 +253,7 @@ export {
 export {
 	type CompactionSettings,
 	type DefaultProjectTrust,
+	type MeldraLaunchPolicy,
 	type FullscreenExitOutput,
 	type HookSettingsLayer,
 	type HookSettingsSnapshot,
