@@ -327,6 +327,8 @@ export interface InteractiveModeOptions {
 	modelFallbackMessage?: string;
 	/** Cwd to trust after reload if it gained a .pi directory during this implicitly trusted session. */
 	autoTrustOnReloadCwd?: string;
+	/** File whose contents should populate the editor without sending. */
+	initialEditorFile?: string;
 	/** Initial message to send on startup (can include @file content) */
 	initialMessage?: string;
 	/** Images to attach to the initial message */
@@ -1123,10 +1125,10 @@ export class InteractiveMode {
 			}
 		});
 
-		// Show startup warnings
 		const {
 			migratedProviders,
 			modelFallbackMessage,
+			initialEditorFile,
 			initialMessage,
 			initialImages,
 			initialMessages,
@@ -1147,6 +1149,16 @@ export class InteractiveMode {
 		}
 
 		void this.maybeWarnAboutAnthropicSubscriptionAuth();
+
+		if (initialEditorFile) {
+			try {
+				const text = fs.readFileSync(initialEditorFile, "utf8");
+				this.editor.setText(text);
+				fs.unlinkSync(initialEditorFile);
+			} catch (error) {
+				this.showError(`无法读取交接文本：${error instanceof Error ? error.message : String(error)}`);
+			}
+		}
 
 		// Process initial messages
 		if (initialMessage) {
@@ -2094,6 +2106,7 @@ export class InteractiveMode {
 			model: this.session.model,
 			scopedModels: this.session.scopedModels,
 			thinkingLevel: this.session.thinkingLevel,
+			getHandoffs: () => extensionRunner.getHandoffs(),
 			isIdle: () => this.session.isIdle,
 			isProjectTrusted: () => this.settingsManager.isProjectTrusted(),
 			signal: this.session.agent.signal,

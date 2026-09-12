@@ -48,6 +48,7 @@ function setup(options: SetupOptions = {}) {
 		registerCommand(name: string, command: Omit<RegisteredCommand, "name" | "sourceInfo">) {
 			if (name === "profile") profileCommand = command;
 		},
+		registerHandoff: vi.fn(),
 		on: vi.fn(),
 	} as unknown as ExtensionAPI;
 	createMeldraProfileExtension()(api);
@@ -97,15 +98,15 @@ describe("Meldra Profile extension", () => {
 		expect(ctx.ui.select).toHaveBeenCalledTimes(1);
 		const [title, items] = vi.mocked(ctx.ui.select).mock.calls[0];
 		expect(title).toContain("选择当前会话使用的配置");
-		expect(items).toContain("原版 Pi 配置（当前会话）");
-		expect(items).not.toContain("Meldra 默认配置");
-		expect(items).not.toContain("工作配置");
+		expect(items).not.toContain("原版 Pi 配置（当前会话）");
+		expect(items).toContain("Meldra 默认配置");
+		expect(items).toContain("工作配置");
 	});
 
 	it("switches the current session between ordinary Profiles after confirmation", async () => {
 		const { command, ctx, switchProfile } = setup({
 			currentProfile: "default",
-			selectResults: ["工作配置"],
+		selectResults: ["工作配置", "在当前窗口切换"],
 			confirmResults: [true],
 		});
 

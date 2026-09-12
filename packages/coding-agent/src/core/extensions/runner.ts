@@ -602,6 +602,11 @@ export class ExtensionRunner {
 		return undefined;
 	}
 
+	getHandoffs(): readonly import("./types.ts").HandoffRegistration[] {
+		this.assertActive();
+		return this.extensions.flatMap((extension) => Array.from(extension.handoffs.values()));
+	}
+
 	getMarkdownTransformers(): MarkdownTransformer[] {
 		return this.extensions.flatMap((ext) => (ext.markdownTransformer ? [ext.markdownTransformer] : []));
 	}
@@ -734,6 +739,10 @@ export class ExtensionRunner {
 			get thinkingLevel() {
 				runner.assertActive();
 				return runner.runtime.getThinkingLevel();
+			},
+			getHandoffs: () => {
+				runner.assertActive();
+				return runner.getHandoffs();
 			},
 			isIdle: () => {
 				runner.assertActive();

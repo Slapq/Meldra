@@ -270,6 +270,14 @@ function createExtensionAPI(
 			runtime.refreshTools();
 		},
 
+		registerHandoff(handoff: import("./types.ts").HandoffRegistration): void {
+			runtime.assertActive();
+			if (!handoff.id || !handoff.label || !handoff.description) {
+				throw new Error("Handoff id, label, and description are required");
+			}
+			extension.handoffs.set(handoff.id, handoff);
+		},
+
 		registerCommand(name: string, options: Omit<RegisteredCommand, "name" | "sourceInfo">): void {
 			runtime.assertActive();
 			extension.commands.set(name, {
@@ -481,6 +489,7 @@ function createExtension(extensionPath: string, resolvedPath: string): Extension
 		tools: new Map(),
 		messageRenderers: new Map(),
 		entryRenderers: new Map(),
+		handoffs: new Map(),
 		commands: new Map(),
 		flags: new Map(),
 		shortcuts: new Map(),

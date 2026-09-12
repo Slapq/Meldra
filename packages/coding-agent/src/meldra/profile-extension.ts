@@ -1,3 +1,8 @@
+import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { ExtensionAPI, ExtensionCommandContext, ExtensionContext } from "../core/extensions/types.ts";
 import {
 	checkProfileUpdate,
@@ -106,6 +111,79 @@ function getArgumentCompletions(argumentPrefix: string) {
 	return matches.length > 0 ? matches : null;
 }
 
+async function openSelectedProfile(profileName: string, ctx: ExtensionCommandContext): Promise<void> {
+	const target = resolveProfile(ctx.cwd, profileName);
+	const targetLabel = getFriendlyProfileLabel(profileName, ctx.cwd);
+	const action = await ctx.ui.select(`如何打开“${targetLabel}”？`, [
+		"在新窗口打开",
+		"在当前窗口切换",
+		"取消",
+	]);
+	if (!action || action === "取消") return;
+
+	if (action === "在当前窗口切换") {
+		await switchProfile(profileName, ctx);
+		return;
+	}
+
+	const handoffs = ctx.getHandoffs();
+	const handoffLabels = handoffs.map((handoff) => `${handoff.label} · ${handoff.description}`);
+	const seed = await ctx.ui.select("新窗口里的输入框", ["空着打开", ...handoffLabels, "取消"]);
+	if (!seed || seed === "取消") return;
+
+	let text: string | undefined;
+	if (seed !== "空着打开") {
+		const index = handoffLabels.indexOf(seed);
+		const handoff = handoffs[index];
+		if (!handoff) return;
+		text = await handoff.run(ctx);
+		if (text === undefined) return;
+	}
+
+	await openProfileWindow(target.name, ctx.cwd, text);
+	notifyProfile(ctx, `已在当前文件夹打开“${targetLabel}”。`);
+}
+
+async function openProfileWindow(name: string, cwd: string, text?: string): Promise<void> {
+	let editorFile: string | undefined;
+	if (text !== undefined) {
+		const directory = join(tmpdir(), "meldra");
+		mkdirSync(directory, { recursive: true });
+		editorFile = join(directory, `handoff-${randomUUID()}.txt`);
+		writeFileSync(editorFile, text, "utf8");
+	}
+
+	const entry = process.argv[1];
+	if (!entry) throw new Error("无法确定 Meldra 启动文件");
+	const childArgs = [entry, "--profile", name];
+	if (editorFile) childArgs.push("--editor-file", editorFile);
+
+	if (process.platform === "win32") {
+		const terminal = spawn("wt.exe", ["new-window", "--", process.execPath, ...childArgs], {
+			cwd,
+			stdio: "ignore",
+			detached: true,
+		});
+		const launched = await new Promise<boolean>((resolve) => {
+			let settled = false;
+			terminal.once("spawn", () => {
+				settled = true;
+				resolve(true);
+			});
+			terminal.once("error", () => {
+				if (!settled) resolve(false);
+			});
+		});
+		if (!launched) throw new Error("无法打开 Windows Terminal，请确认 wt.exe 可用。");
+		terminal.unref();
+		return;
+	}
+
+	const child = spawn(process.execPath, childArgs, { cwd, stdio: "ignore", detached: true });
+	child.on("error", () => {});
+	child.unref();
+}
+
 async function importFromTui(source: string, ctx: ExtensionCommandContext): Promise<void> {
 	let record: InstalledProfileRecord;
 	try {
@@ -159,7 +237,7 @@ async function switchProfile(name: string, ctx: ExtensionCommandContext): Promis
 
 async function openProfileHub(ctx: ExtensionCommandContext): Promise<void> {
 	const profile = currentProfile(ctx);
-	const choices = getProfileChoices(profile, ctx.cwd, true);
+	const choices = getProfileChoices(profile, ctx.cwd).filter((choice) => !choice.profile.compatibility);
 	const actions = ["＋ 添加别人分享的配置", "⚙ 设置当前目录下次启动的默认配置"];
 	const selected = await ctx.ui.select(
 		`选择当前会话使用的配置 · 现在：${getFriendlyProfileLabel(profile.name, ctx.cwd)}`,
@@ -169,8 +247,8 @@ async function openProfileHub(ctx: ExtensionCommandContext): Promise<void> {
 
 	const selectedProfile = choices.find((choice) => choice.label === selected);
 	if (selectedProfile) {
-		await switchProfile(selectedProfile.name, ctx);
-		return;
+			await openSelectedProfile(selectedProfile.name, ctx);
+			return;
 	}
 	if (selected === "＋ 添加别人分享的配置") {
 		const source = await ctx.ui.input("配置来源（本地文件夹或分享地址）");

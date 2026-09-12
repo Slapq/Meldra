@@ -500,6 +500,66 @@ export default function meldraWorkflows(pi: ExtensionAPI) {
 		},
 	});
 
+	async function createHandoffText(goal: string, ctx: import("@earendil-works/pi-coding-agent").ExtensionCommandContext): Promise<string | undefined> {
+		const model = ctx.model;
+		if (!model) {
+			ctx.ui.notify("尚未选择模型", "error");
+			return undefined;
+		}
+		const messages = getHandoffMessages(ctx.sessionManager.getBranch());
+		if (!messages.length) {
+			ctx.ui.notify("当前没有可交接的会话内容", "error");
+			return undefined;
+		}
+		const conversation = serializeConversation(convertToLlm(messages));
+		const draft = await ctx.ui.custom<string | null>((tui, theme, _kb, done) => {
+			const loader = new BorderedLoader(tui, theme, "正在整理交接内容...");
+			loader.onAbort = () => done(null);
+			const userMessage: Message = {
+				role: "user",
+				content: [{ type: "text", text: `## Conversation History\n\n${conversation}\n\n## New Session Goal\n\n${goal}` }],
+				timestamp: Date.now(),
+			};
+			ctx.modelRegistry
+				.complete(model, { systemPrompt: HANDOFF_SYSTEM_PROMPT, messages: [userMessage] }, {
+					signal: loader.signal,
+					cacheRetention: "none",
+					sessionId: uuidv7(),
+				})
+				.then((response) => {
+					if (response.stopReason === "aborted") return done(null);
+					done(response.content.filter((part) => part.type === "text").map((part) => part.text).join("\n"));
+				})
+				.catch((error) => {
+					console.error("Handoff generation failed:", error);
+					done(null);
+				});
+			return loader;
+		});
+		if (draft === null) {
+			ctx.ui.notify("已取消", "info");
+			return undefined;
+		}
+		const edited = await ctx.ui.editor("编辑交接内容", draft);
+		return edited === undefined ? undefined : edited;
+	}
+
+	pi.registerHandoff({
+		id: "full",
+		label: "完整交接",
+		description: "整理当前任务、已完成内容和待办事项",
+		run: async (ctx) => {
+			if (!featureEnabled(config.handoff, "会话交接", ctx)) return undefined;
+			if (ctx.mode !== "tui") {
+				ctx.ui.notify("交接需要交互界面", "error");
+				return undefined;
+			}
+			const goal = await ctx.ui.input("你希望对方接着做什么？");
+			if (goal === undefined) return undefined;
+			return createHandoffText(goal.trim(), ctx);
+		},
+	});
+
 	pi.registerCommand("handoff", {
 		description: "把必要上下文整理到一个新的专注会话",
 		handler: async (args, ctx) => {
@@ -508,63 +568,13 @@ export default function meldraWorkflows(pi: ExtensionAPI) {
 				ctx.ui.notify("/handoff 需要交互界面", "error");
 				return;
 			}
-			const model = ctx.model;
-			if (!model) {
-				ctx.ui.notify("尚未选择模型", "error");
-				return;
-			}
 			const goal = args.trim();
 			if (!goal) {
 				ctx.ui.notify("用法：/handoff <新会话目标>", "error");
 				return;
 			}
-			const messages = getHandoffMessages(ctx.sessionManager.getBranch());
-			if (!messages.length) {
-				ctx.ui.notify("当前没有可交接的会话内容", "error");
-				return;
-			}
-			const conversation = serializeConversation(convertToLlm(messages));
 			const currentSessionFile = ctx.sessionManager.getSessionFile();
-			const draft = await ctx.ui.custom<string | null>((tui, theme, _kb, done) => {
-				const loader = new BorderedLoader(tui, theme, "正在整理交接内容...");
-				loader.onAbort = () => done(null);
-				const userMessage: Message = {
-					role: "user",
-					content: [
-						{ type: "text", text: `## Conversation History\n\n${conversation}\n\n## New Session Goal\n\n${goal}` },
-					],
-					timestamp: Date.now(),
-				};
-				ctx.modelRegistry
-					.complete(
-						model,
-						{ systemPrompt: HANDOFF_SYSTEM_PROMPT, messages: [userMessage] },
-						{
-							signal: loader.signal,
-							cacheRetention: "none",
-							sessionId: uuidv7(),
-						},
-					)
-					.then((response) => {
-						if (response.stopReason === "aborted") return done(null);
-						done(
-							response.content
-								.filter((part) => part.type === "text")
-								.map((part) => part.text)
-								.join("\n"),
-						);
-					})
-					.catch((error) => {
-						console.error("Handoff generation failed:", error);
-						done(null);
-					});
-				return loader;
-			});
-			if (draft === null) {
-				ctx.ui.notify("已取消", "info");
-				return;
-			}
-			const edited = await ctx.ui.editor("编辑交接内容", draft);
+			const edited = await createHandoffText(goal, ctx);
 			if (edited === undefined) return;
 			const result = await ctx.newSession({
 				parentSession: currentSessionFile,
@@ -573,9 +583,10 @@ export default function meldraWorkflows(pi: ExtensionAPI) {
 					replacementCtx.ui.notify("交接内容已放入编辑器，确认后发送", "info");
 				},
 			});
-			if (result.cancelled) ctx.ui.notify("新会话已取消", "info");
+			if (result.cancelled) ctx.ui.notify("已取消", "info");
 		},
 	});
+
 
 	pi.on("before_agent_start", async (event) => {
 		if (config.presets && activePreset?.instructions) {

@@ -72,6 +72,7 @@ export type {
 	ExtensionFactory,
 	ExtensionFlag,
 	ExtensionHandler,
+	HandoffRegistration,
 	ExtensionMode,
 	// Runtime
 	ExtensionRuntime,

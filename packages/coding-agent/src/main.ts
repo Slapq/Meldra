@@ -1382,9 +1382,9 @@ export async function main(args: string[], options?: MainOptions) {
 			migratedProviders,
 			modelFallbackMessage,
 			autoTrustOnReloadCwd,
+			initialEditorFile: parsed.editorFile,
 			initialMessage,
-			initialImages,
-			initialMessages: parsed.messages,
+
 			startupCommand: parsed.startupCommand,
 			verbose: parsed.verbose,
 			tuiMode: parsed.tuiMode,

@@ -13,6 +13,7 @@ export type Mode = "text" | "json" | "rpc";
 export interface Args {
 	profile?: string;
 	workspace?: string;
+	editorFile?: string;
 	provider?: string;
 	model?: string;
 	apiKey?: string;
@@ -95,6 +96,8 @@ export function parseArgs(args: string[]): Args {
 		} else if (arg === "--workspace") {
 			const next = args[i + 1];
 			result.workspace = next !== undefined && !next.startsWith("-") && !next.startsWith("@") ? args[++i] : "";
+		} else if (arg === "--editor-file" && i + 1 < args.length) {
+			result.editorFile = args[++i];
 		} else if (arg === "--provider" && i + 1 < args.length) {
 			result.provider = args[++i];
 		} else if (arg === "--model" && i + 1 < args.length) {
@@ -293,6 +296,7 @@ ${chalk.bold("Commands:")}
 ${chalk.bold("Options:")}
   --profile <name>               Meldra Profile (default: session, directory binding, then default)
   --workspace [dir]              Create a session-bound WorkSpace (default: ~/.meldra/workspaces)
+  --editor-file <path>           Fill the interactive editor from a file without sending
   --provider <name>              Provider name (default: google)
   --model <pattern>              Model pattern or ID (supports "provider/id" and optional ":<thinking>")
   --api-key <key>                API key (defaults to env vars)
