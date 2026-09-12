@@ -979,41 +979,10 @@ export default function dshExtension(pi: ExtensionAPI): void {
 		queueItems = [];
 		updateQueueSurface(ctx);
 	};
-	const updateModelBridgeStatus = (ctx: ExtensionContext, catalog: unknown): void => {
-		const record = isRecord(catalog) ? catalog : {};
-		const current = isRecord(record.current) ? record.current : {};
-		const provider = typeof current.provider === "string" ? current.provider : undefined;
-		const model = typeof current.model === "string" ? current.model : undefined;
-		const activeModel = piActiveModel;
-		const activeModelInCatalog =
-			activeModel !== undefined &&
-			records(record.groups).some(
-				(group) =>
-					group.id === activeModel.provider &&
-					records(group.models).some((candidate) => candidate.id === activeModel.id),
-			);
-		let label = provider && model ? `Harness native ${provider}/${model}` : "Harness preset/default";
-		if (activeModel) {
-			const routeMatches = provider === activeModel.provider && model === activeModel.id;
-			label += routeMatches
-				? " · Pi active matched"
-				: activeModelInCatalog
-					? ` · Pi active ${activeModel.provider}/${activeModel.id} · native differs`
-					: ` · Pi active ${activeModel.provider}/${activeModel.id} · not in Harness catalog`;
-		}
-		const preference = profileModelPreference;
-		if (
-			preference &&
-			(!activeModel || preference.provider !== activeModel.provider || preference.id !== activeModel.id)
-		) {
-			const preferenceInCatalog = records(record.groups).some(
-				(group) =>
-					group.id === preference.provider &&
-					records(group.models).some((candidate) => candidate.id === preference.id),
-			);
-			label += ` · Profile preference ${preference.provider}/${preference.id}${preferenceInCatalog ? "" : " · not in Harness catalog"}`;
-		}
-		ctx.ui.setStatus("meldra-dsh-0-model", ctx.ui.theme.fg("dim", label));
+	const updateModelBridgeStatus = (ctx: ExtensionContext, _catalog: unknown): void => {
+		// The Runtime identity is already shown by the DSH status slot and Profile status.
+		// Keep model selection/bridge work active without duplicating native route details in the footer.
+		ctx.ui.setStatus("meldra-dsh-0-model", undefined);
 	};
 	const invalidateCommandCatalog = (): void => {
 		commandCatalogSessionId = undefined;

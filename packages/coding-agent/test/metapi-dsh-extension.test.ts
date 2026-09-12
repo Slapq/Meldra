@@ -526,10 +526,7 @@ describe("DSH Profile TUI renderer", () => {
 		state.handlers.get("session_start")?.({ type: "session_start", reason: "startup" }, state.ctx);
 
 		await vi.waitFor(() =>
-			expect(state.ctx.ui.setStatus).toHaveBeenCalledWith(
-				"meldra-dsh-0-model",
-				"Harness native deepseek-official/deepseek-v4-flash",
-			),
+			expect(state.ctx.ui.setStatus).toHaveBeenCalledWith("meldra-dsh-0-model", undefined),
 		);
 		vi.unstubAllEnvs();
 	});
@@ -545,10 +542,7 @@ describe("DSH Profile TUI renderer", () => {
 		state.handlers.get("session_start")?.({ type: "session_start", reason: "startup" }, state.ctx);
 
 		await vi.waitFor(() =>
-			expect(state.ctx.ui.setStatus).toHaveBeenCalledWith(
-				"meldra-dsh-0-model",
-				"Harness native deepseek-official/deepseek-v4-flash · Pi active matched",
-			),
+			expect(state.ctx.ui.setStatus).toHaveBeenCalledWith("meldra-dsh-0-model", undefined),
 		);
 		expect(fake.runtime.selectModel).not.toHaveBeenCalled();
 		vi.unstubAllEnvs();
@@ -574,10 +568,7 @@ describe("DSH Profile TUI renderer", () => {
 			state.ctx,
 		);
 
-		expect(state.ctx.ui.setStatus).toHaveBeenLastCalledWith(
-			"meldra-dsh-0-model",
-			"Harness native CloseAI/gpt-5.6-sol · Pi active matched",
-		);
+		expect(state.ctx.ui.setStatus).toHaveBeenLastCalledWith("meldra-dsh-0-model", undefined);
 		vi.unstubAllEnvs();
 	});
 
@@ -592,10 +583,7 @@ describe("DSH Profile TUI renderer", () => {
 		state.handlers.get("session_start")?.({ type: "session_start", reason: "startup" }, state.ctx);
 
 		await vi.waitFor(() =>
-			expect(state.ctx.ui.setStatus).toHaveBeenCalledWith(
-				"meldra-dsh-0-model",
-				"Harness native deepseek-official/deepseek-v4-flash · Pi active deepseek-official/deepseek-v4 · native differs",
-			),
+			expect(state.ctx.ui.setStatus).toHaveBeenCalledWith("meldra-dsh-0-model", undefined),
 		);
 		expect(fake.runtime.selectModel).not.toHaveBeenCalled();
 
@@ -605,10 +593,7 @@ describe("DSH Profile TUI renderer", () => {
 		};
 		state.handlers.get("session_start")?.({ type: "session_start", reason: "startup" }, state.ctx);
 		await vi.waitFor(() =>
-			expect(state.ctx.ui.setStatus).toHaveBeenCalledWith(
-				"meldra-dsh-0-model",
-				"Harness native deepseek-official/deepseek-v4-flash · Pi active missing-provider/missing-model · not in Harness catalog",
-			),
+			expect(state.ctx.ui.setStatus).toHaveBeenCalledWith("meldra-dsh-0-model", undefined),
 		);
 		vi.unstubAllEnvs();
 	});
@@ -2096,10 +2081,7 @@ describe("DSH Profile TUI renderer", () => {
 
 		expect(fake.runtime.selectModel).toHaveBeenCalledWith("deepseek-official", "deepseek-v4", "high");
 		expect(state.ctx.setModelPreference).toHaveBeenCalledWith("deepseek-official", "deepseek-v4");
-		expect(state.ctx.ui.setStatus).toHaveBeenCalledWith(
-			"meldra-dsh-0-model",
-			"Harness native deepseek-official/deepseek-v4-flash · Profile preference deepseek-official/deepseek-v4",
-		);
+		expect(state.ctx.ui.setStatus).toHaveBeenCalledWith("meldra-dsh-0-model", undefined);
 		vi.unstubAllEnvs();
 	});
 
